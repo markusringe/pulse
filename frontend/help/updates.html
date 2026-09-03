@@ -14,7 +14,7 @@
   <p>Auf dem Server mit visualisiertem Fortschritt:</p>
   <pre><code>cd /opt/pulse
 sudo ./scripts/update-vps-ubuntu.sh</code></pre>
-  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.2</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
+  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.3</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
 
   <h3>Manuelles Update (Admin-UI)</h3>
   <ol>
@@ -39,9 +39,17 @@ sudo ./scripts/update-vps-ubuntu.sh</code></pre>
   <h3>Entwickler: Release erstellen</h3>
   <ul>
     <li>Semantische Version in <code>package.json</code> erhöhen</li>
-    <li>Git-Tag <code>v1.4.2</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
+    <li>Git-Tag <code>v1.4.3</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
     <li>Breaking Changes in den Release-Notes mit <strong>Breaking</strong> markieren</li>
     <li>SQL-Migrationen unter <code>migrations/*.sql</code> ablegen</li>
+  </ul>
+
+  <h3>Version 1.4.3 — Startseiten-Performance</h3>
+  <ul>
+    <li><strong>Fix:</strong> Startseite reagiert schneller — kein doppeltes Abbrechen/Neuplanen beim Event-Laden (route + bootUi).</li>
+    <li><strong>Fix:</strong> <code>GET /api/events</code> ohne N+1-Dateilesevorgänge; <code>events.json</code> mit Kurzzeit-Cache.</li>
+    <li><strong>Fix:</strong> QR-Codes auf Event-Karten erst beim Öffnen von „Einladung / QR“ (lazy).</li>
+    <li><strong>Geändert:</strong> Idle-Timeout für Event-Liste 600&nbsp;ms statt 2,5&nbsp;s; <code>navigate()</code> ohne doppeltes <code>route()</code>.</li>
   </ul>
 
   <h3>Version 1.4.2 — Presenter-Login &amp; Team-Zuordnung</h3>
