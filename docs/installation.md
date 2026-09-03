@@ -163,10 +163,16 @@ chmod +x scripts/install-vps-ubuntu.sh scripts/seed-data.sh
 sudo ./scripts/install-vps-ubuntu.sh
 ```
 
+Oder **One-Liner** (Remote, ohne vorheriges Klonen):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/markusringe/pulse/main/scripts/install-vps-ubuntu.sh | sudo bash
+```
+
 Oder mit Klonen in einem Schritt:
 
 ```bash
-sudo ./scripts/install-vps-ubuntu.sh --git https://github.com/IHR-ORG/pulse.git --dir /opt/pulse
+sudo ./scripts/install-vps-ubuntu.sh --git https://github.com/markusringe/pulse.git --dir /opt/pulse
 ```
 
 Das Skript installiert **Docker + Compose**, legt **`.env`** mit Zufallssecrets an, seedet **`data/`** (Branding, Datenschutz, leere Events/Audit) und startet **`docker compose up -d`**. Zugangsdaten: `INSTALL-CREDENTIALS.txt`.
@@ -178,6 +184,8 @@ Das Skript installiert **Docker + Compose**, legt **`.env`** mit Zufallssecrets 
 | `--expose-grafana` | UFW Port 3001 |
 | `--skip-firewall` | Keine UFW-Regeln |
 | `--skip-docker` | Docker nicht neu installieren |
+| `--npm` | Node.js 22 + `npm install` statt Docker |
+| `--json` | Zusammenfassung zusätzlich als JSON |
 
 ### 4.1 Vorbereitung
 
