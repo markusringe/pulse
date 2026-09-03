@@ -4,7 +4,8 @@
  */
 
 import { api } from "./websocket.js?v=nav20";
-import { ensureStepUp, withStepUp } from "./stepUp.js?v=nav35";
+import { ensureStepUp, withStepUp } from "./stepUp.js?v=nav40";
+import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav40";
 
 function $(id) {
   return document.getElementById(id);
@@ -107,7 +108,13 @@ async function loadBackups() {
 /** Neues Backup erstellen und Download starten. */
 async function onCreateBackup() {
   const btn = $("backup-create-btn");
-  if (!(await ensureStepUp())) return;
+  if (!(await ensureStepUp())) {
+    setMsg(
+      "Bestätigung erforderlich — geben Sie Ihren Anmeldecode ein oder melden Sie sich erneut an.",
+      true
+    );
+    return;
+  }
   if (btn) {
     btn.disabled = true;
     btn.textContent = "Backup wird erstellt…";
@@ -232,6 +239,8 @@ let bound = false;
 
 /** Seite initialisieren (#/admin/backups). */
 export async function showBackupsPage() {
+  await loadAuth();
+  applyAdminNavVisibility();
   if (!bound) {
     $("backup-create-btn")?.addEventListener("click", () => void onCreateBackup());
     $("backup-upload-btn")?.addEventListener("click", () => void onUploadBackup());

@@ -45,9 +45,16 @@ export async function loadAuth() {
   const me = await fetchJson("/auth/me");
   if (me.ok) {
     state.user = me.data?.user || null;
-    state.nav = me.data?.nav || [];
+    state.nav = me.data?.nav?.length
+      ? me.data.nav
+      : state.user?.role === "admin"
+        ? NAV_FALLBACK.admin
+        : NAV_FALLBACK[state.user?.role] || [];
     state.stepUpUntil = me.data?.stepUpUntil || null;
     state.viaSecret = Boolean(me.data?.viaSecret);
+    if (state.viaSecret && !state.user) {
+      state.nav = NAV_FALLBACK.admin;
+    }
   } else {
     state.user = null;
     state.nav = [];
@@ -77,7 +84,9 @@ export async function refreshAuthMe() {
   const me = await fetchJson("/auth/me");
   if (me.ok && me.data?.user) {
     state.user = me.data.user;
-    state.nav = me.data.nav || [];
+    state.nav = me.data.nav?.length
+      ? me.data.nav
+      : NAV_FALLBACK[me.data.user.role] || [];
     state.stepUpUntil = me.data.stepUpUntil || null;
   }
 }
@@ -113,19 +122,42 @@ export function isAuthenticated() {
   return Boolean(state.user) || state.viaSecret;
 }
 
-/** Alias für Route-Guards und Navigation. */
+/** Eingeloggt (beliebige Rolle) — für allgemeine Admin-Routen. */
 export function hasAdminAccess() {
   return isAuthenticated();
+}
+
+/** Instanz-Administrator (volle Rechte inkl. Benutzerverwaltung). */
+export function isAdminUser() {
+  if (!state.enabled) return true;
+  if (state.viaSecret) return true;
+  const u = state.user;
+  if (!u || u.role !== "admin") return false;
+  return u.status !== "disabled" && u.status !== "locked";
+}
+
+/** Benutzerverwaltung (#/admin/users) und zugehörige APIs. */
+export function canManageUsers() {
+  return isAdminUser();
 }
 
 export function authNav() {
   return state.nav;
 }
 
+/** Fallback wenn /auth/me keine nav liefert (Cache, alte API). */
+const NAV_FALLBACK = {
+  admin: ["sessions", "events", "branding", "privacy", "ssl", "email", "settings", "updates", "backups", "users", "help"],
+  editor: ["sessions", "events", "help"],
+  viewer: ["events", "help"],
+};
+
 export function hasNav(key) {
   if (!state.enabled) return true;
   if (!state.user) return key === "help" || key === "login";
-  return state.nav.includes(key);
+  if (state.nav.includes(key)) return true;
+  const fallback = NAV_FALLBACK[state.user.role];
+  return Array.isArray(fallback) && fallback.includes(key);
 }
 
 export function roleLabel(role) {
@@ -144,7 +176,7 @@ export async function verifyPin(email, pin, persistent = true) {
   });
   if (r.ok) {
     state.user = r.data.user;
-    state.nav = r.data.nav || [];
+    state.nav = r.data.nav?.length ? r.data.nav : NAV_FALLBACK[r.data.user?.role] || [];
     state.stepUpUntil = r.data.stepUpUntil || Date.now() + 15 * 60 * 1000;
     state.bootstrapPasswordLogin = false;
     state.passwordLoginMode = false;
@@ -161,7 +193,11 @@ export async function bootstrapLogin(email, password, persistent = true) {
   });
   if (r.ok) {
     state.user = r.data.user;
-    state.nav = r.data.nav || [];
+    state.nav = r.data.nav?.length
+      ? r.data.nav
+      : r.data.user?.role === "admin"
+        ? NAV_FALLBACK.admin
+        : NAV_FALLBACK[r.data.user?.role] || [];
     state.stepUpUntil = r.data.stepUpUntil || Date.now() + 15 * 60 * 1000;
     state.bootstrapPasswordLogin = false;
     state.passwordLoginMode = !state.pinLoginAvailable;
@@ -177,7 +213,11 @@ export async function loginPassword(email, password, persistent = true) {
   });
   if (r.ok) {
     state.user = r.data.user;
-    state.nav = r.data.nav || [];
+    state.nav = r.data.nav?.length
+      ? r.data.nav
+      : r.data.user?.role === "admin"
+        ? NAV_FALLBACK.admin
+        : NAV_FALLBACK[r.data.user?.role] || [];
     state.stepUpUntil = r.data.stepUpUntil || Date.now() + 15 * 60 * 1000;
   }
   return r;
@@ -321,6 +361,7 @@ function navKeyFromHash(hash) {
   if (hash === "/admin/branding") return "branding";
   if (hash === "/admin/privacy") return "privacy";
   if (hash === "/admin/ssl") return "ssl";
+  if (hash === "/admin/email") return "email";
   if (hash === "/admin/settings") return "settings";
   if (hash === "/admin/updates") return "updates";
   if (hash === "/admin/backups") return "backups";

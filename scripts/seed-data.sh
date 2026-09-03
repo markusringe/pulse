@@ -19,10 +19,10 @@ for f in branding.json privacy.json; do
   fi
 done
 
-# Leerer Event-Katalog — keine Entwicklungs-Testevents auf dem VPS
+# Leerer Event-Katalog — Demo-Event „Bürgerversammlung“ legt der Server beim ersten Start an
 if [ ! -f "$DEST/events.json" ]; then
   printf '%s\n' '{"events":[]}' > "$DEST/events.json"
-  log "events.json angelegt (leer)"
+  log "events.json angelegt (leer — Demo-Event folgt beim ersten Serverstart)"
 fi
 
 # Leeres Audit-Log

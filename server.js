@@ -36,6 +36,7 @@ const userService = require("./lib/userService");
 const emailService = require("./lib/emailService");
 const pinLimiter = require("./lib/pinLimiter");
 const { ensureBootstrapAdmin, bootstrapCredentials } = require("./lib/bootstrapAdmin");
+const { ensureDemoEvent } = require("./lib/demoEventSeed");
 const updateService = require("./lib/updateService");
 const emailApi = require("./lib/emailApi");
 const backupService = require("./lib/backupService");
@@ -215,6 +216,8 @@ bus.onRemote((code, envelope) => {
         console.log(`[bootstrap] Bereit: ${bootstrap.email}`);
       } else if (bootstrap.reason === "password_synced") {
         console.log(`[bootstrap] Installations-Kennwort synchronisiert: ${bootstrap.email}`);
+      } else if (bootstrap.reason === "role_restored") {
+        console.log(`[bootstrap] Admin-Rechte wiederhergestellt: ${bootstrap.email}`);
       } else if (bootstrap.reason === "exists" && !bootstrapCredentials().envPasswordSet) {
         console.warn("[bootstrap] Admin existiert, aber BOOTSTRAP_ADMIN_PASSWORD fehlt — Login mit INSTALL-CREDENTIALS schlägt fehl bis .env im Container ist");
       }
@@ -243,7 +246,9 @@ bus.onRemote((code, envelope) => {
     }
     ssl.renewDue().catch((err) => console.error("[ssl-renew]", err));
   }, 60 * 60 * 1000);
-  migrateEventDecks().catch((err) => console.error("[events-migrate]", err));
+  migrateEventDecks()
+    .then(() => ensureDemoEvent({ eventStore, createEventWithSession, userDb }))
+    .catch((err) => console.error("[events-migrate/demo]", err));
   sweepExpiredSessions().catch((err) => console.error("[sweep]", err));
   tickEventStatuses();
   ssl.renewDue().catch((err) => console.error("[ssl-renew]", err));
@@ -2284,7 +2289,9 @@ async function createEventWithSession(body = {}) {
     const ev = eventStore.create(body);
     try {
       let slides = eventStore.DEFAULT_DECK;
-      if (body.copyFromId) {
+      if (Array.isArray(body.slides) && body.slides.length) {
+        slides = body.slides.map((s) => normalizeSlide(s));
+      } else if (body.copyFromId) {
         const src = eventStore.get(body.copyFromId);
         const srcSession = src ? await getSession(eventStore.sessionRef(src)) : null;
         if (srcSession?.slides?.length) slides = srcSession.slides.map((s) => slideSource(s));
@@ -2294,7 +2301,7 @@ async function createEventWithSession(body = {}) {
         eventId: ev.id,
         ownerUserId: ev.ownerUserId || body.ownerUserId || "",
         slides,
-        skipLobby: true,
+        skipLobby: body.skipLobby !== false,
       });
       eventStore.attachSession(ev.id, created.session.code);
       return { event: eventStore.get(ev.id), adminKey: created.adminKey, session: created.session };

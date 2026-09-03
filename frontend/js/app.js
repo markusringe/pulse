@@ -34,7 +34,7 @@ import { bindHelp, showHelpPage, explainError } from "./help.js?v=nav12";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
 import { syncAdminNav } from "./adminNav.js?v=nav15";
-import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav39";
+import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav40";
 import { showLoginPage } from "./loginPage.js?v=nav39";
 import { showAdminLoginModal, isAdminLoginModalOpen } from "./adminLoginModal.js?v=nav39";
 import { showUsersPage } from "./usersAdmin.js?v=nav30";
@@ -478,9 +478,8 @@ function route(forcedHash) {
 
   if (hash === "/admin/users") {
     teardownRealtime();
-    showView("users");
-    showUsersPage();
-    applyAdminNavVisibility();
+    showView("users", hash);
+    void showUsersPage().then(() => applyAdminNavVisibility());
     return;
   }
 
@@ -554,8 +553,8 @@ function route(forcedHash) {
   }
   if (hash === "/admin/backups") {
     teardownRealtime();
-    showView("backups");
-    import("./backupsPage.js?v=nav38")
+    showView("backups", hash);
+    import("./backupsPage.js?v=nav40")
       .then((m) => m.showBackupsPage())
       .catch((err) => {
         console.error("[backups-page]", err);

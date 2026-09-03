@@ -3,7 +3,13 @@
  * Administratoren müssen ihren E-Mail-Anmeldecode erneut eingeben.
  */
 
-import { getAuthUser, submitStepUpPin, hasValidStepUp, refreshAuthMe } from "./authClient.js?v=nav32";
+import {
+  getAuthUser,
+  submitStepUpPin,
+  hasValidStepUp,
+  refreshAuthMe,
+  isPinLoginAvailable,
+} from "./authClient.js?v=nav40";
 
 let dialogEl = null;
 
@@ -39,6 +45,8 @@ export async function ensureStepUp() {
   const me = getAuthUser();
   if (!me || me.role !== "admin") return true;
   if (hasValidStepUp()) return true;
+  /* Kennwort-only (Installation ohne SMTP): PIN-Dialog wäre nutzlos. */
+  if (!isPinLoginAvailable()) return true;
   return promptStepUp();
 }
 

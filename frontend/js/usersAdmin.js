@@ -11,17 +11,18 @@ import {
   resendUserPin,
   deleteUser,
   roleLabel,
-  getAuthUser,
-} from "./authClient.js?v=nav30";
-import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav35";
+  loadAuth,
+  canManageUsers,
+} from "./authClient.js?v=nav41";
+import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav40";
 
 /** Benutzerliste rendern. */
 export async function showUsersPage() {
   const root = document.getElementById("view-users");
   if (!root) return;
-  const me = getAuthUser();
-  if (!me || me.role !== "admin") {
-    root.innerHTML = `<p class="muted">Keine Berechtigung.</p>`;
+  await loadAuth();
+  if (!canManageUsers()) {
+    root.innerHTML = `<p class="muted">Keine Berechtigung — Benutzerverwaltung erfordert die Rolle Administrator.</p>`;
     return;
   }
   root.innerHTML = `
