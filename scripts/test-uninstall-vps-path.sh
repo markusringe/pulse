@@ -20,4 +20,9 @@ if bash -s -- --help < "$SCRIPT" 2>&1 | grep -q 'BASH_SOURCE'; then
   exit 1
 fi
 
+echo "test-uninstall-vps-path: --yes Dry-Run (kein root)…"
+if bash "$SCRIPT" --yes 2>&1 | grep -q 'root'; then
+  echo "root-check-ok"
+fi
+
 echo "test-uninstall-vps-path: OK"
