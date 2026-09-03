@@ -33,11 +33,12 @@ import { bindSslPage, showSslPage } from "./ssl.js?v=nav13";
 import { bindHelp, showHelpPage, explainError } from "./help.js?v=nav12";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
-import { syncAdminNav } from "./adminNav.js?v=nav42";
-import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav42";
+import { syncAdminNav } from "./adminNav.js?v=nav43";
+import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav43";
 import { showLoginPage } from "./loginPage.js?v=nav39";
 import { showAdminLoginModal, isAdminLoginModalOpen } from "./adminLoginModal.js?v=nav39";
-import { showUsersPage } from "./usersAdmin.js?v=nav42";
+import { showUsersPage } from "./usersAdmin.js?v=nav43";
+import { showTeamsPage } from "./teamsPage.js?v=nav43";
 import { showProfilePage } from "./profilePage.js?v=nav30";
 import { ensureStepUp } from "./stepUp.js?v=nav35";
 import { bindEvents, showEventsPage, loadHomeEvents, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav30";
@@ -135,6 +136,7 @@ const els = {
     adminSettings: document.getElementById("view-settings"),
     updates: document.getElementById("view-updates"),
     backups: document.getElementById("view-backups"),
+    teams: document.getElementById("view-teams"),
     help: document.getElementById("view-help"),
     stage: document.getElementById("view-stage"),
     events: document.getElementById("view-events"),
@@ -277,9 +279,9 @@ async function bootUi() {
   let branding;
   try {
     branding = (await api.getBranding())?.branding;
-    applyBranding(branding);
-    ctx.instanceBranding = branding || ctx.instanceBranding;
     ctx.branding = branding;
+    ctx.instanceBranding = branding || ctx.instanceBranding;
+    applyBranding(branding);
   } catch (err) {
     console.error("[boot-branding]", err);
   }
@@ -291,8 +293,6 @@ async function bootUi() {
     applyBranding(ctx.branding);
     syncSoundToggles();
   });
-  const teamEl = document.getElementById("join-team");
-  if (teamEl && readTeamName()) teamEl.value = readTeamName();
   refreshDraftList();
   renderRecentSessions();
   mountReactionBar(els.joinReactions, sendReaction);
@@ -355,6 +355,7 @@ function expectedViewFromHash() {
   if (hash === "/admin/backups") return "backups";
   if (hash === "/admin/login") return "login";
   if (hash === "/admin/users") return "users";
+  if (hash === "/admin/teams") return "teams";
   if (hash === "/admin/profile") return "profile";
   if (isLegacyEventJoinHash(hash)) return "join";
   if (isEventsHash(hash)) return "events";
@@ -480,6 +481,13 @@ function route(forcedHash) {
     teardownRealtime();
     showView("users", hash);
     void showUsersPage().then(() => applyAdminNavVisibility());
+    return;
+  }
+
+  if (hash === "/admin/teams") {
+    teardownRealtime();
+    showView("teams", hash);
+    void showTeamsPage().then(() => applyAdminNavVisibility());
     return;
   }
 
@@ -648,6 +656,7 @@ function showView(name, routeHash) {
   if (!els.views.events) els.views.events = document.getElementById("view-events");
   if (!els.views.login) els.views.login = document.getElementById("view-login");
   if (!els.views.users) els.views.users = document.getElementById("view-users");
+  if (!els.views.teams) els.views.teams = document.getElementById("view-teams");
   if (!els.views.profile) els.views.profile = document.getElementById("view-profile");
   if (!els.views.updates) els.views.updates = document.getElementById("view-updates");
   if (!els.views.email) els.views.email = document.getElementById("view-email");
@@ -1065,8 +1074,10 @@ function onCreate(ev) {
 
 function onJoinSubmit(ev) {
   ev.preventDefault();
-  const team = document.getElementById("join-team")?.value.trim();
-  if (team) storeTeamName(team);
+  if (isJoinTeamEnabled()) {
+    const team = document.getElementById("join-team")?.value.trim();
+    if (team) storeTeamName(team);
+  }
   const code = (els.joinCodeInput.value || "").replace(/\D/g, "").slice(0, 6);
   if (code.length !== 6) {
     els.joinCodeInput.focus();
@@ -2157,10 +2168,31 @@ function storeTeamName(name) {
 }
 
 function readTeamName() {
+  if (!isJoinTeamEnabled()) return "";
   try {
     return localStorage.getItem(TEAM_KEY) || "";
   } catch {
     return "";
+  }
+}
+
+/** Ob das optionale Teamname-Feld auf der Startseite aktiv ist (Branding). */
+function isJoinTeamEnabled() {
+  return Boolean(ctx.branding?.joinTeamEnabled);
+}
+
+/** Teamname-Feld auf der Startseite ein- oder ausblenden. */
+function applyJoinTeamField(b) {
+  const wrap = document.getElementById("join-team-wrap");
+  if (!wrap) return;
+  const enabled = Boolean(b?.joinTeamEnabled);
+  wrap.hidden = !enabled;
+  if (!enabled) {
+    const input = document.getElementById("join-team");
+    if (input) input.value = "";
+  } else if (readTeamName()) {
+    const input = document.getElementById("join-team");
+    if (input && !input.value) input.value = readTeamName();
   }
 }
 
@@ -2803,6 +2835,8 @@ function applyBranding(b) {
 
   applyWhiteLabel(b);
 
+  applyJoinTeamField(b);
+
   const logoUrl = typeof b.logo === "string" ? b.logo.trim() : "";
   const hasLogo =
     logoUrl.length > 0 && (logoUrl.startsWith("data:") || /^https?:\/\//i.test(logoUrl));
@@ -3041,6 +3075,7 @@ function bindBrandingForm(initial) {
     setCheck("brand-footer-hidden", b.footerHidden);
     setCheck("brand-stage-logo", b.stageShowLogo);
     setCheck("brand-stage-footer", b.stageShowFooter);
+    setCheck("brand-join-team-enabled", b.joinTeamEnabled);
     setVal("brand-transition", b.slideTransition || "slide");
     form.querySelectorAll("input[name=lang]").forEach((c) => {
       c.checked = (b.languages || ["de"]).includes(c.value);
@@ -3118,6 +3153,7 @@ function bindBrandingForm(initial) {
       footerHidden: Boolean(document.getElementById("brand-footer-hidden")?.checked),
       stageShowLogo: Boolean(document.getElementById("brand-stage-logo")?.checked),
       stageShowFooter: Boolean(document.getElementById("brand-stage-footer")?.checked),
+      joinTeamEnabled: Boolean(document.getElementById("brand-join-team-enabled")?.checked),
       customFont: form._customFont || "",
       slideBackground: form._slideBackground || "",
       slideTransition: document.getElementById("brand-transition")?.value || "slide",

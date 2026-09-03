@@ -93,7 +93,21 @@ export async function refreshAuthMe() {
 
 export function canCreateEvents() {
   if (!state.enabled || !state.user) return true;
-  return state.user.role === "admin" || state.user.role === "editor";
+  return ["admin", "editor", "teamleader", "teammember"].includes(state.user.role);
+}
+
+/** Team anlegen (Admin oder globale Teamleiter-Rolle). */
+export function canCreateTeam() {
+  if (!state.enabled || !state.user) return false;
+  if (state.viaSecret) return true;
+  return state.user.role === "admin" || state.user.role === "teamleader";
+}
+
+/** Mitglieder verwalten — globale Teamleiter-Rolle oder Admin (Team-Ebene prüft die Seite). */
+export function canManageTeamMembers() {
+  if (!state.enabled || !state.user) return false;
+  if (state.viaSecret) return true;
+  return state.user.role === "admin" || state.user.role === "teamleader";
 }
 
 export function needsAuthBootstrap() {
@@ -147,8 +161,10 @@ export function authNav() {
 
 /** Fallback wenn /auth/me keine nav liefert (Cache, alte API). */
 const NAV_FALLBACK = {
-  admin: ["sessions", "events", "branding", "privacy", "ssl", "email", "settings", "updates", "backups", "users", "help"],
-  editor: ["sessions", "events", "help"],
+  admin: ["sessions", "events", "teams", "branding", "privacy", "ssl", "email", "settings", "updates", "backups", "users", "help"],
+  teamleader: ["sessions", "events", "teams", "help"],
+  teammember: ["sessions", "events", "teams", "help"],
+  editor: ["sessions", "events", "teams", "help"],
   viewer: ["events", "help"],
 };
 
@@ -161,7 +177,13 @@ export function hasNav(key) {
 }
 
 export function roleLabel(role) {
-  const map = { admin: "Administrator", editor: "Editor", viewer: "Viewer" };
+  const map = {
+    admin: "Administrator",
+    teamleader: "Teamleiter",
+    teammember: "Teammitglied",
+    editor: "Editor",
+    viewer: "Viewer",
+  };
   return map[role] || role;
 }
 
@@ -365,6 +387,7 @@ function navKeyFromHash(hash) {
   if (hash === "/admin/settings") return "settings";
   if (hash === "/admin/updates") return "updates";
   if (hash === "/admin/backups") return "backups";
+  if (hash === "/admin/teams") return "teams";
   if (hash === "/admin/users") return "users";
   if (hash === "/admin/profile") return "profile";
   if (/^\/admin\/help/.test(hash)) return "help";

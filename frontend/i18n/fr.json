@@ -151,6 +151,8 @@
   "branding.customDomainHint": "Pointez un CNAME DNS vers cet hôte et demandez un certificat sous SSL. Les URL de participation utilisent automatiquement location.host.",
   "branding.footerHidden": "Masquer le pied de page (sessions confidentielles)",
   "branding.footerHiddenHint": "Mentions légales et confidentialité restent accessibles via #/privacy et #/impressum.",
+  "branding.joinTeamEnabled": "Nom d’équipe à l’adhésion (optionnel)",
+  "branding.joinTeamEnabledHint": "Champ optionnel sur la page d’accueil pour les quiz par équipe. Désactivé par défaut pour ne pas perturber les visiteurs.",
   "branding.font": "Police personnalisée (woff2/woff/ttf, max. 500 Ko)",
   "branding.fontHint": "Pas de CDN Google Fonts. Sans fichier, Inter/polices système restent.",
   "branding.slideBg": "Image de fond des diapositives",

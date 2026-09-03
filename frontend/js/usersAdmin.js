@@ -14,9 +14,9 @@ import {
   loadAuth,
   canManageUsers,
   applyAdminNavVisibility,
-} from "./authClient.js?v=nav42";
-import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav42";
-import { syncAdminNav } from "./adminNav.js?v=nav42";
+} from "./authClient.js?v=nav43";
+import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav43";
+import { syncAdminNav } from "./adminNav.js?v=nav43";
 
 /** Benutzerliste rendern. */
 export async function showUsersPage() {
@@ -45,6 +45,8 @@ export async function showUsersPage() {
       <select id="users-filter-role" aria-label="Rolle filtern">
         <option value="">Alle Rollen</option>
         <option value="admin">Administrator</option>
+        <option value="teamleader">Teamleiter</option>
+        <option value="teammember">Teammitglied</option>
         <option value="editor">Editor</option>
         <option value="viewer">Viewer</option>
       </select>
@@ -65,6 +67,8 @@ export async function showUsersPage() {
         <label class="field"><span>Rolle</span>
           <select id="uf-role">
             <option value="viewer">Viewer</option>
+            <option value="teammember">Teammitglied</option>
+            <option value="teamleader">Teamleiter</option>
             <option value="editor">Editor</option>
             <option value="admin">Administrator</option>
           </select>

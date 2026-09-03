@@ -307,6 +307,8 @@ function fillBrandingForm(b) {
   if (stageLogo) stageLogo.checked = Boolean(b.stageShowLogo);
   const stageFoot = document.getElementById("brand-stage-footer");
   if (stageFoot) stageFoot.checked = Boolean(b.stageShowFooter);
+  const joinTeam = document.getElementById("brand-join-team-enabled");
+  if (joinTeam) joinTeam.checked = Boolean(b.joinTeamEnabled);
   setVal("brand-qa-limit", String(b.qaDefaultLimitSec ?? 60));
   const form = document.getElementById("branding-form");
   if (form) {

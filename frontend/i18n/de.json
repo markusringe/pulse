@@ -151,6 +151,8 @@
   "branding.customDomainHint": "DNS-CNAME auf diesen Host zeigen, Zertifikat unter SSL beantragen. Join-URLs nutzen automatisch location.host.",
   "branding.footerHidden": "Footer ausblenden (vertrauliche Sessions)",
   "branding.footerHiddenHint": "Impressum und Datenschutz bleiben über #/privacy und #/impressum erreichbar.",
+  "branding.joinTeamEnabled": "Teamname beim Beitreten (optional)",
+  "branding.joinTeamEnabledHint": "Optionales Feld auf der Startseite für Quiz-Teams. Standard aus, damit Besucher nicht verwirrt werden.",
   "branding.font": "Eigene Schrift (woff2/woff/ttf, max. 500 KB)",
   "branding.fontHint": "Kein Google-Fonts-CDN. Ohne Datei bleibt Inter/Systemschrift.",
   "branding.slideBg": "Hintergrundbild Folien",

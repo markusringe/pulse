@@ -68,6 +68,7 @@
           <nav class="admin-nav" aria-label="Administration">
             <a href="#/admin" data-admin-nav="sessions" data-i18n="admin.nav.sessions">Sessions</a>
             <a href="#/admin/events" data-admin-nav="events" data-i18n="admin.nav.events">Events</a>
+            <a href="#/admin/teams" data-admin-nav="teams">Teams</a>
             <a href="#/admin/branding" data-admin-nav="branding" data-i18n="admin.nav.branding">Branding</a>
             <a href="#/admin/privacy" data-admin-nav="privacy" data-i18n="admin.nav.privacy">Datenschutz</a>
             <a href="#/admin/ssl" data-admin-nav="ssl" data-i18n="admin.nav.ssl">SSL</a>
@@ -98,6 +99,8 @@
       <section id="view-login" class="view view-login" data-view="login" hidden></section>
       <!-- Benutzerverwaltung (#/admin/users) -->
       <section id="view-users" class="view view-users" data-view="users" hidden></section>
+      <!-- Team-Verwaltung (#/admin/teams) -->
+      <section id="view-teams" class="view view-teams" data-view="teams" hidden></section>
       <!-- Benutzerprofil (#/admin/profile) -->
       <section id="view-profile" class="view view-profile" data-view="profile" hidden></section>
       <!--
@@ -149,7 +152,8 @@
               />
             </label>
             <button type="submit" class="btn primary" data-i18n="home.enter">Beitreten</button>
-            <label class="field">
+            <!-- Teamname nur wenn joinTeamEnabled im Branding — standardmäßig ausgeblendet. -->
+            <label class="field" id="join-team-wrap" hidden>
               <span data-i18n="join.team">Teamname (optional)</span>
               <input id="join-team" maxlength="40" autocomplete="off" data-i18n-placeholder="join.teamPlaceholder" placeholder="z. B. Team Blau" />
             </label>
@@ -631,6 +635,8 @@
             <label class="field"><input type="checkbox" id="brand-stage-logo" /> <span data-i18n="branding.stageShowLogo">Logo in der Präsentationsansicht</span></label>
             <label class="field"><input type="checkbox" id="brand-stage-footer" /> <span data-i18n="branding.stageShowFooter">Footer in der Präsentationsansicht</span></label>
             <p class="muted" data-i18n="branding.stageHint">Standard aus — nur die geteilte Leinwand, nicht die Presenter-Steuerung.</p>
+            <label class="field"><input type="checkbox" id="brand-join-team-enabled" /> <span data-i18n="branding.joinTeamEnabled">Teamname beim Beitreten (optional)</span></label>
+            <p class="muted" data-i18n="branding.joinTeamEnabledHint">Optionales Feld auf der Startseite für Quiz-Teams. Standard aus, damit Besucher nicht verwirrt werden.</p>
           </fieldset>
           <label class="field">Logo (SVG/PNG, max. 200×60)
             <input id="brand-logo-file" type="file" accept="image/png,image/svg+xml,image/jpeg" />
@@ -1100,6 +1106,6 @@
     </aside>
 
     <script type="module" src="./js/help.js?v=nav12"></script>
-    <script type="module" src="./js/app.js?v=nav42"></script>
+    <script type="module" src="./js/app.js?v=nav43"></script>
   </body>
 </html>

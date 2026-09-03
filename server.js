@@ -41,6 +41,8 @@ const updateService = require("./lib/updateService");
 const emailApi = require("./lib/emailApi");
 const backupService = require("./lib/backupService");
 const backupApi = require("./lib/backupApi");
+const teamApi = require("./lib/teamApi");
+const teamService = require("./lib/teamService");
 const autoBackup = require("./lib/autoBackup");
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -417,6 +419,18 @@ async function handleApi(req, res, url) {
       restartAutoBackup: autoBackup.restartAutoBackup,
     });
     return;
+  }
+  if (parts[1] === "teams") {
+    const handled = await teamApi.handleTeamsApi({
+      req,
+      res,
+      parts,
+      userDb,
+      send,
+      readJson,
+      getAuth,
+    });
+    if (handled) return;
   }
   if (req.method === "GET" && parts[1] === "audit") {
     if (!(await isSettingsAdmin(req, {}))) {
@@ -2194,7 +2208,8 @@ async function canViewEvent(req, ev, body = {}) {
   const auth = await getAuth(req, body);
   if (auth.viaSecret || permissions.isAdmin(auth.user)) return true;
   const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
-  const access = permissions.eventAccess(auth.user, ev, dbAccess);
+  const teamCtx = await buildTeamContextForUser(auth.user?.id, ev.id);
+  const access = permissions.eventAccess(auth.user, ev, dbAccess, teamCtx);
   return access.view || access.edit || access.present;
 }
 
@@ -2202,7 +2217,31 @@ async function canEditEvent(req, ev, body = {}) {
   const auth = await getAuth(req, body);
   if (auth.viaSecret || permissions.isAdmin(auth.user)) return true;
   const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
-  return permissions.eventAccess(auth.user, ev, dbAccess).edit;
+  const teamCtx = await buildTeamContextForUser(auth.user?.id, ev.id);
+  return permissions.eventAccess(auth.user, ev, dbAccess, teamCtx).edit;
+}
+
+/** Team-IDs des Benutzers und Freigaben für ein Event laden. */
+async function buildTeamContextForUser(userId, eventId) {
+  if (!userDb.supported || !userId) {
+    return { userTeamIds: [], teamAccessRows: [] };
+  }
+  const userTeamIds = await Promise.resolve(userDb.listUserTeamIds(userId));
+  const teamAccessRows = eventId ? await Promise.resolve(userDb.listEventTeamAccess(eventId)) : [];
+  return { userTeamIds, teamAccessRows };
+}
+
+/** Team-Freigaben für mehrere Events (Event-Listenfilter). */
+async function buildTeamAccessByEvent(eventIds) {
+  if (!userDb.supported || !eventIds.length) return {};
+  const rows = await Promise.resolve(userDb.listEventTeamAccessForEvents(eventIds));
+  const map = {};
+  for (const row of rows) {
+    const eid = row.eventId || row.event_id;
+    if (!map[eid]) map[eid] = [];
+    map[eid].push(row);
+  }
+  return map;
 }
 
 /** Instanz-Admin, Event-Berechtigung oder Presenter-Schlüssel dürfen das Session-Deck ändern. */
@@ -2216,7 +2255,8 @@ async function canManageSession(req, body, session) {
     if (ev && (await canEditEvent(req, ev, body))) return true;
     if (ev) {
       const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
-      if (permissions.eventAccess(auth.user, ev, dbAccess).present) return true;
+      const teamCtx = await buildTeamContextForUser(auth.user?.id, ev.id);
+      if (permissions.eventAccess(auth.user, ev, dbAccess, teamCtx).present) return true;
     }
   }
   return false;
@@ -2446,7 +2486,20 @@ async function handleEventsApi(req, res, url, parts) {
       for (const ev of list) {
         accessByEvent[ev.id] = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
       }
-      list = permissions.filterEventsForUser(auth.user, list, accessByEvent);
+      const userTeamIds = userDb.supported
+        ? await Promise.resolve(userDb.listUserTeamIds(auth.user.id))
+        : [];
+      const teamAccessByEvent = userDb.supported
+        ? await buildTeamAccessByEvent(list.map((ev) => ev.id))
+        : {};
+      list = permissions.filterEventsForUser(auth.user, list, accessByEvent, {
+        userTeamIds,
+        teamAccessByEvent,
+      });
+    }
+    const teamFilter = q.get("teamId") || "";
+    if (teamFilter) {
+      list = list.filter((ev) => ev.teamId === teamFilter);
     }
     const events = [];
     for (const ev of list) {
@@ -2468,6 +2521,8 @@ async function handleEventsApi(req, res, url, parts) {
         joinUrl: card.joinUrl,
         joinEnabled: card.joinEnabled,
         resultsOnly: card.resultsOnly,
+        teamId: ev.teamId || "",
+        visibility: ev.visibility || "private",
         slideCount: (session?.slides || []).length,
         stats: {
           participants: Number(stats.participants) || 0,
@@ -2492,9 +2547,18 @@ async function handleEventsApi(req, res, url, parts) {
     }
     try {
       const body = await readJson(req);
+      if (auth.user && body?.teamId) {
+        const ok = await teamService.canAssignEventToTeam(userDb, auth.user, String(body.teamId));
+        if (!ok) {
+          send(res, 403, { error: "Kein Zugriff auf dieses Team" });
+          return;
+        }
+      }
       const created = await createEventWithSession({
         ...(body || {}),
         ownerUserId: auth.user?.id || body?.ownerUserId || "",
+        teamId: body?.teamId || "",
+        visibility: body?.visibility || "private",
       });
       const session = created.session;
       send(res, 201, {
@@ -2551,6 +2615,40 @@ async function handleEventsApi(req, res, url, parts) {
     return;
   }
 
+  if (req.method === "POST" && id && sub === "share") {
+    const body = await readJson(req);
+    const evShare = eventStore.get(id);
+    if (!evShare) {
+      send(res, 404, { error: "Event nicht gefunden" });
+      return;
+    }
+    const authShare = await getAuth(req);
+    if (!authShare.user && !authShare.viaSecret) {
+      send(res, 401, { error: "Nicht angemeldet" });
+      return;
+    }
+    const isOwner = evShare.ownerUserId === authShare.user?.id;
+    if (!isOwner && !permissions.isAdmin(authShare.user) && !authShare.viaSecret) {
+      send(res, 403, { error: "Nur der Event-Besitzer darf teilen" });
+      return;
+    }
+    const teamIds = Array.isArray(body.teamIds) ? body.teamIds : [];
+    const accessLevel = ["view", "edit", "present"].includes(body.accessLevel) ? body.accessLevel : "view";
+    eventStore.update(id, { visibility: "shared" });
+    if (userDb.supported) {
+      await Promise.resolve(userDb.clearEventTeamAccess(id));
+      for (const tid of teamIds) {
+        const teamId = String(tid || "").slice(0, 40);
+        if (!teamId) continue;
+        const team = await Promise.resolve(userDb.findTeamById(teamId));
+        if (!team) continue;
+        await Promise.resolve(userDb.setEventTeamAccess(id, teamId, accessLevel));
+      }
+    }
+    send(res, 200, { success: true });
+    return;
+  }
+
   if (req.method === "PATCH" && id && sub === "access") {
     const body = await readJson(req);
     if (!evCheck) {
@@ -2559,7 +2657,8 @@ async function handleEventsApi(req, res, url, parts) {
     }
     const auth = await getAuth(req);
     const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(id)) : [];
-    if (!permissions.eventAccess(auth.user, evCheck, dbAccess).manageAccess && !auth.viaSecret) {
+    const teamCtx = await buildTeamContextForUser(auth.user?.id, id);
+    if (!permissions.eventAccess(auth.user, evCheck, dbAccess, teamCtx).manageAccess && !auth.viaSecret) {
       send(res, 403, { error: "Keine Berechtigung" });
       return;
     }
