@@ -373,10 +373,13 @@ function navKeyFromHash(hash) {
 
 export function applyAdminNavVisibility() {
   const chrome = document.getElementById("admin-chrome");
-  if (!chrome || !state.enabled || !state.user) return;
+  if (!chrome || !state.enabled) return;
+  const adminSession = isAdminUser() || state.viaSecret;
   chrome.querySelectorAll("[data-admin-nav]").forEach((a) => {
     const key = a.getAttribute("data-admin-nav");
-    const show = hasNav(key);
+    let show = hasNav(key);
+    /* Admin: volle Leiste auch wenn nav-Array leer oder aus Cache veraltet. */
+    if (adminSession && NAV_FALLBACK.admin.includes(key)) show = true;
     a.hidden = !show;
   });
 }

@@ -13,8 +13,10 @@ import {
   roleLabel,
   loadAuth,
   canManageUsers,
-} from "./authClient.js?v=nav41";
-import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav40";
+  applyAdminNavVisibility,
+} from "./authClient.js?v=nav42";
+import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav42";
+import { syncAdminNav } from "./adminNav.js?v=nav42";
 
 /** Benutzerliste rendern. */
 export async function showUsersPage() {
@@ -22,9 +24,14 @@ export async function showUsersPage() {
   if (!root) return;
   await loadAuth();
   if (!canManageUsers()) {
-    root.innerHTML = `<p class="muted">Keine Berechtigung — Benutzerverwaltung erfordert die Rolle Administrator.</p>`;
+    await loadAuth();
+  }
+  if (!canManageUsers()) {
+    root.innerHTML = `<p class="muted">Keine Berechtigung — Benutzerverwaltung erfordert die Rolle Administrator. Bitte abmelden und erneut anmelden.</p>`;
     return;
   }
+  syncAdminNav("users", "/admin/users");
+  applyAdminNavVisibility();
   root.innerHTML = `
     <header class="admin-page-head">
       <div>

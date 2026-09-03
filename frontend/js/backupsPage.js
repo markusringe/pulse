@@ -4,8 +4,9 @@
  */
 
 import { api } from "./websocket.js?v=nav20";
-import { ensureStepUp, withStepUp } from "./stepUp.js?v=nav40";
-import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav40";
+import { ensureStepUp, withStepUp } from "./stepUp.js?v=nav42";
+import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav42";
+import { syncAdminNav } from "./adminNav.js?v=nav42";
 
 function $(id) {
   return document.getElementById(id);
@@ -240,6 +241,7 @@ let bound = false;
 /** Seite initialisieren (#/admin/backups). */
 export async function showBackupsPage() {
   await loadAuth();
+  syncAdminNav("backups", "/admin/backups");
   applyAdminNavVisibility();
   if (!bound) {
     $("backup-create-btn")?.addEventListener("click", () => void onCreateBackup());

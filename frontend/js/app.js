@@ -33,11 +33,11 @@ import { bindSslPage, showSslPage } from "./ssl.js?v=nav13";
 import { bindHelp, showHelpPage, explainError } from "./help.js?v=nav12";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
-import { syncAdminNav } from "./adminNav.js?v=nav15";
-import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav40";
+import { syncAdminNav } from "./adminNav.js?v=nav42";
+import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav42";
 import { showLoginPage } from "./loginPage.js?v=nav39";
 import { showAdminLoginModal, isAdminLoginModalOpen } from "./adminLoginModal.js?v=nav39";
-import { showUsersPage } from "./usersAdmin.js?v=nav30";
+import { showUsersPage } from "./usersAdmin.js?v=nav42";
 import { showProfilePage } from "./profilePage.js?v=nav30";
 import { ensureStepUp } from "./stepUp.js?v=nav35";
 import { bindEvents, showEventsPage, loadHomeEvents, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav30";
@@ -554,7 +554,7 @@ function route(forcedHash) {
   if (hash === "/admin/backups") {
     teardownRealtime();
     showView("backups", hash);
-    import("./backupsPage.js?v=nav40")
+    import("./backupsPage.js?v=nav42")
       .then((m) => m.showBackupsPage())
       .catch((err) => {
         console.error("[backups-page]", err);
@@ -651,6 +651,7 @@ function showView(name, routeHash) {
   if (!els.views.profile) els.views.profile = document.getElementById("view-profile");
   if (!els.views.updates) els.views.updates = document.getElementById("view-updates");
   if (!els.views.email) els.views.email = document.getElementById("view-email");
+  if (!els.views.backups) els.views.backups = document.getElementById("view-backups");
   for (const [key, el] of Object.entries(els.views)) {
     if (!el) continue;
     const active = key === name;

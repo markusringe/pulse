@@ -8,13 +8,16 @@ const ADMIN_VIEWS = new Set(["adminHub", "events", "branding", "ssl", "email", "
 
 /**
  * Ob die aktuelle View zur Administration gehört (inkl. Admin-Hilfe).
+ * Hash-Fallback: funktioniert auch mit gecachtem adminNav.js ohne „backups“ in ADMIN_VIEWS.
  * @param {string} viewName
+ * @param {string} [hashOverride]
  * @returns {boolean}
  */
-export function isAdminArea(viewName) {
+export function isAdminArea(viewName, hashOverride) {
+  const hash = hashOverride ?? (location.hash.replace(/^#/, "") || "/");
+  if (/^\/admin(\/|$)/.test(hash) && hash !== "/admin/login") return true;
   if (ADMIN_VIEWS.has(viewName)) return true;
   if (viewName === "help") {
-    const hash = location.hash.replace(/^#/, "") || "/";
     return hash.startsWith("/admin");
   }
   return false;
@@ -64,10 +67,11 @@ function navKey(viewName, hashOverride) {
 export function syncAdminNav(viewName, hashOverride) {
   const chrome = document.getElementById("admin-chrome");
   if (!chrome) return;
-  const on = isAdminArea(viewName);
+  const hash = hashOverride ?? (location.hash.replace(/^#/, "") || "/");
+  const on = isAdminArea(viewName, hash);
   chrome.hidden = !on;
   document.body.classList.toggle("admin-area", on);
-  const key = navKey(viewName, hashOverride);
+  const key = navKey(viewName, hash);
   chrome.querySelectorAll("[data-admin-nav]").forEach((a) => {
     const active = a.getAttribute("data-admin-nav") === key;
     a.classList.toggle("is-active", active);
