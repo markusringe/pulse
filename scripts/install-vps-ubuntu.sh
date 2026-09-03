@@ -33,13 +33,15 @@
 # Support: https://github.com/markusringe/pulse/issues
 # =============================================================================
 
-set -euo pipefail
+# set -u bewusst erst nach Pfadermittlung — bei curl|bash ist BASH_SOURCE[0] oft unset.
+set -eo pipefail
 
 # --- Konstanten ---
 readonly DEFAULT_INSTALL_DIR="/opt/pulse"
 readonly DEFAULT_GIT_URL="https://github.com/markusringe/pulse.git"
 readonly DEFAULT_GIT_BRANCH="main"
 readonly PULSE_REPO="markusringe/pulse"
+readonly PULSE_INSTALLER_VER="2.1"
 
 # --- Optionen (werden per getopts-Loop gesetzt) ---
 INSTALL_DIR=""
@@ -60,9 +62,8 @@ TOTAL_STEPS=10
 # Mit set -u darf BASH_SOURCE[0] nicht ungeprüft expandiert werden.
 # =============================================================================
 resolve_script_dir() {
-  local src=""
-  if [[ -n "${BASH_SOURCE[0]+x}" && -n "${BASH_SOURCE[0]}" && "${BASH_SOURCE[0]}" != "bash" ]]; then
-    src="${BASH_SOURCE[0]}"
+  local src="${BASH_SOURCE[0]:-}"
+  if [[ -n "$src" && "$src" != "bash" && -f "$src" ]]; then
     cd "$(dirname "$src")" && pwd
     return 0
   fi
@@ -81,7 +82,8 @@ detect_remote_invocation() {
   if [[ -n "${PULSE_REMOTE_INSTALL:-}" && "${PULSE_REMOTE_INSTALL}" == "1" ]]; then
     return 0
   fi
-  if [[ ! -n "${BASH_SOURCE[0]+x}" || -z "${BASH_SOURCE[0]}" || "${BASH_SOURCE[0]}" == "bash" ]]; then
+  local src="${BASH_SOURCE[0]:-}"
+  if [[ ! -t 0 ]] || [[ -z "$src" ]] || [[ "$src" == "bash" ]]; then
     return 0
   fi
   return 1
@@ -97,6 +99,9 @@ fi
 if detect_remote_invocation; then
   IS_REMOTE=1
 fi
+
+# Ab hier dürfen unset-Variablen als Fehler gelten (nach Pfad-/Remote-Erkennung).
+set -u
 
 # --- Ausgabe-Helfer (vor Optionen-Parser, da --help/Fehler sie brauchen) ---
 log()  { printf '\033[1;32m==> [%s/%s]\033[0m %s\n' "$STEP" "$TOTAL_STEPS" "$*"; }
@@ -628,6 +633,7 @@ main() {
   local dir
   dir="$(resolve_install_dir)"
   STEP=0
+  ok "Pulse VPS-Installer v${PULSE_INSTALLER_VER}"
   log "Pulse VPS-Installer — Zielverzeichnis: $dir"
 
   system_update
