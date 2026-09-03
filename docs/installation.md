@@ -267,22 +267,43 @@ docker compose down
 
 ## 6. Aktualisierung
 
+### VPS-Update-Skript (empfohlen)
+
+Visualisierter Ablauf mit Backup, Git-Pull, Build und Healthcheck:
+
+```bash
+cd /opt/pulse
+sudo ./scripts/update-vps-ubuntu.sh
+```
+
+Remote One-Liner:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/markusringe/pulse/main/scripts/update-vps-ubuntu.sh | sudo bash
+```
+
+Optionen: `--tag v1.3.0` (festes Release), `--npm` / `--docker`, `--yes`, `--skip-backup`, `--json`.  
+Erkennt automatisch Docker-Stack (Standard) oder npm-Modus.
+
 ### Lokal (Git + npm)
 
 ```bash
 git pull
 npm install
+npm run css:build
 npm test          # optional
 # Server neu starten
 ```
 
-### Docker
+### Docker (manuell)
 
 ```bash
 git pull
 docker compose build
 docker compose up -d
 ```
+
+Alternativ: In-App-Update unter `#/admin/updates` (npm-Installation mit Git-Repo).
 
 Daten in `data/` bzw. im Volume `pulse-data` bleiben erhalten.
 
@@ -312,6 +333,7 @@ Weitere Betriebsdetails: `docs/projektdokumentation.md` (Abschnitt 6), Funktions
 |---|---|
 | `scripts/install.sh` | Automatisierte Installation (lokal / Docker) |
 | `scripts/install-vps-ubuntu.sh` | VPS Ubuntu: Docker installieren, Stack starten, Daten seeden |
+| `scripts/update-vps-ubuntu.sh` | VPS Ubuntu: Update mit Backup, Git-Pull, Build, Healthcheck |
 | `scripts/seed-data.sh` | Grundeinstellungen in `data/` (nur fehlende Dateien) |
 | `.env.example` | Vorlage für Umgebungsvariablen |
 | `package.json` | npm-Skripte (`start`, `test`, `migrate:events`, `docs:sync-version`) |

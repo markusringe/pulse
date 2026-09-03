@@ -10,7 +10,13 @@
     <li>Prozess-Manager (systemd, Docker <code>restart: always</code>) startet den Server nach dem Update neu</li>
   </ul>
 
-  <h3>Manuelles Update</h3>
+  <h3>VPS per Shell (Docker oder npm)</h3>
+  <p>Auf dem Server mit visualisiertem Fortschritt:</p>
+  <pre><code>cd /opt/pulse
+sudo ./scripts/update-vps-ubuntu.sh</code></pre>
+  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.3.0</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
+
+  <h3>Manuelles Update (Admin-UI)</h3>
   <ol>
     <li><code>#/admin/updates</code> öffnen</li>
     <li><strong>Jetzt prüfen</strong> — lädt das neueste GitHub-Release</li>
