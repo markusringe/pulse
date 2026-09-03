@@ -2,7 +2,7 @@
 
 **Ist-Zustand / Spezifikation**
 
-**Stand:** Programmversion **v1.2.2** · Ist-Zustand aus dem Quellcode, 2026-09-03.
+**Stand:** Programmversion **v1.2.3** · Ist-Zustand aus dem Quellcode, 2026-09-03.
 **Kein Soll-Konzept:** Nur Funktionen und Technik, die im Repository tatsächlich vorhanden sind.  
 **Produktname:** Pulse. Technische Präfixe: `data/pulse.db`, `pulse:session:…`, Docker-Services `pulse` / `pulse-b`.
 
@@ -310,7 +310,7 @@ Admin-Branding: `stageShowLogo` / `stageShowFooter` (Default aus), `qaDefaultLim
 ### 3.23 Hilfe / Tour
 
 - Hash `#/help`, `#/help/<slug>`, `#/admin/help`. Katalog `frontend/help/articles.json`, HTML-Artikel unter `frontend/help/`.
-- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**25 Artikel**, Stand Katalog **Version 9**, Programm **v1.2.2**).
+- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**25 Artikel**, Stand Katalog **Version 9**, Programm **v1.2.3**).
 - Suche (UND-Tokens, Kategorie) in `frontend/js/help.js` / `lib/helpIndex.js`.
 - Erstnutzer-Tour (nach Consent), Tooltips (`frontend/js/tooltips.js`), Mini-Hilfe, Tastaturhilfe, Feedback ja/nein nur in **localStorage** (`pulse:help-feedback`) — **kein** Server-Upload.
 - In den Hilfe-HTML-Dateien stehen **Platzhalter „Video folgt“**, keine eingebetteten Videos.

@@ -3469,7 +3469,8 @@ function maskAt(mask, x, y) {
 }
 
 function placeFormat(mod, size, mask) {
-  const data = (0b00 << 3) | mask;
+  /* ECC-Stufe M (0b01) — muss zu spec.ec in QR_VERSIONS passen, sonst lesen Scanner nicht. */
+  const data = (0b01 << 3) | mask;
   let rem = data;
   for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
   const bits = ((data << 10) | rem) ^ 0x5412;
@@ -3542,6 +3543,10 @@ function encodeQr(text) {
 /** Zwischenspeicher — doppeltes Rendern auf der Startseite muss QR nicht neu berechnen. */
 const qrEncodeCache = new Map();
 const QR_CACHE_MAX = 64;
+/** Ruhezone in Modulen (ISO 18004: mindestens 4). */
+const QR_QUIET_MODULES = 4;
+/** Mindestgröße eines Moduls in Pixeln — sonst unscharf bei CSS-Skalierung. */
+const QR_MODULE_MIN_PX = 4;
 
 export function drawQrCode(canvas, text) {
   if (!canvas || !text) return;
@@ -3556,16 +3561,28 @@ export function drawQrCode(canvas, text) {
     qrEncodeCache.set(text, qr);
   }
   const ctx = canvas.getContext("2d");
-  const pad = 2;
-  const n = qr.size + pad * 2;
-  canvas.width = n;
-  canvas.height = n;
+  const modules = qr.size + QR_QUIET_MODULES * 2;
+  /* Zielauflösung aus HTML-Attribut — clientWidth ist vor dem ersten Paint oft 0. */
+  const targetPx =
+    Number(canvas.getAttribute("width")) || canvas.clientWidth || canvas.offsetWidth || 160;
+  const modulePx = Math.max(QR_MODULE_MIN_PX, Math.floor(targetPx / modules));
+  const pixelSize = modules * modulePx;
+
+  canvas.width = pixelSize;
+  canvas.height = pixelSize;
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, n, n);
-  ctx.fillStyle = "#111111";
+  ctx.fillRect(0, 0, pixelSize, pixelSize);
+  ctx.fillStyle = "#000000";
   for (let y = 0; y < qr.size; y++) {
     for (let x = 0; x < qr.size; x++) {
-      if (qr.bits[y * qr.size + x]) ctx.fillRect(x + pad, y + pad, 1, 1);
+      if (qr.bits[y * qr.size + x]) {
+        ctx.fillRect(
+          (x + QR_QUIET_MODULES) * modulePx,
+          (y + QR_QUIET_MODULES) * modulePx,
+          modulePx,
+          modulePx
+        );
+      }
     }
   }
 }

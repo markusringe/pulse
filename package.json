@@ -1,6 +1,6 @@
 {
   "name": "pulse",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "private": true,
   "description": "Pulse — Live-Interaktion für Umfragen, Wortwolken, Q&A und Quiz (Vanilla JS + Node.js)",
   "main": "server.js",
@@ -25,13 +25,14 @@
     "test:email-config": "node scripts/test-email-config.js",
     "test:updates": "node scripts/test-updates.js",
     "test:backups": "node scripts/test-backups.js",
+    "test:qr": "node scripts/test-qr.js",
     "test:install-vps": "bash scripts/test-install-vps-path.sh",
     "bootstrap:admin": "node scripts/bootstrap-admin.js",
     "migrate:events": "node scripts/migrate-events.js",
     "docs:sync-version": "node scripts/sync-doc-version.js",
     "setup": "bash scripts/install.sh",
     "setup:vps": "bash scripts/install-vps-ubuntu.sh",
-    "test": "node scripts/test-security.js && node scripts/test-deck.js && node scripts/test-live.js && node scripts/test-presenter.js && node scripts/test-ssl.js && node scripts/test-theme.js && node scripts/test-privacy.js && node scripts/test-help.js && node scripts/test-branding.js && node scripts/test-settings.js && node scripts/test-slides.js && node scripts/test-qa-timer.js && node scripts/test-events.js && node scripts/test-auth.js && node scripts/test-email-config.js && node scripts/test-updates.js && node scripts/test-backups.js && bash scripts/test-install-vps-path.sh && bash scripts/test-uninstall-vps-path.sh"
+    "test": "node scripts/test-security.js && node scripts/test-deck.js && node scripts/test-live.js && node scripts/test-presenter.js && node scripts/test-ssl.js && node scripts/test-theme.js && node scripts/test-privacy.js && node scripts/test-help.js && node scripts/test-branding.js && node scripts/test-settings.js && node scripts/test-slides.js && node scripts/test-qa-timer.js && node scripts/test-events.js && node scripts/test-auth.js && node scripts/test-email-config.js && node scripts/test-updates.js && node scripts/test-backups.js && node scripts/test-qr.js && bash scripts/test-install-vps-path.sh && bash scripts/test-uninstall-vps-path.sh"
   },
   "engines": {
     "node": ">=22"

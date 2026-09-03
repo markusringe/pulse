@@ -83,6 +83,8 @@
   align-self: center;
   background: #fff;
   border-radius: 8px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .event-link {
