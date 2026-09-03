@@ -171,7 +171,6 @@ const els = {
   joinExtra: document.getElementById("join-extra"),
   createQuizExtra: document.getElementById("create-quiz-extra"),
   createRatingExtra: document.getElementById("create-rating-extra"),
-  createPassword: document.getElementById("create-password"),
   createCorrect: document.getElementById("create-correct"),
   createDuration: document.getElementById("create-duration"),
   qrCanvas: document.getElementById("qr-canvas"),
@@ -1105,7 +1104,6 @@ function onCreate(ev) {
     startSession({ ...demoPayload(question), rehearsal: Boolean(els.createRehearsal?.checked) });
     return;
   }
-  const password = els.createPassword?.value || "";
   const current = readFormSlide();
   const slides = slidesForStart(current);
   clearDraft();
@@ -1114,7 +1112,6 @@ function onCreate(ev) {
     type: current.type,
     question: current.question,
     slides,
-    password,
     rehearsal: Boolean(els.createRehearsal?.checked),
     options: current.options,
     correctIndex: current.correctIndex,
@@ -1763,29 +1760,13 @@ function focusChoice(buttons, index) {
 function onAdminUnlock(ev) {
   ev.preventDefault();
   const key = (els.adminKeyInput?.value || "").trim();
-  const password = document.getElementById("admin-password-input")?.value || "";
   if (!ctx.session) return;
   if (key) {
     storeAdminKey(ctx.session.code, key);
     api.setAdminKey(key);
   }
-  if (password) {
-    api.verifyPassword(ctx.session.code, password).then((res) => {
-      const msg = document.getElementById("admin-lock-msg");
-      if (!res?.ok) {
-        if (msg) {
-          const err = explainError(res?.error || "admin_lock");
-          msg.textContent = `${err.title} — ${err.next}`;
-        }
-        return;
-      }
-      els.adminDialog?.close();
-      ctx.rt?.send("join", { code: ctx.session.code, role: "presenter", adminKey: api.adminKey, password });
-    });
-    return;
-  }
   els.adminDialog?.close();
-  ctx.rt?.send("join", { code: ctx.session.code, role: "presenter", adminKey: key });
+  ctx.rt?.send("join", { code: ctx.session.code, role: "presenter", adminKey: key || api.adminKey });
 }
 
 function onWordSubmit(ev) {

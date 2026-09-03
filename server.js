@@ -182,6 +182,7 @@ function onHttpUpgrade(req, socket) {
       "\r\n"
   );
   const client = new Client(socket);
+  client.req = req;
   client.ipHash = ipKey;
   clients.add(client);
   metrics.setWsConnections(clients.size);
@@ -828,7 +829,7 @@ async function createSession(body) {
     paused: false,
     lobby: body.skipLobby === true || body.type === "demo" ? false : true,
     rehearsal: body.rehearsal === true,
-    passwordHash: body.password ? hashPassword(body.password) : "",
+    passwordHash: "",
     retentionDays: branding.retentionDays,
     quizTotals: {},
     powerups: {},
@@ -1880,11 +1881,12 @@ async function joinSession(client, payload = {}) {
   const wantStage = role === "stage";
   const byKey = verifyAdminKey(adminKey, session.adminHash);
   const byPw = Boolean(session.passwordHash && verifyPassword(payload.password, session.passwordHash));
+  const byAuth = wantPresenter ? await canPresentSession(await getAuth(client.req || {}, payload), session) : false;
   if (wantStage) {
     /* Leinwand: keine Auth, nicht als Teilnehmer zählen, keine Notizen. */
     client.role = "stage";
-  } else if (wantPresenter && !byKey && !byPw) {
-    client.send({ type: "error", payload: { message: "Ungültiger Admin-Schlüssel" } });
+  } else if (wantPresenter && !byKey && !byPw && !byAuth) {
+    client.send({ type: "error", payload: { message: "Ungültiger Admin-Schlüssel", error: "admin_lock" } });
     client.role = "participant";
   } else {
     client.role = wantPresenter ? "presenter" : "participant";
@@ -2515,13 +2517,28 @@ async function canManageSession(req, body, session) {
   if (session.eventId) {
     const ev = eventStore.get(session.eventId);
     if (ev && (await canEditEvent(req, ev, body))) return true;
-    if (ev) {
+    if (ev && auth.user) {
       const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
-      const teamCtx = await buildTeamContextForUser(auth.user?.id, ev.id);
-      if (permissions.eventAccess(auth.user, ev, dbAccess, teamCtx).present) return true;
+      const teamCtx = await buildTeamContextForUser(auth.user.id, ev.id);
+      if (permissions.eventAccess(auth.user, ev, dbAccess, teamCtx).edit) return true;
     }
   }
   return false;
+}
+
+/** WebSocket-Presenter ohne Admin-Schlüssel — angemeldete Event-Presenter/Editoren. */
+async function canPresentSession(auth, session) {
+  if (!auth?.user || !session) return false;
+  if (permissions.isAdmin(auth.user)) return true;
+  if (session.ownerUserId && auth.user.id === session.ownerUserId) return true;
+  if (!session.eventId) return false;
+  const ev = eventStore.get(session.eventId);
+  if (!ev) return false;
+  if (ev.ownerUserId && auth.user.id === ev.ownerUserId) return true;
+  const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
+  const teamCtx = await buildTeamContextForUser(auth.user.id, ev.id);
+  const access = permissions.eventAccess(auth.user, ev, dbAccess, teamCtx);
+  return Boolean(access.present || access.edit);
 }
 
 function originFromRequest(req) {

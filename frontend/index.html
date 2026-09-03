@@ -402,11 +402,7 @@
 
               <section class="admin-form-section admin-form-section--compact" aria-labelledby="admin-section-access">
                 <h3 class="admin-form-section__title" id="admin-section-access" data-i18n="admin.section.access">Zugang</h3>
-                <p class="hint muted admin-form-hint" data-i18n="home.adminHint">Nach dem Start bleibt der Admin-Schlüssel in diesem Browser. Ohne ihn sind Folienwechsel geschützt.</p>
-                <label class="field field--compact">
-                  <span data-i18n="home.password">Presenter-Passwort (optional)</span>
-                  <input id="create-password" type="password" autocomplete="new-password" />
-                </label>
+                <p class="hint muted admin-form-hint" data-i18n="home.adminHint">Nach dem Start bleibt der Admin-Schlüssel in diesem Browser. Für Events reicht oft die Anmeldung mit Presenter-Berechtigung.</p>
               </section>
 
               <section class="admin-form-section admin-form-section--compact" aria-labelledby="admin-section-templates">
@@ -579,14 +575,10 @@
         <dialog id="admin-dialog" class="admin-dialog" aria-labelledby="admin-dialog-title">
           <form id="admin-form" method="dialog">
             <h2 id="admin-dialog-title" data-i18n="present.unlock">Präsentation entsperren</h2>
-            <p data-i18n="present.unlockHint">Bitte den Admin-Schlüssel oder das Presenter-Passwort eingeben.</p>
+            <p data-i18n="present.unlockHint">Bitte den Admin-Schlüssel eingeben. Bei Events mit Benutzerkonto: zuerst anmelden, dann erneut verbinden.</p>
             <label class="field">
-              <span>Admin-Schlüssel</span>
+              <span data-i18n="present.adminKey">Admin-Schlüssel</span>
               <input id="admin-key-input" name="adminKey" autocomplete="off" />
-            </label>
-            <label class="field">
-              <span data-i18n="home.password">Presenter-Passwort</span>
-              <input id="admin-password-input" type="password" autocomplete="current-password" />
             </label>
             <p id="admin-lock-msg" class="muted" role="status"></p>
             <div class="home-actions">
