@@ -174,7 +174,7 @@
   }
 
   .pulse-input-code {
-    @apply pulse-input text-center text-2xl font-semibold tracking-[0.28em] tabular-nums sm:text-3xl;
+    @apply w-full min-h-11 rounded-pulse-sm border border-pulse-line/50 bg-pulse-bg-elev px-4 py-3 text-base text-pulse-ink placeholder:text-pulse-muted/70 focus-visible:border-pulse-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-pulse-focus text-center text-2xl font-semibold tracking-[0.28em] tabular-nums sm:text-3xl;
     min-height: 3.25rem;
   }
 
@@ -212,7 +212,7 @@
   }
 
   .pulse-event-card {
-    @apply pulse-card flex flex-col gap-3 @container;
+    @apply rounded-pulse border border-pulse-line/40 bg-pulse-bg-elev p-5 shadow-pulse flex flex-col gap-3 @container;
   }
 
   .pulse-event-card__title {
