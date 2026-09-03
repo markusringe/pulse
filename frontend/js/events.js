@@ -333,35 +333,135 @@ export async function showEventsPage() {
   }
 }
 
+/** Max. vergangene Events auf der Startseite (zusätzlich zur Server-Begrenzung). */
+const HOME_PAST_LIMIT = 12;
+
+/** Laufende Startseiten-Aktualisierung — ältere Aufrufe verwerfen (Boot ruft zweimal auf). */
+let homeEventsSeq = 0;
+
+/** Gemeinsame API-Anfrage, wenn loadHomeEvents parallel startet. */
+let homeEventsFetch = null;
+
+/** Warteschlange für verzögertes QR-Zeichnen (Main-Thread entlasten). */
+const homeQrQueue = [];
+let homeQrIdleScheduled = false;
+
+/** Verzögerter Start der Event-Liste — Admin-Klick soll nicht warten müssen. */
+let homeEventsIdleHandle = null;
+
+/** Laufende Event-Liste/QR abbrechen (z. B. beim Wechsel in den Adminbereich). */
+export function cancelHomeEventsWork() {
+  homeEventsSeq += 1;
+  homeQrQueue.length = 0;
+  if (homeEventsIdleHandle != null) {
+    if (typeof cancelIdleCallback === "function") cancelIdleCallback(homeEventsIdleHandle);
+    else clearTimeout(homeEventsIdleHandle);
+    homeEventsIdleHandle = null;
+  }
+}
+
+/** Event-Karten erst laden, wenn der Browser Luft hat — Startseite bleibt bedienbar. */
+export function scheduleLoadHomeEvents() {
+  cancelHomeEventsWork();
+  const run = () => {
+    homeEventsIdleHandle = null;
+    void loadHomeEvents();
+  };
+  if (typeof requestIdleCallback === "function") {
+    homeEventsIdleHandle = requestIdleCallback(run, { timeout: 2500 });
+  } else {
+    homeEventsIdleHandle = setTimeout(run, 120);
+  }
+}
+
+/**
+ * QR-Codes auf der Startseite in kleinen Paketen zeichnen — verhindert Firefox-Freezes
+ * bei vielen Event-Karten (encodeQr blockiert synchron den Main Thread).
+ * @param {HTMLElement} root
+ * @param {number} seq Lauf-ID — verworfene Render-Läufe zeichnen keine QR mehr.
+ */
+function scheduleHomeQrDraw(root, seq) {
+  root.querySelectorAll("[data-qr]").forEach((canvas) => {
+    homeQrQueue.push({
+      canvas,
+      url: canvas.getAttribute("data-url") || "",
+      seq,
+    });
+  });
+  if (homeQrIdleScheduled || !homeQrQueue.length) return;
+  homeQrIdleScheduled = true;
+
+  const drain = (deadline) => {
+    let budget = deadline && typeof deadline.timeRemaining === "function" ? deadline.timeRemaining() : 12;
+    while (homeQrQueue.length && budget > 2) {
+      const item = homeQrQueue.shift();
+      if (item.seq !== homeEventsSeq) continue;
+      if (item.canvas?.isConnected) hooks.drawQrCode(item.canvas, item.url);
+      budget = deadline && typeof deadline.timeRemaining === "function" ? deadline.timeRemaining() : budget - 3;
+    }
+    if (homeQrQueue.length) {
+      if (typeof requestIdleCallback === "function") {
+        requestIdleCallback(drain, { timeout: 400 });
+      } else {
+        setTimeout(() => drain(null), 32);
+      }
+    } else {
+      homeQrIdleScheduled = false;
+    }
+  };
+
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(drain, { timeout: 600 });
+  } else {
+    setTimeout(() => drain(null), 0);
+  }
+}
+
 export async function loadHomeEvents() {
   await i18nReady;
   const box = document.getElementById("home-events");
   if (!box) return;
-  const data = await api.eventsPublic();
-  const upcoming = data?.upcoming || [];
-  const past = data?.past || [];
-  if (!upcoming.length && !past.length) {
-    box.innerHTML = "";
-    box.hidden = true;
-    return;
-  }
-  box.hidden = false;
-  box.innerHTML = `
+  const seq = ++homeEventsSeq;
+
+  try {
+    if (!homeEventsFetch) {
+      homeEventsFetch = api.eventsPublic().finally(() => {
+        homeEventsFetch = null;
+      });
+    }
+    const data = await homeEventsFetch;
+    if (seq !== homeEventsSeq) return;
+
+    const upcoming = data?.upcoming || [];
+    const past = (data?.past || []).slice(0, HOME_PAST_LIMIT);
+    if (!upcoming.length && !past.length) {
+      box.innerHTML = "";
+      box.hidden = true;
+      box.dataset.eventsReady = "";
+      return;
+    }
+    box.hidden = false;
+    box.innerHTML = `
     ${upcoming.length ? `<h2 class="home-events-title">${esc(tx("events.home.upcoming"))}</h2>` : ""}
     ${upcoming.map((ev) => homeCardHtml(ev)).join("")}
     ${past.length ? `<h2 class="home-events-title">${esc(tx("events.home.past"))}</h2>` : ""}
     ${past.map((ev) => homeCardHtml(ev)).join("")}
   `;
-  box.querySelectorAll("[data-qr]").forEach((canvas) => {
-    const url = canvas.getAttribute("data-url") || "";
-    hooks.drawQrCode(canvas, url);
-  });
-  box.querySelectorAll("[data-copy]").forEach((btn) => {
-    btn.addEventListener("click", () => copyText(btn.getAttribute("data-copy") || "", btn));
-  });
-  box.querySelectorAll("[data-dl-qr]").forEach((btn) => {
-    btn.addEventListener("click", () => downloadQr(btn.getAttribute("data-canvas"), btn.getAttribute("data-name")));
-  });
+    box.dataset.eventsReady = "1";
+    homeQrQueue.length = 0;
+    scheduleHomeQrDraw(box, seq);
+    box.querySelectorAll("[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", () => copyText(btn.getAttribute("data-copy") || "", btn));
+    });
+    box.querySelectorAll("[data-dl-qr]").forEach((btn) => {
+      btn.addEventListener("click", () => downloadQr(btn.getAttribute("data-canvas"), btn.getAttribute("data-name")));
+    });
+  } catch (err) {
+    if (seq !== homeEventsSeq) return;
+    console.error("[home-events]", err);
+    box.hidden = true;
+    box.dataset.eventsReady = "";
+  }
 }
 
 function homeCardHtml(ev) {

@@ -34,14 +34,14 @@ import { bindHelp, showHelpPage, explainError } from "./help.js?v=help9";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
 import { syncAdminNav } from "./adminNav.js?v=nav43";
-import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav43";
+import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, isAuthLoaded, logout } from "./authClient.js?v=nav46";
 import { showLoginPage } from "./loginPage.js?v=nav39";
-import { showAdminLoginModal, isAdminLoginModalOpen } from "./adminLoginModal.js?v=nav39";
+import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav46";
 import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
 import { showProfilePage } from "./profilePage.js?v=nav30";
 import { ensureStepUp } from "./stepUp.js?v=nav35";
-import { bindEvents, showEventsPage, loadHomeEvents, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav30";
+import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav32";
 import {
   initTheme,
   toggleDocumentTheme,
@@ -261,10 +261,9 @@ try {
     const needsAuth =
       isAuthEnabled() && hash.startsWith("/admin") && hash !== "/admin/login" && !hasAdminAccess();
     if (needsAuth) {
-      const target = hash;
-      revertAdminHash();
-      route("/");
-      void showAdminLoginModal(target).then((r) => afterAdminLogin(r, target));
+      rememberAdminRedirect(hash);
+      navigate("/admin/login");
+      return;
     } else {
       route();
     }
@@ -325,7 +324,8 @@ async function bootUi() {
     return;
   }
   if (expectedViewFromHash() === "home") {
-    await loadHomeEvents();
+    const box = document.getElementById("home-events");
+    if (!box?.dataset.eventsReady) scheduleLoadHomeEvents();
   }
   applyAdminNavVisibility();
   document.getElementById("btn-auth-logout")?.toggleAttribute("hidden", !getAuthUser());
@@ -432,6 +432,7 @@ function bindGlobal() {
   document.getElementById("add-datetime")?.addEventListener("click", () => addDatetimeField());
   /* Capture: Hash-Links sofort routen, auch wenn ein Overlay das Bubble verhindert. */
   document.addEventListener("click", onInAppHashClick, true);
+  document.getElementById("btn-admin-home")?.addEventListener("click", onAdminHomeClick);
   document.getElementById("consent-ok")?.addEventListener("click", acceptConsent);
   document.getElementById("footer-toggle")?.addEventListener("click", () => {
     document.getElementById("app-footer")?.classList.toggle("is-open");
@@ -481,10 +482,8 @@ function route(forcedHash) {
 
   if (isAuthEnabled() && hash.startsWith("/admin") && hash !== "/admin/login" && hash !== "/admin/onboarding" && !hasAdminAccess()) {
     if (isAdminLoginModalOpen()) return;
-    const target = hash;
-    revertAdminHash();
-    showView("home");
-    void showAdminLoginModal(target).then((r) => afterAdminLogin(r, target));
+    rememberAdminRedirect(hash);
+    navigate("/admin/login");
     return;
   }
 
@@ -703,12 +702,35 @@ function showView(name, routeHash) {
   }
   if (name === "home") {
     applyBranding(ctx.instanceBranding || ctx.branding);
-    loadHomeEvents();
+    scheduleLoadHomeEvents();
+  } else {
+    cancelHomeEventsWork();
   }
   if (name !== "home") {
     const consent = document.getElementById("consent-dialog");
     if (consent) consent.hidden = true;
   }
+}
+
+/** Administration von der Startseite — Modal sofort (Firefox-User-Geste), Event-Laden abbrechen. */
+function onAdminHomeClick(ev) {
+  ev.preventDefault();
+  cancelHomeEventsWork();
+  void openAdminFromHome("/admin");
+}
+
+/**
+ * Admin-Einstieg von der Startseite: bei fehlender Session Modal in der Klick-Geste öffnen.
+ * @param {string} path z. B. "/admin"
+ */
+async function openAdminFromHome(path) {
+  if (!isAuthLoaded()) await loadAuth();
+  if (!isAuthEnabled() || hasAdminAccess()) {
+    navigate(path);
+    return;
+  }
+  const result = await showAdminLoginModal(path);
+  afterAdminLogin(result, path);
 }
 
 /**
@@ -723,9 +745,9 @@ function onInAppHashClick(ev) {
   if (!href.startsWith("#/")) return;
   ev.preventDefault();
   const path = href.slice(1);
-  /* Admin-Links ohne Session: Modal statt Navigation. */
-  if (isAuthEnabled() && path.startsWith("/admin") && path !== "/admin/login" && !hasAdminAccess()) {
-    void showAdminLoginModal(path).then((r) => afterAdminLogin(r, path));
+  if (path.startsWith("/admin") && path !== "/admin/login") {
+    cancelHomeEventsWork();
+    void openAdminFromHome(path);
     return;
   }
   navigate(path);
@@ -3517,9 +3539,22 @@ function encodeQr(text) {
   return best;
 }
 
+/** Zwischenspeicher — doppeltes Rendern auf der Startseite muss QR nicht neu berechnen. */
+const qrEncodeCache = new Map();
+const QR_CACHE_MAX = 64;
+
 export function drawQrCode(canvas, text) {
-  const qr = encodeQr(text);
-  if (!qr || !canvas) return;
+  if (!canvas || !text) return;
+  let qr = qrEncodeCache.get(text);
+  if (!qr) {
+    qr = encodeQr(text);
+    if (!qr) return;
+    if (qrEncodeCache.size >= QR_CACHE_MAX) {
+      const first = qrEncodeCache.keys().next().value;
+      qrEncodeCache.delete(first);
+    }
+    qrEncodeCache.set(text, qr);
+  }
   const ctx = canvas.getContext("2d");
   const pad = 2;
   const n = qr.size + pad * 2;

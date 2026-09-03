@@ -67,6 +67,11 @@ export async function loadAuth() {
   return state;
 }
 
+/** Ob der Auth-Status mindestens einmal vom Server geladen wurde. */
+export function isAuthLoaded() {
+  return state.loaded;
+}
+
 export function getAuthUser() {
   return state.user;
 }

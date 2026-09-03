@@ -1,9 +1,12 @@
 /**
  * Admin-Login-Modal: erscheint beim Klick auf „Administration“ ohne gültige Session.
+ * Firefox: showModal() muss in der User-Geste erfolgen — Dialog daher sofort öffnen.
  */
 
-import { loadAuth, getAuthUser, isAuthEnabled } from "./authClient.js?v=nav39";
-import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav39";
+import { loadAuth, getAuthUser, isAuthEnabled } from "./authClient.js?v=nav46";
+import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav46";
+
+const ADMIN_REDIRECT_KEY = "pulse:admin-redirect";
 
 let dialogEl = null;
 /** Verhindert parallele Modals. */
@@ -27,54 +30,123 @@ function ensureDialog() {
 }
 
 /**
+ * Modal sofort sichtbar machen (sync, innerhalb der Klick-Geste).
+ * @returns {boolean}
+ */
+function openDialogSync(host) {
+  const dlg = ensureDialog();
+  if (dlg.open) return true;
+  if (host) host.innerHTML = `<p class="muted login-loading">Anmeldung wird geladen …</p>`;
+  try {
+    dlg.showModal();
+    return true;
+  } catch (err) {
+    console.warn("[admin-login] showModal fehlgeschlagen — Fallback Vollseite", err);
+    return false;
+  }
+}
+
+/** Ziel-Route für Redirect nach Login merken. */
+export function rememberAdminRedirect(targetHash) {
+  const clean = normalizeAdminHash(targetHash);
+  try {
+    sessionStorage.setItem(ADMIN_REDIRECT_KEY, `#${clean}`);
+  } catch {
+    /* Webview ohne sessionStorage */
+  }
+}
+
+/** Gespeicherte Admin-Zielroute lesen und löschen. */
+export function consumeAdminRedirect(fallback = "#/admin/events") {
+  try {
+    const stored = sessionStorage.getItem(ADMIN_REDIRECT_KEY);
+    sessionStorage.removeItem(ADMIN_REDIRECT_KEY);
+    return stored || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Vollseiten-Login (#/admin/login) — ohne User-Geste (Direktaufruf, Hash-Wechsel).
+ * @param {string} [targetHash]
+ */
+export function navigateAdminLoginPage(targetHash = "/admin") {
+  rememberAdminRedirect(targetHash);
+  const hash = "#/admin/login";
+  try {
+    if (location.hash !== hash) location.hash = hash;
+  } catch {
+    /* Webview */
+  }
+}
+
+/**
  * Admin-Anmeldung als Modal anzeigen.
  * @param {string} [targetHash] — Ziel-Route nach erfolgreichem Login (z. B. /admin/branding)
- * @returns {Promise<{ ok: boolean }>}
+ * @returns {Promise<{ ok: boolean, redirectHash?: string }>}
  */
 export async function showAdminLoginModal(targetHash = "/admin") {
   if (!isAuthEnabled()) return { ok: true };
-
-  await loadAuth();
-  if (getAuthUser()) return { ok: true };
-
-  if (openPromise) return openPromise;
 
   const destination = normalizeAdminHash(targetHash);
   const dlg = ensureDialog();
   const host = dlg.querySelector("#admin-login-host");
 
-  openPromise = new Promise((resolve) => {
-    /** Ziel nach Login (z. B. E-Mail-Setup nach Bootstrap). */
-    let redirectAfterLogin = `#${destination}`;
+  if (openPromise) return openPromise;
 
-    const finish = (ok) => {
-      disposeLoginForm(host);
-      if (host) host.replaceChildren();
-      dlg.removeEventListener("close", onClose);
+  if (!openDialogSync(host)) {
+    navigateAdminLoginPage(destination);
+    return { ok: false };
+  }
+
+  openPromise = (async () => {
+    try {
+      await loadAuth();
+      if (getAuthUser()) {
+        if (dlg.open) dlg.close("ok");
+        openPromise = null;
+        return { ok: true, redirectHash: `#${destination}` };
+      }
+
+      return await new Promise((resolve) => {
+        let redirectAfterLogin = `#${destination}`;
+
+        const finish = (ok) => {
+          disposeLoginForm(host);
+          if (host) host.replaceChildren();
+          openPromise = null;
+          resolve({ ok, redirectHash: redirectAfterLogin });
+        };
+
+        const onClose = () => {
+          dlg.removeEventListener("close", onClose);
+          finish(dlg.returnValue === "ok");
+        };
+
+        dlg.addEventListener("close", onClose);
+
+        void initLoginForm(host, {
+          title: "Administration anmelden",
+          idPrefix: "admin-login-",
+          showCancel: true,
+          onSuccess: (redirectHash) => {
+            redirectAfterLogin = redirectHash || `#${destination}`;
+            dlg.close("ok");
+          },
+          onCancel: () => dlg.close("cancel"),
+        }).then(() => {
+          host.querySelector(`#admin-login-email`)?.focus();
+        });
+      });
+    } catch (err) {
+      console.error("[admin-login]", err);
       openPromise = null;
-      resolve({ ok, redirectHash: redirectAfterLogin });
-    };
-
-    const onClose = () => {
-      finish(dlg.returnValue === "ok");
-    };
-
-    dlg.addEventListener("close", onClose);
-
-    void initLoginForm(host, {
-      title: "Administration anmelden",
-      idPrefix: "admin-login-",
-      showCancel: true,
-      onSuccess: (redirectHash) => {
-        redirectAfterLogin = redirectHash || `#${destination}`;
-        dlg.close("ok");
-      },
-      onCancel: () => dlg.close("cancel"),
-    }).then(() => {
-      if (!dlg.open) dlg.showModal();
-      host.querySelector(`#admin-login-email`)?.focus();
-    });
-  });
+      if (dlg.open) dlg.close("cancel");
+      navigateAdminLoginPage(destination);
+      return { ok: false };
+    }
+  })();
 
   return openPromise;
 }
@@ -88,5 +160,5 @@ function normalizeAdminHash(hash) {
 
 /** Ob das Admin-Login-Modal gerade offen ist. */
 export function isAdminLoginModalOpen() {
-  return Boolean(dialogEl?.open);
+  return Boolean(dialogEl?.open || openPromise);
 }
