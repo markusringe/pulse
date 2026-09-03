@@ -1,0 +1,49 @@
+<article class="help-article-body" data-article="installation">
+  <h2>Installation und Betrieb</h2>
+  <p>Pulse läuft als Node.js-Anwendung — lokal zum Testen oder auf einem Server mit Docker. Ausführliche Schritte stehen in <code>docs/installation.md</code> im Repository.</p>
+
+  <h3>Lokal (Entwicklung)</h3>
+  <ul>
+    <li><strong>Voraussetzung:</strong> Node.js ≥ 22, npm</li>
+    <li><code>chmod +x scripts/install.sh</code> (einmalig)</li>
+    <li><code>./scripts/install.sh</code> oder <code>npm run setup</code> — installiert Abhängigkeiten, legt <code>.env</code> an, setzt <code>ADMIN_SECRET</code></li>
+    <li><code>npm start</code> → <a href="#/">http://localhost:3000</a></li>
+    <li>Healthcheck: <code>/api/health</code></li>
+  </ul>
+  <p>Ohne exportierte <code>.env</code>-Variablen startet der Server nur mit einem Entwicklungs-Pepper — in Produktion immer <code>ADMIN_SECRET</code> setzen.</p>
+
+  <h3>Docker Compose (lokal oder Server)</h3>
+  <ul>
+    <li><code>./scripts/install.sh --docker</code> — baut Images, seedet <code>data/</code>, startet den Stack</li>
+    <li>Stack: zwei App-Instanzen (<code>pulse</code>, <code>pulse-b</code>), Redis, nginx (Port 80/443), optional Prometheus und Grafana (Port 3001)</li>
+    <li>Pulse erreichbar über <code>http://&lt;host&gt;/</code> (nginx)</li>
+    <li>Daten liegen im Host-Verzeichnis <code>./data</code> (SQLite <code>pulse.db</code>, Branding, Events, SSL unter <code>data/ssl/</code>)</li>
+  </ul>
+
+  <h3>VPS Ubuntu (Produktion)</h3>
+  <p>Auf einem frischen <strong>Ubuntu 22.04 / 24.04</strong> Server (als root oder mit <code>sudo</code>):</p>
+  <pre><code>chmod +x scripts/install-vps-ubuntu.sh scripts/seed-data.sh
+sudo ./scripts/install-vps-ubuntu.sh</code></pre>
+  <p>Alternativ: <code>npm run setup:vps</code> (im Projektverzeichnis, mit sudo).</p>
+  <p>Das VPS-Skript installiert <strong>Docker Engine</strong> und das <strong>Compose-Plugin</strong>, richtet die Firewall (UFW: SSH, 80, 443) ein, erzeugt <code>.env</code> mit Zufallssecrets, kopiert Grundeinstellungen nach <code>data/</code> und startet <code>docker compose up -d</code>.</p>
+  <ul>
+    <li><strong>Grunddaten</strong> (<code>scripts/seed-data.sh</code>): <code>branding.json</code> und <code>privacy.json</code> (Saarbrücken-Preset), leerer Event-Katalog, leeres Audit-Log — bestehende Dateien werden nicht überschrieben</li>
+    <li><strong>Zugangsdaten</strong> nach der Installation: <code>INSTALL-CREDENTIALS.txt</code> (<code>ADMIN_SECRET</code>, Grafana-Passwort) — sichern und danach löschen</li>
+    <li>Option <code>--expose-grafana</code> öffnet Port 3001 in der Firewall</li>
+    <li>Option <code>--git URL --dir /opt/pulse</code> klont das Repository und installiert dort</li>
+  </ul>
+
+  <h3>HTTPS nach der Installation</h3>
+  <p>DNS auf den Server zeigen lassen, Port 80 von außen erreichbar, dann in der Admin-Oberfläche <a href="#/admin/ssl">SSL</a> (Let’s Encrypt HTTP-01). Details: <a href="#/help/ssl">SSL-Hilfe</a>.</p>
+
+  <h3>Instanz-Admin vs. Session-Admin</h3>
+  <ul>
+    <li><strong>ADMIN_SECRET</strong> (Umgebungsvariable / <code>.env</code>): API und Menüs Branding, Datenschutz, SSL, Einstellungen — Header <code>X-Admin-Key</code> oder Bearer</li>
+    <li><strong>Session-Admin-Schlüssel</strong>: pro Session beim Start, bleibt im Browser — Folienwechsel und Moderation</li>
+  </ul>
+
+  <h3>Aktualisierung</h3>
+  <p><code>git pull</code>, dann <code>docker compose build &amp;&amp; docker compose up -d</code> (Docker) oder <code>npm install</code> und Server neu starten (lokal). Daten in <code>data/</code> bleiben erhalten.</p>
+
+  <p><a href="#/help/admin">Admin-Hilfe</a> · <a href="#/help/troubleshooting">Fehlerbehebung</a> · <a href="./help/guides/admin-checklist.html">Admin-Checkliste</a> · Ausführlich auch als Markdown: <code>docs/hilfe.md</code></p>
+</article>

@@ -1,0 +1,71 @@
+<article class="help-article-body" data-article="use-cases">
+  <h2>Typische Szenarien (Use-Cases)</h2>
+  <p>Drei durchgängige Beispiele — jeweils mit Ziel, Zeit und häufigen Fehlern.</p>
+
+  <details class="help-details" open>
+    <summary><strong>Use-Case 1: Bürgerversammlung (~200 Teilnehmende, ~90 Min.)</strong></summary>
+    <h4>Ziel</h4>
+    <p>Öffentliche Beteiligung mit Umfragen, Wortwolke und moderiertem Q&amp;A.</p>
+    <h4>Vorbereitung (~30 Min.)</h4>
+    <ol class="help-steps">
+      <li>Event „Bürgerversammlung Klimaschutz 2026“ anlegen, Status später <em>aktiv</em>.</li>
+      <li>Deck: 3× MC, 2× Wortwolke, 2× Q&amp;A, 1× Quiz — unter <code>#/admin/sessions/&lt;code&gt;</code>.</li>
+      <li>Einstellungen: Wortfilter an, Fragen-Intervall 30 s, Lobby aktiv.</li>
+      <li>Beamer-Test, zweites Handy als Teilnehmer.</li>
+    </ol>
+    <h4>Durchführung</h4>
+    <p>Lobby → Umfragen mit Reveal → Wortwolken → Q&amp;A moderieren → Quiz-Abschluss → Q&amp;A-Export.</p>
+    <aside class="help-callout help-callout--tip">QR groß auf Leinwand; Code zusätzlich vorlesen. Bei 200+ Teilnehmenden: stabiles WLAN, ggf. Docker mit Redis.</aside>
+    <p><strong>Fehler vermeiden:</strong> Event noch <em>geplant</em> — Join gesperrt. Status vor Start auf <em>aktiv</em>.</p>
+  </details>
+
+  <details class="help-details">
+    <summary><strong>Use-Case 2: Team-Meeting mit Quiz (~30 Min.)</strong></summary>
+    <h4>Ziel</h4>
+    <p>Lockere Check-in-Umfrage und Wissens-Quiz im Team.</p>
+    <h4>Vorbereitung (~10 Min.)</h4>
+    <ol class="help-steps">
+      <li>Ad-hoc-Session unter Sessions (kein Event nötig).</li>
+      <li>Deck: 1× MC Check-in, 3× Quiz, 1× Bewertungsskala Feedback.</li>
+      <li>Quiz: Teams erlauben, Power-Ups an.</li>
+    </ol>
+    <h4>Durchführung</h4>
+    <p>Kurzer Join-Code im Chat → Quiz erklären → Rangliste zeigen → Skala für Retro.</p>
+    <aside class="help-callout help-callout--info">Keine Lobby nötig — Demo- und Quiz-Vorlagen überspringen den Warteraum.</aside>
+  </details>
+
+  <details class="help-details">
+    <summary><strong>Use-Case 3: Schulung mit Skalen (~15 Min. Selbstlernen)</strong></summary>
+    <h4>Ziel</h4>
+    <p>Wissens-Check und Feedback nach Schulungsmodul.</p>
+    <h4>Vorbereitung (~15 Min.)</h4>
+    <ol class="help-steps">
+      <li>Wiederkehrendes Event anlegen (gleicher Code pro Termin).</li>
+      <li>Deck: 5× MC, 3× Bewertungsskala.</li>
+      <li>Ergebnisse sofort zeigen (<kbd>R</kbd> dauerhaft an oder nach jeder Folie).</li>
+    </ol>
+    <h4>Durchführung</h4>
+    <p>Teilnehmende arbeiten selbstständig durch — Presenter nur bei Bedarf eingreifen.</p>
+    <p><strong>Hinweis:</strong> Hybride Tools (Webex, Teams): Join-Link von Pulse separat teilen — keine native Integration.</p>
+  </details>
+
+  <details class="help-details">
+    <summary><strong>Use-Case 4: Ortsauswahl mit Picker (~50 Städte)</strong></summary>
+    <h4>Ziel</h4>
+    <p>Teilnehmende wählen ihren Wohnort aus einer langen Liste — ohne 50 Buttons auf einmal.</p>
+    <h4>Vorbereitung (~20 Min.)</h4>
+    <ol class="help-steps">
+      <li>Folientyp <strong>Picker</strong>, 50 Städte per Massen-Import (eine Zeile pro Stadt).</li>
+      <li>Kategorien nach Bundesland, List-Layout, Suche aktiv.</li>
+      <li>Single-Select, Ergebnisse erst nach Reveal.</li>
+    </ol>
+    <p>Details: <a href="#/help/picker">Picker-Hilfe</a>.</p>
+  </details>
+
+  <nav class="help-see-also">
+    <strong>Siehe auch:</strong>
+    <a href="#/help/session-manage">Session verwalten</a> ·
+    <a href="#/help/quiz">Quiz</a> ·
+    <a href="#/help/qa">Q&amp;A</a>
+  </nav>
+</article>

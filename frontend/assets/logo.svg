@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
+  <!-- Platzhalter-Logo: Stadtblau und Wortmarken-Schwarz der Live-Website -->
+  <rect width="200" height="60" rx="8" fill="#007CC1"/>
+  <text x="100" y="38" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="18" font-weight="700">Saarbrücken</text>
+</svg>

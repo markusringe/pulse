@@ -1,0 +1,60 @@
+<article class="help-article-body" data-article="picker">
+  <h2>Picker — große Auswahllisten (10–50 Optionen)</h2>
+  <p>Der Folientyp <strong>Picker</strong> eignet sich für lange Listen: Städte, Produkte, Themen, Namen. Teilnehmende wählen aus bis zu <strong>50 Optionen</strong> (mindestens 10 beim Speichern).</p>
+
+  <h3>Wann Picker statt Multiple Choice?</h3>
+  <table class="help-table">
+    <thead><tr><th>Typ</th><th>Optionen</th><th>Typischer Einsatz</th></tr></thead>
+    <tbody>
+      <tr><td>Multiple Choice</td><td>2–6</td><td>Schnelle Ja/Nein- oder Kurzumfragen</td></tr>
+      <tr><td><strong>Picker</strong></td><td>10–50</td><td>Städte, Produkte, Prioritäten, lange Namenslisten</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Presenter: Folie anlegen</h3>
+  <ol class="help-steps">
+    <li>Unter <code>#/admin</code> oder im Deck-Editor (<code>#/admin/sessions/&lt;code&gt;</code>) Fragetyp <strong>Picker</strong> wählen.</li>
+    <li>Im Block <strong>Grundlagen</strong>: Frage (max. 500 Zeichen), optional Unterzeile.</li>
+    <li>Im Block <strong>Optionen</strong>: mindestens 10 Einträge — einzeln oder per <strong>Massen-Import</strong> (eine Zeile pro Option).</li>
+    <li>Im Block <strong>Typ-Einstellungen</strong>:
+      <ul>
+        <li><strong>Mehrfachauswahl</strong> mit optionalem Maximum (z. B. „3 Favoriten“)</li>
+        <li><strong>Suchfunktion</strong> (Standard bei mehr als 20 Optionen)</li>
+        <li><strong>Kategorien</strong> mit Name und Farbe; Optionen per Dropdown zuordnen</li>
+        <li><strong>Darstellung:</strong> Liste, Raster oder Dropdown (Dropdown nur Single-Select)</li>
+      </ul>
+    </li>
+    <li><strong>Live-Vorschau</strong> testet Layout und Suche ohne Session-Start.</li>
+    <li>Erweiterte Einstellungen: Presenter-Notizen, geplante Minuten, Reveal-Standard.</li>
+  </ol>
+
+  <aside class="help-callout help-callout--info">
+    Das Formular passt sich dem Folientyp an: nur relevante Abschnitte werden eingeblendet (Animation ca. 300&nbsp;ms). Beim Wechsel des Folientypen erscheint eine Warnung, wenn Optionen verworfen würden.
+  </aside>
+
+  <h3>Deck-Editor</h3>
+  <p>Picker-Folien werden im <strong>Modal</strong> bearbeitet (wie Quiz, Ranking, Bildwahl). Enthält dieselben Felder wie das Startformular inkl. Kategorien-Editor und Vorschau. Speichern per <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>S</kbd> oder Auto-Save nach 30&nbsp;s.</p>
+
+  <h3>Teilnehmende</h3>
+  <ul>
+    <li><strong>Single-Select:</strong> eine Option wählen — bei Liste/Raster oft sofortige Absendung; bei Dropdown Bestätigen-Button.</li>
+    <li><strong>Multi-Select:</strong> mehrere Optionen antippen, Zähler zeigt Auswahl; Maximum wird eingehalten.</li>
+    <li><strong>Suche</strong> filtert Optionen und Kategorienamen (Groß/Klein egal).</li>
+    <li><strong>Kategorien</strong> als Filter-Leiste über den Optionen.</li>
+    <li>Ab <strong>30 Optionen</strong> in Listen-Ansicht: Virtual Scrolling für flüssiges Scrollen.</li>
+  </ul>
+
+  <h3>Ergebnisse</h3>
+  <p>Balkendiagramm nach Stimmen; Prozent bezogen auf Teilnehmerzahl. Bei mehr als 30 Optionen: Top&nbsp;10 plus „Weitere Optionen“. Mit Kategorien: gruppierte Auswertung je Kategorie.</p>
+  <p>Reveal wie bei Multiple Choice — Taste <kbd>R</kbd> auf der Bühne.</p>
+
+  <h3>Beispiel: Ortsauswahl</h3>
+  <p>50 Städte, Kategorien nach Bundesland, List-Layout mit Suche, Single-Select. Teilnehmende finden schnell „Saarbrücken“ statt 50 Buttons auf einmal zu sehen.</p>
+
+  <nav class="help-see-also">
+    <strong>Siehe auch:</strong>
+    <a href="#/help/session-manage">Session verwalten</a> ·
+    <a href="#/help/polls">Umfragen</a> ·
+    <a href="#/help/use-cases">Use-Cases</a>
+  </nav>
+</article>

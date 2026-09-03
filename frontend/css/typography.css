@@ -1,0 +1,108 @@
+/**
+ * Typografie — Inter lokal/system, kein Google-Fonts-CDN (DSGVO).
+ * Fließtext mindestens 16px, Zeilenhöhe 1,6, klare Heading-Hierarchie.
+ */
+
+:root {
+  --font: "Inter", system-ui, "Segoe UI", -apple-system, "Avenir Next", sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+html,
+body {
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.75rem, 3.4vw, 2.6rem);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+h2 {
+  font-size: 1.35rem;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+h3 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.eyebrow {
+  margin: 0;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.hint {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.slide-question {
+  font-size: clamp(1.35rem, 3.2vw, 2.7rem);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--ink);
+}
+
+.join-code {
+  font-family: var(--mono);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  letter-spacing: 0.22em;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+.join-url {
+  font-size: 0.9rem;
+  max-width: 42ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field span,
+.field-label {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--muted);
+}

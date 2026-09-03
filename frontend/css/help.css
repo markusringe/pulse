@@ -1,0 +1,737 @@
+/**
+ * Pulse — Hilfe, Tour, Tooltips, Druck-Guides.
+ * Farben ausschließlich über Theme-Variablen (--bg, --ink, --accent, --focus, …).
+ * Kein Popper.js: Tooltips werden in help.js / tooltips.js per getBoundingClientRect gesetzt.
+ */
+
+/* ---------- Hilfe-View (in der App) ---------- */
+
+.view-help {
+  display: block;
+  overflow: auto;
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: calc(var(--pad) + env(safe-area-inset-top)) var(--pad) calc(var(--pad) + env(safe-area-inset-bottom));
+}
+
+.view-help[hidden] {
+  display: none !important;
+}
+
+.help-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.help-header h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+
+.help-search {
+  width: 100%;
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.help-search input[type="search"] {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--ink);
+  font: inherit;
+}
+
+.help-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.help-cats button {
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--ink);
+  padding: 0.35rem 0.85rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.help-cats button[aria-pressed="true"] {
+  outline: 2px solid var(--focus);
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-elev));
+}
+
+.help-layout {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 840px) {
+  .help-layout {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    align-items: start;
+  }
+}
+
+.help-article-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.help-article-list a {
+  display: block;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: var(--bg-elev);
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid var(--line);
+}
+
+.help-article-list a:hover,
+.help-article-list a:focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+.help-article-list .muted {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.help-article-list mark,
+.help-article-body mark {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: inherit;
+  padding: 0 0.15em;
+  border-radius: 3px;
+}
+
+.help-article-page {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem 1.15rem 1.4rem;
+}
+
+.help-article-page h2,
+.help-article-page h3 {
+  margin-top: 1.1rem;
+}
+
+/* ---------- Rollen-Filter ---------- */
+
+.help-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.help-roles button {
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--ink);
+  padding: 0.35rem 0.85rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.help-roles button[aria-pressed="true"] {
+  outline: 2px solid var(--focus);
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg-elev));
+}
+
+/* ---------- Callout-Boxen ---------- */
+
+.help-callout {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border-left: 4px solid var(--line);
+  font-size: 0.95rem;
+}
+
+.help-callout--info {
+  border-left-color: #2b6cb0;
+  background: color-mix(in srgb, #2b6cb0 12%, var(--bg-soft));
+}
+
+.help-callout--warn {
+  border-left-color: #c05621;
+  background: color-mix(in srgb, #c05621 12%, var(--bg-soft));
+}
+
+.help-callout--danger {
+  border-left-color: #c53030;
+  background: color-mix(in srgb, #c53030 12%, var(--bg-soft));
+}
+
+.help-callout--tip {
+  border-left-color: #2f855a;
+  background: color-mix(in srgb, #2f855a 12%, var(--bg-soft));
+}
+
+/* ---------- Rollen-Karten (Welcome) ---------- */
+
+.help-role-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+@media (min-width: 640px) {
+  .help-role-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.help-role-card {
+  display: block;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: inherit;
+  text-decoration: none;
+  transition: outline 0.15s;
+}
+
+.help-role-card:hover,
+.help-role-card:focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+.help-role-card h3 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.help-role-card__icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.help-role-card__links {
+  margin: 0.65rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+/* ---------- Architektur-Diagramm ---------- */
+
+.help-arch-diagram {
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.help-arch-layer {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.help-arch-layer--event {
+  background: color-mix(in srgb, #2b6cb0 14%, var(--bg-elev));
+}
+
+.help-arch-layer--session {
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-elev));
+}
+
+.help-arch-layer--deck {
+  background: color-mix(in srgb, #2f855a 14%, var(--bg-elev));
+}
+
+.help-arch-arrow {
+  text-align: center;
+  padding: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.help-arch-slides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.help-arch-slide {
+  flex: 1 1 5rem;
+  min-width: 4.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ---------- Tabellen, TOC, Details, Siehe-auch ---------- */
+
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0 1rem;
+  font-size: 0.92rem;
+}
+
+.help-table th,
+.help-table td {
+  border: 1px solid var(--line);
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.help-table th {
+  background: var(--bg-soft);
+}
+
+.help-toc {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.help-toc ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.help-toc .help-toc-h3 {
+  margin-left: 0.75rem;
+  list-style-type: circle;
+}
+
+.help-toc a {
+  color: var(--accent);
+}
+
+.help-details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.5rem 0.85rem;
+  background: var(--bg-soft);
+}
+
+.help-details summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 650;
+}
+
+.help-see-also {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.help-see-also a {
+  color: var(--accent);
+}
+
+.help-flowchart {
+  display: block;
+  overflow-x: auto;
+  padding: 0.85rem 1rem;
+  margin: 0.75rem 0 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+.help-hub-list {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.help-hub-list h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.help-article-page kbd,
+.help-guide-page kbd {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  padding: 0.1em 0.4em;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-soft);
+}
+
+.help-dl dt {
+  font-weight: 700;
+  margin-top: 0.85rem;
+}
+
+.help-dl dd {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+}
+
+.help-steps {
+  padding-left: 1.2rem;
+}
+
+.help-steps li {
+  margin: 0.45rem 0;
+}
+
+.help-video-placeholder {
+  margin: 1rem 0;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+
+.help-video-poster {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.help-video-placeholder figcaption {
+  padding: 0.6rem 0.9rem 0.85rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.help-feedback {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.help-feedback textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  margin: 0.5rem 0;
+  padding: 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+
+.help-side {
+  display: grid;
+  gap: 1rem;
+}
+
+.help-side section {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+}
+
+.help-side h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.help-side ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.help-agg li {
+  margin: 0.35rem 0;
+}
+
+/* ---------- Kontext-Panel (schwebend) ---------- */
+
+.help-fab {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(64px, env(safe-area-inset-bottom));
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--ink);
+  font: 700 1.1rem/1 var(--font);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.help-context {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: calc(64px + 52px);
+  z-index: 41;
+  width: min(22rem, calc(100vw - 24px));
+  background: var(--bg-elev);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  box-shadow: var(--shadow);
+}
+
+.help-context[hidden] {
+  display: none !important;
+}
+
+.help-context h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+/* ---------- Presenter Mini-Hilfe ---------- */
+
+#present-stage {
+  position: relative;
+}
+
+.help-hotkeys {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 8;
+  max-width: min(20rem, 90vw);
+  background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.88rem;
+}
+
+.help-hotkeys summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 650;
+}
+
+.help-hotkeys ul {
+  margin: 0.3rem 0 0.6rem;
+  padding-left: 1.1rem;
+}
+
+.view-present {
+  position: relative;
+}
+
+/* ---------- Tour ---------- */
+
+.help-tour-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: color-mix(in srgb, #000 45%, transparent);
+  /* Klicks auf Startseiten-Links (Administration) müssen durchkommen. */
+  pointer-events: none;
+}
+
+.help-tour-card {
+  position: fixed;
+  z-index: 82;
+  pointer-events: auto;
+  width: min(28rem, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  background: var(--bg-elev);
+  color: var(--ink);
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  padding: 1.1rem 1.2rem 1rem;
+  box-shadow: var(--shadow);
+}
+
+.help-tour-card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.help-tour-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.help-tour-progress {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.help-tour-spotlight {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 10px;
+  position: relative;
+  z-index: 81;
+}
+
+/* ---------- Tooltips (Layer am body) ---------- */
+
+.help-tooltip-layer {
+  position: fixed;
+  z-index: 90;
+  max-width: min(18rem, calc(100vw - 16px));
+  padding: 0.45rem 0.65rem;
+  background: var(--bg-elev);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.help-tooltip-layer[hidden] {
+  display: none !important;
+}
+
+/* ---------- Verständliche Fehler ---------- */
+
+.help-error-block {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.help-error-cause,
+.help-error-next {
+  display: block;
+  color: var(--muted);
+  font-size: 0.92em;
+}
+
+.help-error-link {
+  color: var(--accent);
+}
+
+#join-feedback:has(.help-error-block) {
+  text-align: left;
+}
+
+/* ---------- Guide-Druckseiten ---------- */
+
+.help-guide-page {
+  margin: 0 auto;
+  max-width: 42rem;
+  padding: 1.5rem 1.25rem 3rem;
+  font-family: var(--font, system-ui, sans-serif);
+  color: var(--ink, #16181d);
+  background: var(--bg, #fff);
+}
+
+.help-guide-page h1 {
+  margin: 0.2rem 0 0.6rem;
+}
+
+.help-guide-page table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.help-guide-page th,
+.help-guide-page td {
+  border: 1px solid var(--line, #ccc);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+}
+
+.help-guide-page .btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  margin-right: 0.4rem;
+  border-radius: 10px;
+  border: 1px solid var(--line, #ccc);
+  background: var(--bg-elev, #f4f4f4);
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.help-guide-page .btn.primary {
+  background: var(--accent, #c4452a);
+  color: #fff;
+  border-color: transparent;
+}
+
+@media print {
+  .help-no-print,
+  .help-fab,
+  .help-context,
+  .help-tour-backdrop,
+  .help-tour-card,
+  .help-tooltip-layer,
+  .help-hotkeys,
+  .app-footer,
+  .skip-link {
+    display: none !important;
+  }
+
+  html,
+  body,
+  .app,
+  .view-help {
+    overflow: visible !important;
+    height: auto !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .view-help {
+    max-width: none;
+  }
+
+  .help-guide-page,
+  .help-article-page {
+    background: #fff;
+    color: #111;
+    border: 0;
+    box-shadow: none;
+  }
+
+  a[href]::after {
+    content: none;
+  }
+}

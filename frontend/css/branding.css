@@ -1,0 +1,303 @@
+/**
+ * Branding Landeshauptstadt Saarbrücken (Stand Website 2026-09-02).
+ * Theme-Kontraste leben in theme.css — hier nur Marken-Mapping und Layout-Extras.
+ * Keine Google-Fonts-CDN (DSGVO): Inter nur, wenn lokal installiert.
+ *
+ * --primary-color / --secondary-color dürfen Theme-Tokens nicht unter WCAG drücken.
+ * Akzent #F99700 (CSS .orange; historisches Gelb #FFCC00 ist nicht mehr auf der
+ * Stadtseite) ist ausschließlich Flächenfarbe mit dunklem Text, nie Fließtext.
+ */
+
+:root {
+  --primary-color: #007cc1;
+  --secondary-color: #f99700;
+}
+
+.brand-logo:not([hidden]) {
+  max-width: 200px;
+  max-height: 60px;
+  object-fit: contain;
+  display: block;
+}
+
+/* [hidden] darf nicht durch display:block sichtbar werden — sonst kaputtes Icon ohne src. */
+.brand-logo[hidden] {
+  display: none !important;
+}
+
+.slide-question {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.stage-panel:not([hidden]) {
+  animation: none;
+}
+
+.present-stage[data-transition="fade"] .stage-panel:not([hidden]) {
+  animation: brand-fade 300ms ease;
+}
+
+.present-stage[data-transition="slide"] .stage-panel:not([hidden]) {
+  animation: slide-up 300ms ease;
+}
+
+@keyframes brand-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .present-stage .stage-panel:not([hidden]) {
+    animation: none !important;
+  }
+}
+
+/* Kontrast-Scrim über Custom-Hintergrund, Text bleibt auf der Bühne lesbar. */
+body.has-slide-bg .present-stage {
+  background-image: var(--slide-bg-image);
+  background-size: cover;
+  background-position: center;
+}
+body.has-slide-bg .present-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--slide-bg-scrim, rgba(255, 255, 255, 0.78));
+  pointer-events: none;
+  z-index: 0;
+}
+body.has-slide-bg .present-stage > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.has-slide-bg .view-join {
+  position: relative;
+  background-image: var(--slide-bg-image);
+  background-size: cover;
+  background-position: center;
+}
+body.has-slide-bg .view-join::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--join-bg-scrim, rgba(255, 255, 255, 0.48));
+  pointer-events: none;
+  z-index: 0;
+}
+body.has-slide-bg .view-join > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.footer-hidden .app-footer {
+  display: none !important;
+}
+
+.legal-hash-link {
+  margin: 0;
+  padding: 4px var(--pad, 16px);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.legal-hash-link[hidden] {
+  display: none !important;
+}
+.legal-hash-link a {
+  color: var(--link, #005b8e);
+}
+
+.branding-page fieldset.field {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 0 0 12px;
+}
+
+.word-pulse {
+  animation: word-pulse 600ms ease;
+}
+
+@keyframes word-pulse {
+  0% { transform: scale(0.85); opacity: 0.4; }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.type-icon { margin-right: 0.35em; }
+
+.lang-switch {
+  display: flex;
+  gap: 4px;
+}
+
+.lang-switch button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--ink);
+  border-radius: 10px;
+}
+
+.lang-switch button[aria-pressed="true"] {
+  outline: 2px solid var(--focus);
+  background: var(--bg-soft);
+}
+
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px var(--pad);
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+  background: var(--bg-elev);
+  color: var(--ink);
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  position: relative;
+  z-index: 21;
+  pointer-events: auto;
+}
+
+.footer-links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-home a,
+.footer-links a,
+.footer-links .link-btn {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.footer-drawer-toggle {
+  display: none;
+}
+
+/* [hidden] sonst von display:flex überstimmt — Link nur bei gesetzter URL. */
+.footer-home:not([hidden]) {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.footer-home a,
+.footer-links a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.emoji-cell {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 1.25rem;
+  background: var(--bg-soft);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.legal-page,
+.branding-page {
+  overflow: auto;
+  padding: var(--pad);
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.legal-page a,
+.branding-page a {
+  color: var(--link);
+}
+
+@media (max-width: 768px) {
+  .app-footer:not(.is-open) .footer-home,
+  .app-footer:not(.is-open) .footer-meta {
+    display: none;
+  }
+  .footer-drawer-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .slide-question { font-size: 1.6rem; }
+}
+
+@media (min-width: 1440px) {
+  .present-stage { max-width: 60%; margin-inline: auto; width: 100%; }
+}
+
+/* Instanz-Einstellungen (Export/Import) unter #/admin/settings. */
+.settings-panel {
+  margin-top: 1.5rem;
+}
+
+.settings-panel h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.15rem;
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: center;
+}
+
+.settings-file-label {
+  margin: 0;
+}
+
+.settings-preview {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg-soft, var(--bg-elev));
+}
+
+.settings-preview[hidden] {
+  display: none;
+}
+
+.settings-preview h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.settings-preview ul {
+  margin: 0.5rem 0 0.75rem;
+  padding-left: 1.2rem;
+}
+
+.settings-msg-error {
+  color: var(--danger, #b00020);
+}

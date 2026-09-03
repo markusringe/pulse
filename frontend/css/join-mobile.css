@@ -1,0 +1,213 @@
+/**
+ * Join-View: Daumen-Zone, Safe-Area, Offline-Banner.
+ * Tokens aus theme.css (Stadtblau --primary-color / --btn-primary-bg).
+ */
+
+.offline-banner,
+.rehearsal-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.offline-banner[hidden],
+.rehearsal-banner[hidden] {
+  display: none !important;
+}
+
+.offline-banner {
+  background: var(--status-err-bg);
+  color: var(--status-err);
+}
+
+.offline-banner strong {
+  font-weight: 750;
+}
+
+.rehearsal-banner {
+  background: var(--status-info-bg);
+  color: var(--status-info);
+  text-align: center;
+  font-weight: 650;
+}
+
+.view-present .offline-banner,
+.view-present .rehearsal-banner {
+  grid-column: 1 / -1;
+}
+
+.present-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.view-join {
+  grid-template-rows: auto 1fr;
+  padding-bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(var(--pad) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--pad) + env(safe-area-inset-right, 0px));
+}
+
+.join-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+#join-question {
+  flex: 0 0 auto;
+}
+
+.join-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.rehearsal-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.rehearsal-check span {
+  font-weight: 650;
+}
+
+.view-join .choice-btn,
+.view-join .reaction-btn,
+.view-join .word-form .btn,
+.view-join .qa-composer .btn,
+.view-join .rating-btn {
+  min-height: 48px;
+}
+
+.view-join .choice-btn.is-swipe-focus,
+.view-join .qa-card.is-swipe-focus,
+.view-join .qa-featured.is-swipe-focus,
+.view-join .qa-row.is-swipe-focus {
+  outline: 3px solid var(--focus);
+}
+
+.join-block.is-rehearsal {
+  opacity: 0.55;
+}
+
+.join-block.is-rehearsal .btn:disabled {
+  cursor: not-allowed;
+}
+
+/* Startseite: Join-Feld bleibt in der Daumenzone gut treffbar. IDs unverändert. */
+.view-home .join-panel .btn.primary,
+.view-home #join-code-input,
+.view-home #join-team {
+  min-height: 48px;
+}
+
+/* Smartphone: Aktionen im unteren Drittel, Frage oben. */
+@media (max-width: 640px) {
+  /* Join in der Daumenzone, innerhalb der View-Zelle über dem Footer. */
+  .view-home .home-join {
+    width: 100%;
+    align-self: end;
+    padding-bottom: 8px;
+  }
+
+  .view-home #join-code-input {
+    font-size: 1.35rem;
+    min-height: 56px;
+  }
+
+  .view-home .join-panel .btn.primary {
+    min-height: 56px;
+    font-size: 1.08rem;
+  }
+
+  .view-join .join-main {
+    min-height: 0;
+  }
+
+  .join-thumb {
+    min-height: 32dvh;
+    justify-content: flex-end;
+  }
+
+  .view-join .choice-grid {
+    gap: 12px;
+  }
+
+  .view-join .choice-btn {
+    min-height: 56px;
+    padding: 16px 18px;
+    font-size: 1.08rem;
+  }
+
+  .view-join .reaction-bar {
+    margin-top: 4px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .view-join .qa-composer textarea,
+  .view-join .word-form input {
+    font-size: 16px;
+  }
+}
+
+/* Sehr flache Smartphones: Join zentrieren, damit „Administration“ nicht in den Footer ragt. */
+@media (max-width: 640px) and (max-height: 740px) {
+  .view-home .home-join {
+    align-self: center;
+  }
+}
+
+/* Presenter-Statistik-Leiste */
+.presenter-stats {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 8px 12px;
+}
+
+.presenter-stats-head {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.presenter-stats-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 16px;
+  align-items: start;
+}
+
+.stat-line {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem;
+}
+
+.stat-qa {
+  font-weight: 700;
+  color: var(--status-info);
+}
+
+.stat-notes {
+  grid-column: 1 / -1;
+}
+
+.stat-notes textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+}

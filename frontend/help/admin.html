@@ -1,0 +1,32 @@
+<article class="help-article-body" data-article="admin">
+  <h2>Admin: Branding, Schlüssel, Checkliste</h2>
+  <p>Die Administration hat eine durchgehende Menüleiste: <strong>Sessions</strong>, <strong>Events</strong>, Branding, Datenschutz, SSL, Einstellungen, Hilfe.</p>
+  <h3>Sessions und Events</h3>
+  <ul>
+    <li><a href="#/admin">Sessions</a> (<code>#/admin</code>) — ad-hoc-Session anlegen: Formular in Blöcken (Grundlagen, Folien-Einstellungen, Typ-Optionen, Folienliste, Zugang, Vorlagen), Sidebar „Letzte Sessions“</li>
+    <li><a href="#/admin/events">Events</a> — Veranstaltungen mit festem Join-Code für die Startseite (Titel, Datum, Status)</li>
+    <li><code>#/admin/sessions/&lt;code&gt;</code> — Deck-Editor: Folieninhalt bearbeiten (Inline/Modal), Bulk, kopieren, sortieren</li>
+  </ul>
+  <p>Ein Event ist genau eine Session (ein Code, ein Deck). Folien liegen nicht im Event-Datensatz. Ausführlich: <a href="#/help/events">Events und Session-Decks</a>.</p>
+  <h3>Installation (Server)</h3>
+  <ul>
+    <li><strong>Lokal:</strong> <code>./scripts/install.sh</code> oder <code>npm run setup</code></li>
+    <li><strong>Docker:</strong> <code>./scripts/install.sh --docker</code></li>
+    <li><strong>VPS Ubuntu:</strong> <code>sudo ./scripts/install-vps-ubuntu.sh</code> oder <code>npm run setup:vps</code> — installiert Docker, seedet <code>data/</code>, startet Compose</li>
+  </ul>
+  <p>Grundeinstellungen (Branding, Datenschutz) legt <code>scripts/seed-data.sh</code> an. Geheimnisse nach VPS-Setup in <code>INSTALL-CREDENTIALS.txt</code>. Ausführlich: <a href="#/help/installation">Installation und Betrieb</a>, <code>docs/installation.md</code>.</p>
+  <h3>Admin-Schlüssel</h3>
+  <p>Beim Start einer Session bleibt der Schlüssel in <em>diesem</em> Browser (sessionStorage). Ohne ihn sind Folienwechsel und Moderation geschützt. Ein anderes Gerät braucht das optionale Presenter-Passwort oder denselben Schlüssel.</p>
+  <h3>Branding</h3>
+  <p>Unter <a href="#/admin/branding">Branding</a> nur das Erscheinungsbild: Logo, Farben, White-Label (App-Name, Favicon, Domain-Hinweis, Footer ausblenden), Schrift, Folienhintergrund, Übergang, optionaler Sound (Standard stumm), Sprachen und Homepage-URL. Standardfarben der Stadt-CI: Stadtblau <code>#007CC1</code> und Orange <code>#F99700</code> — Orange nicht als Text auf Weiß; die App übernimmt Markenfarben nur bei ausreichendem Kontrast. Interne Dateinamen und Speicher-Prefix ändern sich durch den App-Namen nicht.</p>
+  <h3>Datenschutz</h3>
+  <p>Unter <a href="#/admin/privacy">Datenschutz</a> Rechtstexte (Verantwortliche Stelle, DSB, Aufsicht), öffentliche Links, Aufbewahrungsfrist und Ergänzungen zur Datenschutzerklärung. Die öffentliche Ansicht bleibt <a href="#/privacy">Datenschutz</a> und <a href="#/impressum">Impressum</a>.</p>
+  <h3>Einstellungen und Sicherung (Schema 2)</h3>
+  <p>Unter <a href="#/admin/settings">Einstellungen</a>: Frage-Intervall, Q&amp;A-Zeitlimit, Wortfilter und die Datei <code>pulse-settings.json</code>. Enthalten sind Branding inkl. Logo, Rechtstexte mit Versionshistorie sowie SSL-Metadaten und PEM-Dateien (private Schlüssel). Schema 1 ohne PEM bleibt importierbar. Nicht enthalten: Sessions, Umfrageantworten, Audit-Logs und das Admin-Secret. Die Datei wie ein Passwort aufbewahren. Import lädt HTTPS neu, ohne den Prozess zu beenden.</p>
+  <h3>Weiter zu SSL</h3>
+  <ul>
+    <li><a href="#/admin/ssl">SSL-Zertifikate</a> — HTTPS mit Let’s Encrypt</li>
+    <li><a href="./help/guides/admin-checklist.html">Admin-Checkliste drucken</a></li>
+  </ul>
+  <p>Ist-Zustand der Software (Architektur, Folientypen, Betrieb): <code>docs/projektdokumentation.md</code>. Verzeichnis von Verarbeitungstätigkeiten (Entwurf): <code>docs/verfahrensverzeichnis.md</code>.</p>
+</article>

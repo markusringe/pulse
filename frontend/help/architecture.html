@@ -1,0 +1,66 @@
+<article class="help-article-body" data-article="architecture">
+  <h2>Session-Architektur verstehen</h2>
+  <p>Bevor Sie Events oder Folien anlegen: <strong>ein Event = genau eine Session = ein Join-Code = ein Deck</strong>. Es gibt keine parallelen „Sets“ mehr.</p>
+
+  <div class="help-arch-diagram" role="img" aria-label="Event enthält Session, Session enthält Deck, Deck enthält Folien">
+    <div class="help-arch-layer help-arch-layer--event">
+      <strong>Event</strong>
+      <span class="muted">Metadaten: Titel, Datum, Status, QR auf Startseite</span>
+      <code>data/events.json</code>
+    </div>
+    <div class="help-arch-arrow" aria-hidden="true">↓ gleicher Code</div>
+    <div class="help-arch-layer help-arch-layer--session">
+      <strong>Session</strong>
+      <span class="muted">Join-Code · Teilnehmer · Live-Daten · Admin-Schlüssel</span>
+      <code>pulse.db</code>
+    </div>
+    <div class="help-arch-arrow" aria-hidden="true">↓ enthält</div>
+    <div class="help-arch-layer help-arch-layer--deck">
+      <strong>Deck</strong>
+      <span class="muted">Geordnete Folienfolge (max. 40)</span>
+    </div>
+    <div class="help-arch-arrow" aria-hidden="true">↓ besteht aus</div>
+    <div class="help-arch-slides">
+      <div class="help-arch-slide">Folie 1 · MC</div>
+      <div class="help-arch-slide">Folie 2 · Wolke</div>
+      <div class="help-arch-slide">Folie 3 · Q&amp;A</div>
+      <div class="help-arch-slide muted">…</div>
+    </div>
+  </div>
+
+  <h3 id="beispiel">Beispiel durchdekliniert</h3>
+  <table class="help-table">
+    <thead><tr><th>Schicht</th><th>Beispiel</th></tr></thead>
+    <tbody>
+      <tr><td>Event</td><td>„Bürgerversammlung Klimaschutz 2026“ · Status <em>aktiv</em> · ID <code>ev_abc…</code></td></tr>
+      <tr><td>Join- / Session-Code</td><td><code>482917</code> (sechs Ziffern, überall gleich)</td></tr>
+      <tr><td>Session</td><td>Laufende Umfrage mit Stimmen, Q&amp;A, Quiz-Punkten</td></tr>
+      <tr><td>Deck</td><td>8 Folien: 3× MC, 2× Wortwolke, 2× Q&amp;A, 1× Quiz</td></tr>
+      <tr><td>Folie 1</td><td>„Willkommen — wie zufrieden sind Sie?“ (Multiple Choice, 4 Optionen)</td></tr>
+      <tr><td>Folie 2</td><td>„Ihr Klimaschutz-Tipp“ (Wortwolke)</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="begriffe">Begriffe im Überblick</h3>
+  <dl class="help-dl">
+    <dt>Event vs. Session</dt>
+    <dd>Event = öffentliche Hülle auf der Startseite. Session = technische Umfrage mit Folien und Ergebnissen. <strong>Ein Code</strong> für beides.</dd>
+    <dt>Deck vs. Folie</dt>
+    <dd>Deck = gesamte Abfolge. Folie = ein Interaktionsschritt (Typ + Frage + Optionen).</dd>
+    <dt>Join-Code vs. Admin-Schlüssel</dt>
+    <dd>Join-Code für Teilnehmende. Admin-Schlüssel (Browser nach Start) oder Presenter-Passwort für Steuerung.</dd>
+    <dt>Lobby vs. Reveal</dt>
+    <dd>Lobby = Warteraum vor dem ersten Slide. Reveal = „Ergebnisse zeigen“ (<kbd>R</kbd>) für Umfragen/Wolke.</dd>
+  </dl>
+
+  <aside class="help-callout help-callout--tip">
+    <strong>Ad-hoc ohne Event:</strong> Unter <a href="#/admin">Sessions</a> starten — kein Katalogeintrag auf der Startseite, Join nur per Code/QR.
+  </aside>
+
+  <nav class="help-see-also" aria-label="Siehe auch">
+    <strong>Siehe auch:</strong>
+    <a href="#/help/session-manage">Session verwalten</a> ·
+    <a href="#/help/events">Events &amp; Decks</a> ·
+    <a href="#/help/glossary">Glossar</a>
+  </nav>
+</article>

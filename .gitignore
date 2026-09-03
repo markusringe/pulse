@@ -1,0 +1,13 @@
+# Daten und Secrets nicht versionieren
+data/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.local
+INSTALL-CREDENTIALS.txt
+node_modules/
+.DS_Store
+*.pem
+*.key
+credentials.json

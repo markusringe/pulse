@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin-Checkliste — Pulse</title>
+    <link rel="stylesheet" href="../../css/help.css" />
+  </head>
+  <body class="help-guide-page">
+    <header class="help-guide-head">
+      <p class="eyebrow">Pulse</p>
+      <h1>Admin-Checkliste</h1>
+      <p>Vor dem ersten öffentlichen Einsatz. Drucken → Als PDF sichern.</p>
+      <p class="help-no-print">
+        <button type="button" class="btn primary" data-help-print>Drucken</button>
+        <a class="btn ghost" href="../../#/admin/help">Zur Admin-Hilfe</a>
+      </p>
+    </header>
+    <main>
+      <h2>Auftritt</h2>
+      <ul>
+        <li>☐ Logo, App-Name und Stadtfarben unter Branding gesetzt (Default Stadtblau #007CC1, Orange #F99700; Kontrast prüfen)</li>
+        <li>☐ Homepage-URL statt Social-Links; Footer, Impressum- und Datenschutz-Links geprüft</li>
+        <li>☐ Optional: eigene Domain (CNAME) und Footer für vertrauliche Sessions ausgeblendet</li>
+        <li>☐ Event-Katalog unter Events geprüft (Status aktiv für Join, Session-Deck <code>#/admin/sessions/&lt;code&gt;</code>, Folien kopieren falls nötig)</li>
+        <li>☐ Sprachen (DE/EN/FR) wie gewünscht aktiv</li>
+      </ul>
+      <h2>Technik</h2>
+      <ul>
+        <li>☐ Server installiert — VPS: <code>sudo ./scripts/install-vps-ubuntu.sh</code>; sonst <code>docs/installation.md</code> / <code>./scripts/install.sh --docker</code></li>
+        <li>☐ <code>ADMIN_SECRET</code> gesetzt (<code>INSTALL-CREDENTIALS.txt</code> nach VPS-Setup sichern und löschen)</li>
+        <li>☐ <code>data/</code> gesichert (Branding, Datenschutz, <code>pulse.db</code>, SSL)</li>
+        <li>☐ HTTPS: Domain zeigt auf den Server, Port 80 für Let’s Encrypt erreichbar (kein Wildcard, keine IP, kein localhost)</li>
+        <li>☐ Zertifikat-Status „Aktiv“, automatische Erneuerung an</li>
+        <li>☐ Staging-Zertifikate nicht in Produktion lassen</li>
+        <li>☐ Einstellungen exportiert (Schema 2: Logo + PEM) und die Datei wie ein Secret abgelegt — nicht per E-Mail</li>
+      </ul>
+      <h2>Schutz</h2>
+      <ul>
+        <li>☐ Datenschutzerklärung gelesen, Zusatztext falls nötig</li>
+        <li>☐ Aufbewahrungsfrist gesetzt (7 / 30 / 90 Tage oder nie)</li>
+        <li>☐ Wortfilter und eigene Sperrbegriffe</li>
+        <li>☐ Presenter-Passwort-Prozess bekannt (Admin-Schlüssel bleibt im Start-Browser)</li>
+      </ul>
+      <h2>Probe</h2>
+      <ul>
+        <li>☐ Probe-Session oder Event mit zwei Geräten (Join-Daumenzone, Offline-Banner) — ggf. Picker-Folie mit Suche testen</li>
+        <li>☐ Notfall-Button und Moderation einmal geklickt</li>
+        <li>☐ Hilfe-Tour auf einem frischen Browser (localStorage leer) gesehen</li>
+      </ul>
+    </main>
+    <script>
+      document.querySelector("[data-help-print]")?.addEventListener("click", () => window.print());
+    </script>
+  </body>
+</html>

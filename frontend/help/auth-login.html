@@ -1,0 +1,38 @@
+<article class="help-article-body" data-article="auth-login">
+  <h2>Anmelden mit E-Mail-PIN</h2>
+  <p>Die Administration nutzt ein passwortloses Login: Sie geben Ihre E-Mail-Adresse ein, erhalten einen <strong>sechsstelligen Code</strong> per E-Mail und melden sich damit an. Das Kennwort dient nur beim Anlegen des Kontos oder bei Kennwortänderungen — nicht für die tägliche Anmeldung.</p>
+
+  <h3>Ablauf</h3>
+  <ol class="help-steps">
+    <li><code>#/admin/login</code> öffnen</li>
+    <li>E-Mail eingeben → „Code senden“</li>
+    <li>Code aus der E-Mail eingeben (10 Minuten gültig, einmal verwendbar)</li>
+    <li>Optional „Angemeldet bleiben“ (30 Tage) oder „Nicht angemeldet bleiben“ auf gemeinsamen Rechnern</li>
+  </ol>
+
+  <h3>Rollen</h3>
+  <dl class="help-dl">
+    <dt>Administrator</dt>
+    <dd>Vollzugriff inkl. Benutzerverwaltung, Branding, SSL, Einstellungen</dd>
+    <dt>Editor</dt>
+    <dd>Events und Sessions anlegen und bearbeiten — keine globalen Einstellungen</dd>
+    <dt>Viewer</dt>
+    <dd>Nur freigegebene Events ansehen oder präsentieren</dd>
+  </dl>
+
+  <h3>PIN kommt nicht an?</h3>
+  <ul>
+    <li>Spam-/Junk-Ordner prüfen</li>
+    <li>Kurz warten, dann „Neuen Code senden“ (nach 30 Sekunden)</li>
+    <li>Administrator: SMTP-Konfiguration und <code>/api/health</code> prüfen</li>
+    <li>Lokal: Entwicklungs-Mailbox unter Login sichtbar, wenn <code>AUTH_DEV_MAILBOX=1</code></li>
+  </ul>
+
+  <p>Session-Presenter mit Join-Code und optionalem Presenter-Passwort bleiben unverändert — Teilnehmende brauchen kein Konto.</p>
+
+  <nav class="help-see-also">
+    <strong>Siehe auch:</strong>
+    <a href="#/help/admin">Administration</a> ·
+    <a href="#/help/session-manage">Session verwalten</a>
+  </nav>
+</article>

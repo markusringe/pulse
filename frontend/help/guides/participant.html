@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Teilnehmer-Guide — Pulse</title>
+    <link rel="stylesheet" href="../../css/help.css" />
+  </head>
+  <body class="help-guide-page">
+    <header class="help-guide-head">
+      <p class="eyebrow">Pulse</p>
+      <h1>Teilnehmer-Guide</h1>
+      <p>Handy oder Laptop. Kein Konto. Zum PDF: Drucken → Als PDF sichern.</p>
+      <p class="help-no-print">
+        <button type="button" class="btn primary" data-help-print>Drucken</button>
+        <a class="btn ghost" href="../../#/help">Zur Hilfe</a>
+      </p>
+    </header>
+    <main>
+      <h2>Beitreten</h2>
+      <ol>
+        <li>Adresse der Veranstaltung öffnen, QR auf der Startseite/Event-Karte scannen oder sechs Ziffern von der Leinwand eingeben (<code>#/join/…</code>).</li>
+        <li>Beim Quiz optional einen Teamnamen. Bei geplanten Events warten, bis der Status <em>aktiv</em> ist.</li>
+        <li>Bei „Gleich geht’s los“ warten — der Präsentator startet die Lobby.</li>
+      </ol>
+      <h2>Mitmachen</h2>
+      <ul>
+        <li><strong>Umfrage / Bildwahl / Skala:</strong> eine Antwort antippen. Sie sehen eine Bestätigung, nicht unbedingt schon das Ergebnis.</li>
+        <li><strong>Picker</strong> (lange Listen, 10–50 Optionen): Suche nutzen, ggf. Kategorie wählen, eine oder mehrere Optionen markieren und bestätigen.</li>
+        <li><strong>Ranking / 100 Punkte / Termin:</strong> Reihenfolge setzen, genau 100 Punkte verteilen oder Zeitfenster wählen (mehrere Slots möglich).</li>
+        <li><strong>Freitext / Wortwolke:</strong> kurzen Satz bzw. ein Wort senden.</li>
+        <li><strong>Q&amp;A:</strong> Frage schreiben, Kategorie wählen, optional privat. Interessante Fragen per Upvote nach oben holen.</li>
+        <li><strong>Quiz:</strong> schnell die richtige Option(en) wählen, solange der Timer läuft. 50:50 und Doppelpunkte je einmal.</li>
+        <li><strong>Reaktionen:</strong> Emojis unten in der Daumenzone — sie schweben kurz auf der Leinwand, werden nicht gespeichert.</li>
+      </ul>
+      <p>Auf dem Handy: waagerecht wischen wechselt nur zwischen den Karten auf Ihrem Gerät, nicht die Folie auf der Bühne. Nach dem Senden kann das Gerät kurz vibrieren.</p>
+      <h2>Probleme</h2>
+      <p>„Session gibt es nicht“: Code erneut von der Leinwand. Offline-Banner: WLAN, Seite neu laden. Blockierte Frage: andere Formulierung, Wortfilter kann greifen. Probe-Hinweis: der Präsentator übt — es wird kein Live-Publikum erwartet.</p>
+      <p class="muted">Hilfe v6 · Stand 2026-09-03 · Online: <code>#/help/roles-participant</code> · Picker: <code>#/help/picker</code></p>
+    </main>
+    <script>
+      document.querySelector("[data-help-print]")?.addEventListener("click", () => window.print());
+    </script>
+  </body>
+</html>

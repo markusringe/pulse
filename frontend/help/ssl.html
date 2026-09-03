@@ -1,0 +1,13 @@
+<article class="help-article-body" data-article="ssl">
+  <h2>SSL-Zertifikate</h2>
+  <p>Pulse kann kostenlose Zertifikate von Let’s Encrypt beantragen. Die Domain muss per DNS auf diesen Server zeigen, Port 80 muss erreichbar sein (HTTP-01-Challenge). Hinter einem Reverse-Proxy den Pfad <code>/.well-known/acme-challenge/</code> unverändert an die App weiterleiten. Es gibt keine Wildcards, keine IP-Zertifikate und kein localhost.</p>
+  <h3>Status-Badges</h3>
+  <ul>
+    <li><strong>Aktiv</strong> — Zertifikat gültig, HTTPS kann lauschen.</li>
+    <li><strong>Läuft</strong> — Antrag ist unterwegs, die Seite aktualisiert sich von selbst.</li>
+    <li><strong>Fehler</strong> — Domain, E-Mail oder Challenge prüfen; Meldung unter dem Badge lesen.</li>
+    <li><strong>Abgelaufen</strong> — erneuern oder neu beantragen. Optional „automatisch erneuern“ (Prüfung stündlich, Fenster etwa 30 Tage vor Ablauf; Zertifikate gelten 90 Tage).</li>
+  </ul>
+  <p>Staging-Umgebung ist nur für Tests: Browser vertrauen diesen Zertifikaten nicht. Private Schlüssel liegen auf der Platte (nicht in der normalen SSL-API). Im Settings-Export Schema 2 sind die PEM-Dateien enthalten — die Sicherungsdatei wie ein Secret behandeln.</p>
+  <p><a href="#/admin/ssl">Zur SSL-Verwaltung</a> · <a href="#/admin/settings">Einstellungen exportieren</a></p>
+</article>

@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+  <head>
+    <!--
+      FOUC-Schutz: Theme aus localStorage setzen, BEVOR CSS/Body gerendert wird.
+      Nur der Wert „dark“ schaltet Dark ein — sonst immer Light (kein System-Dark).
+    -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("pulse-theme");
+          document.documentElement.setAttribute("data-theme", t === "dark" ? "dark" : "light");
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+        /* Startseite hat kein hidden (JS-Ausfall). Hash-Routen dürfen sie nicht kurz zeigen —
+           besonders #/stage für Screen-Sharing. */
+        var h = location.hash || "";
+        if (/^#\/(present|join|stage|present-view|privacy|impressum|admin|help)\b/.test(h)) {
+          document.documentElement.classList.add("route-booting");
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4f6f8" />
+    <meta name="description" content="Pulse — Echtzeit-Interaktion für Umfragen, Wortwolken, Q&amp;A und Quiz." />
+    <title>Pulse — Live-Interaktion</title>
+    <link rel="icon" id="favicon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="stylesheet" href="./css/theme.css" />
+    <link rel="stylesheet" href="./css/typography.css" />
+    <link rel="stylesheet" href="./css/components.css?v=nav5" />
+    <link rel="stylesheet" href="./css/accessibility.css" />
+    <link rel="stylesheet" href="./css/styles.css?v=nav28" />
+    <link rel="stylesheet" href="./css/join-mobile.css" />
+    <link rel="stylesheet" href="./css/branding.css?v=nav31" />
+    <link rel="stylesheet" href="./css/moderation.css" />
+    <link rel="stylesheet" href="./css/privacy-legal.css?v=nav5" />
+    <link rel="stylesheet" href="./css/help.css" />
+    <link rel="stylesheet" href="./css/stage.css" />
+    <link rel="stylesheet" href="./css/events.css?v=nav24" />
+    <link rel="stylesheet" href="./css/event-countdown.css?v=nav1" />
+  </head>
+  <body>
+    <a class="skip-link" href="#app" data-i18n="nav.skip">Zum Inhalt springen</a>
+    <p class="legal-hash-link" id="legal-hash-link" hidden>
+      <a href="#/privacy" data-i18n="footer.privacy">Datenschutz</a>
+      ·
+      <a href="#/impressum" data-i18n="footer.imprint">Impressum</a>
+    </p>
+    <!--
+      Vollflächiges App-Root: kein Dokument-Scroll.
+      Views werden per Hash-Routing ein- und ausgeblendet.
+    -->
+    <div id="app" class="app" tabindex="-1">
+      <!--
+        Feste Admin-Leiste: auf allen #/admin…-Seiten sichtbar, damit die Menüs
+        nacheinander anklickbar bleiben. Kein .view — showView blendet sie nicht aus.
+      -->
+      <header id="admin-chrome" class="admin-chrome" hidden>
+        <div class="admin-chrome-bar">
+          <p class="admin-chrome-title" data-i18n="admin.hubTitle">Administration</p>
+          <nav class="admin-nav" aria-label="Administration">
+            <a href="#/admin" data-admin-nav="sessions" data-i18n="admin.nav.sessions">Sessions</a>
+            <a href="#/admin/events" data-admin-nav="events" data-i18n="admin.nav.events">Events</a>
+            <a href="#/admin/branding" data-admin-nav="branding" data-i18n="admin.nav.branding">Branding</a>
+            <a href="#/admin/privacy" data-admin-nav="privacy" data-i18n="admin.nav.privacy">Datenschutz</a>
+            <a href="#/admin/ssl" data-admin-nav="ssl" data-i18n="admin.nav.ssl">SSL</a>
+            <a href="#/admin/settings" data-admin-nav="settings" data-i18n="admin.nav.settings">Einstellungen</a>
+            <a href="#/admin/users" data-admin-nav="users" data-i18n="admin.nav.users">Benutzer</a>
+            <a href="#/admin/help" data-admin-nav="help" data-i18n="admin.nav.help">Hilfe</a>
+          </nav>
+          <div class="admin-chrome-tools">
+            <span id="admin-user-label" class="admin-user-label muted" hidden></span>
+            <button type="button" id="btn-auth-logout" class="btn ghost btn-sm" hidden>Abmelden</button>
+            <div id="lang-switch-admin" class="lang-switch" role="group" aria-label="Sprache"></div>
+            <button type="button" id="btn-theme-admin" class="icon-btn" data-theme-toggle aria-pressed="false" aria-label="Dunkles Design aktivieren" title="Zum dunklen Design wechseln">
+              <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13.5A7.5 7.5 0 1 1 10.5 5 6 6 0 0 0 19 13.5Z"/></svg>
+            </button>
+            <a class="admin-back" href="#/" data-i18n="admin.back">← Mitmachen</a>
+          </div>
+        </div>
+      </header>
+      <!-- Anmeldung mit E-Mail-PIN (#/admin/login) -->
+      <section id="view-login" class="view view-login" data-view="login" hidden></section>
+      <!-- Benutzerverwaltung (#/admin/users) -->
+      <section id="view-users" class="view view-users" data-view="users" hidden></section>
+      <!-- Benutzerprofil (#/admin/profile) -->
+      <section id="view-profile" class="view view-profile" data-view="profile" hidden></section>
+      <!--
+        Startseite (#/): nur Mitmachen. Ohne hidden-Attribut, damit bei fehlendem JS
+        das Join-Formular sichtbar bleibt und nicht nur der Footer.
+        Session anlegen und Admin-Chrome liegen auf #/admin (#view-admin).
+      -->
+      <section id="view-home" class="view view-home" data-view="home">
+        <header class="home-brand">
+          <img id="brand-logo-home" class="brand-logo" alt="" hidden />
+          <span class="logo" id="home-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
+          <div class="home-title">
+            <p class="eyebrow" id="home-app-name" data-brand-name data-i18n="app.name">Pulse</p>
+            <h1 data-i18n="app.tagline">Live-Feedback, ohne Ballast.</h1>
+          </div>
+          <!-- Sprache, Theme, Admin: eigene Grid-Spalte, damit das Zahnrad nicht aus dem Viewport geschoben wird. -->
+          <div class="home-tools">
+            <div id="lang-switch" class="lang-switch" role="group" aria-label="Sprache"></div>
+            <button type="button" id="btn-theme-home" class="icon-btn" data-theme-toggle aria-pressed="false" aria-label="Dunkles Design aktivieren" title="Zum dunklen Design wechseln">
+              <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13.5A7.5 7.5 0 1 1 10.5 5 6 6 0 0 0 19 13.5Z"/></svg>
+            </button>
+            <!-- Echtes href, damit Administration auch ohne Click-Handler per Hash-Route öffnet. -->
+            <a href="#/admin" id="btn-admin-home" class="icon-btn" data-i18n-aria="home.adminLink" data-i18n-title="home.adminLink" aria-label="Administration" title="Administration">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+                <circle cx="9" cy="7" r="2.1" />
+                <circle cx="15" cy="12" r="2.1" />
+                <circle cx="8" cy="17" r="2.1" />
+              </svg>
+            </a>
+          </div>
+        </header>
+
+        <div class="home-join">
+          <form id="join-form" class="panel join-panel" autocomplete="off">
+            <h2 data-i18n="home.join">Teilnehmen</h2>
+            <p class="muted" data-i18n="home.joinHint">Sechsstelligen Code eingeben und live abstimmen.</p>
+            <label class="field">
+              <span data-i18n="home.code">Join-Code</span>
+              <input
+                id="join-code-input"
+                name="code"
+                inputmode="numeric"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                placeholder="482917"
+                aria-label="Sechsstelliger Join-Code"
+              />
+            </label>
+            <button type="submit" class="btn primary" data-i18n="home.enter">Beitreten</button>
+            <label class="field">
+              <span data-i18n="join.team">Teamname (optional)</span>
+              <input id="join-team" maxlength="40" autocomplete="off" data-i18n-placeholder="join.teamPlaceholder" placeholder="z. B. Team Blau" />
+            </label>
+          </form>
+        </div>
+        <!-- Event-Karten mit Join-Link, QR und Copy-Paste-Text; leer wenn keine Events. -->
+        <section id="home-events" class="home-events" hidden></section>
+      </section>
+
+      <!--
+        Admin-Hub (#/admin): Session anlegen, Vorlagen, Folienliste, letzte Sessions,
+        Links zu Branding / SSL / Rechtstexten. Formular-IDs bleiben gleich, damit
+        app.js weiter über getElementById binden kann.
+        hidden: ohne JS bleibt die Startseite (Mitmachen) sichtbar.
+      -->
+      <section id="view-admin" class="view view-admin" data-view="adminHub" hidden>
+        <header class="admin-page-head">
+          <img id="brand-logo-admin" class="brand-logo" alt="" hidden />
+          <span class="logo" id="admin-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
+          <div>
+            <p class="eyebrow" id="admin-app-name" data-brand-name data-i18n="app.name">Pulse</p>
+            <h1 data-i18n="admin.sessionsTitle">Sessions</h1>
+          </div>
+        </header>
+
+        <!-- Zweispaltig: Formular links, letzte Sessions rechts (untereinander auf schmalen Screens). -->
+        <div class="admin-sessions-layout">
+          <form id="create-form" class="panel create-panel admin-create-form" autocomplete="off">
+            <header class="admin-form-intro">
+              <h2 data-i18n="home.create">Neue Session</h2>
+              <p class="muted admin-form-lead" data-i18n="admin.sessionsLead">Ad-hoc-Session anlegen — für geplante Veranstaltungen nutzen Sie Events.</p>
+            </header>
+
+            <div class="admin-form-sections">
+              <section class="admin-form-section" aria-labelledby="admin-section-basics">
+                <h3 class="admin-form-section__title" id="admin-section-basics" data-i18n="admin.section.basics">Grundlagen</h3>
+                <div class="admin-form-grid admin-form-grid--type-q">
+                  <label class="field field--compact">
+                    <span data-i18n="home.type">Fragetyp</span>
+                    <select id="create-type" name="type">
+                      <option value="choice" data-i18n="type.choice">Multiple Choice</option>
+                      <option value="wordcloud" data-i18n="type.wordcloud">Wortwolke</option>
+                      <option value="qa" data-i18n="type.qa">Live-Q&amp;A</option>
+                      <option value="quiz" data-i18n="type.quiz">Quiz</option>
+                      <option value="rating_scale" data-i18n="type.rating">Bewertungsskala</option>
+                      <option value="ranking" data-i18n="type.ranking">Ranking</option>
+                      <option value="points100" data-i18n="type.points100">100 Punkte</option>
+                      <option value="open_text" data-i18n="type.openText">Freitext</option>
+                      <option value="image_choice" data-i18n="type.imageChoice">Bildwahl</option>
+                      <option value="datetime" data-i18n="type.datetime">Terminfindung</option>
+                      <option value="picker" data-i18n="type.picker">Picker</option>
+                      <option value="demo" data-i18n="type.demo">Demo (alle Folien)</option>
+                    </select>
+                  </label>
+                  <label class="field field--compact admin-form-grid__span">
+                    <span data-i18n="home.question">Frage</span>
+                    <textarea id="create-question" name="question" rows="2" maxlength="500" data-i18n-placeholder="home.question" placeholder="Was möchtet ihr als Nächstes?"></textarea>
+                  </label>
+                  <label class="field field--compact admin-form-grid__span">
+                    <span data-i18n="home.subtitle">Beschreibung / Unterzeile (optional)</span>
+                    <input id="create-subtitle" maxlength="200" data-i18n-placeholder="home.subtitlePlaceholder" placeholder="Kurzer Hinweis unter der Frage" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="admin-form-section form-section--anim" id="create-options-section" aria-labelledby="admin-section-options" hidden>
+                <h3 class="admin-form-section__title" id="admin-section-options" data-i18n="admin.section.options">Optionen</h3>
+                <div id="create-options" class="options-editor options-editor--compact">
+                  <span class="field-label" id="create-options-label" data-i18n="home.options">Antworten (2–6)</span>
+                  <div id="option-fields" class="option-fields-list"></div>
+                  <button type="button" id="add-option" class="btn ghost btn--sm" data-i18n="home.addOption">Option hinzufügen</button>
+                  <div id="create-picker-bulk" class="options-editor options-editor--compact" hidden>
+                    <label class="field field--compact">
+                      <span data-i18n="picker.bulkImport">Massen-Import (eine Option pro Zeile)</span>
+                      <textarea id="create-picker-bulk-text" rows="4" placeholder="Option 1&#10;Option 2&#10;…"></textarea>
+                    </label>
+                    <button type="button" id="btn-picker-bulk" class="btn ghost btn--sm" data-i18n="picker.bulkApply">Liste übernehmen</button>
+                  </div>
+                </div>
+              </section>
+
+              <section class="admin-form-section form-section--anim" id="create-type-options-section" aria-labelledby="admin-section-typeopts" hidden>
+                <h3 class="admin-form-section__title" id="admin-section-typeopts" data-i18n="admin.section.typeSettings">Typ-Einstellungen</h3>
+                <div id="create-choice-extra" class="options-editor options-editor--compact" hidden>
+                  <label class="check"><input type="checkbox" id="create-hide-results" /> <span data-i18n="events.slides.hideResults">Ergebnisse verbergen bis Reveal</span></label>
+                </div>
+                <div id="create-quiz-extra" class="options-editor options-editor--compact" hidden>
+                  <div class="admin-form-grid admin-form-grid--2">
+                    <label class="field field--compact">
+                      <span data-i18n="quiz.correctHint">Richtige Indizes (kommagetrennt, mehrere erlaubt)</span>
+                      <input id="create-correct" type="text" value="1" placeholder="0, 2" />
+                    </label>
+                    <label class="field field--compact">
+                      <span>Timer (Sekunden)</span>
+                      <input id="create-duration" type="number" min="5" max="60" value="30" />
+                    </label>
+                  </div>
+                  <p class="hint muted" data-i18n="quiz.multiHint">Punkte nur bei vollständig korrekter Auswahl aller Richtigen.</p>
+                </div>
+                <div id="create-datetime-extra" class="options-editor options-editor--compact" hidden>
+                  <span class="field-label" data-i18n="slide.slots">Termine</span>
+                  <div id="datetime-fields"></div>
+                  <button type="button" id="add-datetime" class="btn ghost btn--sm" data-i18n="slide.addSlot">Termin hinzufügen</button>
+                </div>
+                <div id="create-image-extra" class="options-editor options-editor--compact" hidden>
+                  <p class="hint muted" data-i18n="slide.imageHint">PNG/JPEG/WebP, zusammen max. 256 KB. Bilder an die Optionen oben anhängen.</p>
+                </div>
+                <div id="create-rating-extra" class="options-editor options-editor--compact" hidden>
+                  <div class="admin-form-grid admin-form-grid--2">
+                    <label class="field field--compact">
+                      <span>Skala</span>
+                      <select id="create-rating-scale">
+                        <option value="5">5 Punkte</option>
+                        <option value="7">7 Punkte</option>
+                        <option value="10">10 Punkte</option>
+                      </select>
+                    </label>
+                    <label class="field field--compact">
+                      <span>Darstellung</span>
+                      <select id="create-rating-style">
+                        <option value="icons">Smileys</option>
+                        <option value="stars">Sterne</option>
+                        <option value="numbers">Zahlen</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+                <div id="create-wordcloud-extra" class="options-editor options-editor--compact" hidden>
+                  <label class="check"><input type="checkbox" id="create-wc-hide" /> <span data-i18n="events.slides.hideResults">Ergebnisse verbergen bis Reveal</span></label>
+                </div>
+                <div id="create-qa-extra" class="options-editor options-editor--compact" hidden>
+                  <label class="check"><input type="checkbox" id="create-qa-moderated" checked /> <span data-i18n="events.slides.moderated">Moderation aktiv</span></label>
+                </div>
+                <div id="create-picker-extra" class="options-editor options-editor--compact" hidden>
+                  <div class="admin-form-grid admin-form-grid--2">
+                    <label class="check"><input type="checkbox" id="create-picker-multi" /> <span data-i18n="picker.allowMultiple">Mehrfachauswahl erlauben</span></label>
+                    <label class="field field--compact" id="create-picker-max-wrap" hidden>
+                      <span data-i18n="picker.maxSelections">Maximale Auswahl</span>
+                      <input id="create-picker-max" type="number" min="1" max="50" placeholder="3" />
+                    </label>
+                    <label class="check"><input type="checkbox" id="create-picker-search" checked /> <span data-i18n="picker.enableSearch">Suchfunktion aktivieren</span></label>
+                    <label class="check"><input type="checkbox" id="create-picker-categories" /> <span data-i18n="picker.useCategories">Kategorien verwenden</span></label>
+                    <label class="field field--compact">
+                      <span data-i18n="picker.layout">Darstellung</span>
+                      <select id="create-picker-layout">
+                        <option value="list" data-i18n="picker.layoutList">Liste</option>
+                        <option value="grid" data-i18n="picker.layoutGrid">Raster</option>
+                        <option value="dropdown" data-i18n="picker.layoutDropdown">Dropdown</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div id="create-categories-wrap" class="picker-categories-editor" hidden>
+                    <span class="field-label" data-i18n="picker.categories">Kategorien</span>
+                    <div id="create-category-fields"></div>
+                    <button type="button" id="btn-add-category" class="btn ghost btn--sm" data-i18n="picker.addCategory">Kategorie hinzufügen</button>
+                  </div>
+                  <div id="create-picker-preview" class="picker-editor-preview" hidden aria-live="polite"></div>
+                </div>
+              </section>
+
+              <details class="admin-form-section admin-form-section--collapsible" id="create-advanced-section">
+                <summary class="admin-form-section__title" data-i18n="admin.section.advanced">Erweiterte Einstellungen</summary>
+                <div class="admin-form-grid admin-form-grid--2">
+                  <label class="field field--compact">
+                    <span data-i18n="home.plannedMinutes">Geplante Minuten (optional)</span>
+                    <input id="create-planned" type="number" min="1" max="180" step="1" placeholder="5" inputmode="numeric" />
+                  </label>
+                  <label class="check field--compact"><input type="checkbox" id="create-results-visible" /> <span data-i18n="admin.showResultsDefault">Ergebnisse standardmäßig zeigen</span></label>
+                  <label class="field field--compact admin-form-grid__span">
+                    <span data-i18n="home.notes">Presenter-Notizen</span>
+                    <textarea id="create-notes" rows="3" maxlength="4000" data-i18n-placeholder="home.notesPlaceholder" placeholder="Stichworte nur für Sie — nicht auf der Leinwand."></textarea>
+                  </label>
+                </div>
+              </details>
+
+              <section class="admin-form-section deck-editor" id="deck-editor" aria-labelledby="admin-section-deck">
+                <div class="admin-form-section__head">
+                  <h3 class="admin-form-section__title" id="admin-section-deck" data-i18n="deck.title">Folienliste</h3>
+                  <button type="button" id="btn-deck-add" class="btn ghost btn--sm" data-i18n="deck.add">Zur Liste hinzufügen</button>
+                </div>
+                <p class="hint muted admin-form-hint" data-i18n="deck.hint">Mehrere Folien vorbereiten. „Zur Liste hinzufügen“ übernimmt die Frage oben. Beim Start kommt die aktuelle Frage mit, falls sie noch nicht am Ende steht.</p>
+                <div id="deck-draft" class="deck-draft-host"></div>
+              </section>
+
+              <section class="admin-form-section admin-form-section--compact" aria-labelledby="admin-section-access">
+                <h3 class="admin-form-section__title" id="admin-section-access" data-i18n="admin.section.access">Zugang</h3>
+                <p class="hint muted admin-form-hint" data-i18n="home.adminHint">Nach dem Start bleibt der Admin-Schlüssel in diesem Browser. Ohne ihn sind Folienwechsel geschützt.</p>
+                <label class="field field--compact">
+                  <span data-i18n="home.password">Presenter-Passwort (optional)</span>
+                  <input id="create-password" type="password" autocomplete="new-password" />
+                </label>
+              </section>
+
+              <section class="admin-form-section admin-form-section--compact" aria-labelledby="admin-section-templates">
+                <h3 class="admin-form-section__title" id="admin-section-templates" data-i18n="admin.section.templates">Vorlagen</h3>
+                <div class="admin-template-grid">
+                  <button type="button" id="btn-demo" class="btn ghost btn--sm" data-i18n="home.demo">Demo laden</button>
+                  <button type="button" id="btn-intro-quiz" class="btn ghost btn--sm" data-i18n="home.introQuiz">Einführungs-Quiz</button>
+                  <button type="button" id="btn-knowledge" class="btn ghost btn--sm" data-i18n="home.knowledge">Wissens-Check</button>
+                  <button type="button" id="btn-icebreaker" class="btn ghost btn--sm" data-i18n="home.icebreaker">Eisbrecher</button>
+                </div>
+              </section>
+
+              <footer class="admin-form-actions">
+                <button type="submit" class="btn primary" data-i18n="home.start">Session starten</button>
+                <div class="admin-form-actions__secondary">
+                  <label class="field rehearsal-check field--inline">
+                    <input type="checkbox" id="create-rehearsal" />
+                    <span data-i18n="home.rehearsal">Probe</span>
+                  </label>
+                  <button type="button" id="btn-rehearsal" class="btn ghost btn--sm" data-i18n="home.rehearsalStart">Probe starten</button>
+                </div>
+              </footer>
+            </div>
+          </form>
+
+          <aside id="recent-sessions" class="panel recent-panel admin-sessions-sidebar" hidden>
+            <h2 class="admin-sidebar-title" data-i18n="home.recent">Letzte Sessions</h2>
+            <ul id="recent-list" class="recent-list recent-list--compact"></ul>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== Präsentator / Beamer ===== -->
+      <section id="view-present" class="view view-present" data-view="present" hidden>
+        <div class="present-head">
+        <div id="present-offline-banner" class="offline-banner" hidden role="status"></div>
+        <div id="rehearsal-banner" class="rehearsal-banner" hidden role="status"></div>
+        <header class="present-top">
+          <div class="brand-mini">
+            <span class="logo sm" id="present-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
+            <span id="present-app-name" data-brand-name>Pulse</span>
+          </div>
+          <p id="present-question" class="slide-question">Frage wird geladen…</p>
+          <div class="present-meta">
+            <div id="lang-switch-present" class="lang-switch" role="group" aria-label="Sprache"></div>
+            <span id="connection-status" class="status" data-state="connecting" title="Verbindungsstatus">
+              <i></i><span>Verbinde</span>
+            </span>
+            <span class="participants" title="Live-Teilnehmerzahl">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a3 3 0 1 0-2.8-4M12 13a4 4 0 0 0-4 4v1h12v-1a4 4 0 0 0-4-4h-4ZM6.5 11a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm0 2c-2.2 0-4 1.3-4 3v1h3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              <strong id="participant-count" aria-live="polite">0</strong>
+              <span class="sr-only">Teilnehmer</span>
+            </span>
+            <button type="button" id="btn-sound" class="icon-btn" data-sound-toggle aria-pressed="true" data-i18n-aria="sound.muteOn" aria-label="Ton aus (Standard)" title="Ton aus (Standard)">
+              <span aria-hidden="true">🔇</span>
+            </button>
+            <button type="button" id="btn-theme" class="icon-btn" data-theme-toggle aria-pressed="false" aria-label="Dunkles Design aktivieren" title="Zum dunklen Design wechseln">
+              <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13.5A7.5 7.5 0 1 1 10.5 5 6 6 0 0 0 19 13.5Z"/></svg>
+            </button>
+          </div>
+        </header>
+        </div>
+
+        <main class="present-stage" id="present-stage" data-transition="slide">
+          <div id="lobby-overlay" class="lobby-overlay" hidden>
+            <p class="eyebrow" data-i18n="lobby.title">Warteraum</p>
+            <p id="lobby-code" class="join-code">------</p>
+            <canvas id="lobby-qr" class="qr lobby-qr" width="200" height="200" aria-label="QR-Code zum Beitreten"></canvas>
+            <p class="lobby-count"><strong id="lobby-participants">0</strong> <span data-i18n="lobby.waiting">warten</span></p>
+            <button type="button" id="btn-lobby-start" class="btn primary" data-i18n="lobby.start">Los geht’s</button>
+          </div>
+          <div id="results-teaser" class="results-teaser" hidden>
+            <p id="results-teaser-count" class="results-teaser-count">0</p>
+            <p class="muted" data-i18n="results.hidden">Stimmen sind da — Ergebnisse noch verborgen.</p>
+          </div>
+          <div id="reaction-layer" class="reaction-layer" aria-hidden="true"></div>
+          <div id="poll-root" class="stage-panel" hidden></div>
+          <div id="wordcloud-root" class="stage-panel wordcloud-stage" hidden>
+            <canvas id="wordcloud-canvas" aria-label="Wortwolke"></canvas>
+            <aside class="word-rank" aria-label="Häufigste Wörter">
+              <h3>Rangliste</h3>
+              <div id="word-virtual-list" class="virtual-list"></div>
+            </aside>
+          </div>
+          <div id="qa-root" class="stage-panel qa-container" hidden></div>
+          <div id="quiz-root" class="stage-panel quiz-container" hidden></div>
+        </main>
+
+        <aside id="presenter-stats" class="presenter-stats" hidden></aside>
+
+        <footer class="present-dock">
+          <div id="present-deck" class="present-deck"></div>
+          <div class="join-block">
+            <canvas id="qr-canvas" class="qr" width="128" height="128" aria-label="QR-Code zum Beitreten"></canvas>
+            <div class="join-copy">
+              <p class="eyebrow">Beitreten</p>
+              <p id="join-code-display" class="join-code">------</p>
+              <p id="join-url" class="join-url muted"></p>
+              <button type="button" id="btn-copy-link" class="btn ghost" data-i18n="present.copy">Link kopieren</button>
+            </div>
+          </div>
+          <nav class="slide-nav" aria-label="Folien">
+            <button type="button" id="btn-prev" class="btn ghost" data-i18n="present.prev">Zurück</button>
+            <span id="slide-indicator" class="muted" aria-live="polite">1 / 1</span>
+            <button type="button" id="btn-next" class="btn ghost" data-i18n="present.next">Weiter</button>
+            <button type="button" id="btn-stage-view" class="btn primary" data-i18n="present.stageView">Präsentationsansicht öffnen</button>
+            <button type="button" id="btn-slide-dup" class="btn ghost" data-i18n="deck.duplicate">Duplizieren</button>
+            <button type="button" id="btn-slide-del" class="btn ghost" data-i18n="deck.removeLive">Folie löschen</button>
+            <button type="button" id="btn-results" class="btn ghost" data-i18n="results.show">Ergebnisse zeigen</button>
+            <button type="button" id="btn-reset" class="btn ghost" data-i18n="present.reset">Ergebnisse leeren</button>
+            <button type="button" id="btn-moderation" class="btn ghost" data-i18n="present.moderation">Moderation</button>
+            <button type="button" id="btn-export-csv" class="btn ghost" data-i18n="present.exportCsv">Q&amp;A CSV</button>
+            <button type="button" id="btn-export-pdf" class="btn ghost" data-i18n="present.exportPdf">Q&amp;A PDF</button>
+            <button type="button" id="panic-button" class="btn" data-i18n="present.panic">Notfall</button>
+          </nav>
+        </footer>
+        <aside id="moderation-panel" class="moderation-panel" hidden></aside>
+
+        <dialog id="slide-dialog" class="admin-dialog" aria-labelledby="slide-dialog-title">
+          <form id="slide-add-form">
+            <h2 id="slide-dialog-title" data-i18n="deck.addLive">Folie hinzufügen</h2>
+            <label class="field">
+              <span data-i18n="home.type">Fragetyp</span>
+              <select id="slide-add-type">
+                <option value="choice" data-i18n="type.choice">Multiple Choice</option>
+                <option value="wordcloud" data-i18n="type.wordcloud">Wortwolke</option>
+                <option value="qa" data-i18n="type.qa">Live-Q&amp;A</option>
+                <option value="quiz" data-i18n="type.quiz">Quiz</option>
+                <option value="rating_scale" data-i18n="type.rating">Bewertungsskala</option>
+                <option value="ranking" data-i18n="type.ranking">Ranking</option>
+                <option value="points100" data-i18n="type.points100">100 Punkte</option>
+                <option value="open_text" data-i18n="type.openText">Freitext</option>
+                <option value="image_choice" data-i18n="type.imageChoice">Bildwahl</option>
+                <option value="datetime" data-i18n="type.datetime">Terminfindung</option>
+                <option value="picker" data-i18n="type.picker">Picker</option>
+              </select>
+            </label>
+            <label class="field">
+              <span data-i18n="home.question">Frage</span>
+              <input id="slide-add-question" maxlength="140" />
+            </label>
+            <label class="field">
+              <span data-i18n="home.plannedMinutes">Anzeigedauer in Sekunden (optional)</span>
+              <input id="slide-add-planned" type="number" min="1" max="3600" step="1" placeholder="60" inputmode="numeric" />
+            </label>
+            <label class="field">
+              <span data-i18n="home.notes">Folien-Notizen (nur Präsentator)</span>
+              <textarea id="slide-add-notes" rows="2" maxlength="2000"></textarea>
+            </label>
+            <label class="field" id="slide-add-options-wrap">
+              <span data-i18n="home.options">Antworten (2–6)</span>
+              <input id="slide-add-options" placeholder="A, B, C" />
+            </label>
+            <div class="home-actions">
+              <button type="submit" class="btn primary" data-i18n="deck.addLive">Folie hinzufügen</button>
+              <button type="button" id="slide-add-cancel" class="btn ghost" data-i18n="present.cancel">Abbrechen</button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog id="admin-dialog" class="admin-dialog" aria-labelledby="admin-dialog-title">
+          <form id="admin-form" method="dialog">
+            <h2 id="admin-dialog-title" data-i18n="present.unlock">Präsentation entsperren</h2>
+            <p data-i18n="present.unlockHint">Bitte den Admin-Schlüssel oder das Presenter-Passwort eingeben.</p>
+            <label class="field">
+              <span>Admin-Schlüssel</span>
+              <input id="admin-key-input" name="adminKey" autocomplete="off" />
+            </label>
+            <label class="field">
+              <span data-i18n="home.password">Presenter-Passwort</span>
+              <input id="admin-password-input" type="password" autocomplete="current-password" />
+            </label>
+            <p id="admin-lock-msg" class="muted" role="status"></p>
+            <div class="home-actions">
+              <button type="submit" class="btn primary" data-i18n="present.unlockBtn">Entsperren</button>
+              <button type="button" id="admin-cancel" class="btn ghost" data-i18n="present.cancel">Abbrechen</button>
+            </div>
+          </form>
+        </dialog>
+      </section>
+
+      <!-- ===== Teilnehmer (Mobil) ===== -->
+      <section id="view-join" class="view view-join" data-view="join" hidden>
+        <header class="join-top">
+          <span class="logo sm" id="join-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
+          <strong id="join-session-code">------</strong>
+          <span id="join-connection-status" class="status" data-state="connecting" hidden>
+            <i></i><span>Verbinde</span>
+          </span>
+          <button type="button" id="btn-sound-join" class="icon-btn" data-sound-toggle aria-pressed="true" data-i18n-aria="sound.muteOn" aria-label="Ton aus (Standard)" title="Ton aus (Standard)">
+            <span aria-hidden="true">🔇</span>
+          </button>
+          <button type="button" id="btn-theme-join" class="icon-btn" data-theme-toggle aria-pressed="false" aria-label="Dunkles Design aktivieren" title="Zum dunklen Design wechseln">
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13.5A7.5 7.5 0 1 1 10.5 5 6 6 0 0 0 19 13.5Z"/></svg>
+          </button>
+        </header>
+        <main class="join-main" id="join-main">
+          <div id="join-offline-banner" class="offline-banner" hidden role="status"></div>
+          <p id="join-rehearsal-hint" class="rehearsal-banner" hidden role="status"></p>
+          <p id="join-question" class="slide-question">Verbinde…</p>
+          <div id="join-lobby" class="join-lobby" hidden>
+            <p data-i18n="lobby.wait">Gleich geht’s los. Der Code steht auf der Leinwand.</p>
+          </div>
+          <div class="join-thumb" id="join-thumb">
+            <div id="join-choice" class="choice-grid" hidden role="listbox" aria-labelledby="join-question"></div>
+            <form id="join-word-form" class="word-form" hidden>
+              <label class="field">
+                <span>Dein Wort</span>
+                <input id="word-input" maxlength="32" placeholder="Ein kurzes Wort" autocomplete="off" />
+              </label>
+              <button type="submit" class="btn primary">Senden</button>
+            </form>
+            <div id="join-qa" class="qa-container" hidden></div>
+            <div id="join-quiz" class="quiz-container" hidden></div>
+            <div id="join-rating" class="rating-scale" hidden></div>
+            <div id="join-extra" class="slide-input" hidden></div>
+            <p id="join-feedback" class="feedback" role="status" aria-live="polite"></p>
+            <div id="join-reactions" class="reaction-bar"></div>
+          </div>
+        </main>
+      </section>
+
+      <!-- Präsentationsansicht: reine Lese-Leinwand für Screen-Sharing (kein Join-Chrome). -->
+      <section id="view-stage" class="view view-stage" data-view="stage" hidden>
+        <p id="stage-conn" class="stage-conn" hidden role="status" aria-live="polite"></p>
+        <div id="stage-logo-wrap" class="stage-logo-wrap" hidden>
+          <img id="stage-logo" alt="" />
+        </div>
+        <div id="stage-frame" class="stage-frame" aria-live="polite"></div>
+        <p id="stage-footer" class="stage-footer-copy" hidden></p>
+        <button type="button" id="stage-fs" class="stage-fs" data-i18n="stage.fullscreen">Vollbild aktivieren</button>
+        <div id="stage-pause" class="stage-pause" hidden role="alert">
+          <p data-i18n="present.paused">Session pausiert – Bitte warten</p>
+        </div>
+      </section>
+
+      <section id="view-privacy" class="view legal-page" hidden>
+        <main class="legal-main" id="privacy-main">
+          <div class="legal-toolbar no-print">
+            <button type="button" id="privacy-print" class="btn ghost" data-i18n="privacy.print">Drucken / PDF</button>
+            <button type="button" id="privacy-download-html" class="btn ghost" data-i18n="privacy.downloadHtml">HTML herunterladen</button>
+            <a href="#/impressum" data-i18n="footer.imprint">Impressum</a>
+          </div>
+          <h1 data-i18n="privacy.title">Datenschutzerklärung</h1>
+          <p id="privacy-lang-note" class="legal-lang-note" hidden></p>
+          <article id="privacy-body"></article>
+          <p class="legal-nav no-print"><a href="#/impressum" data-i18n="footer.imprint">Impressum</a> · <a href="#/">← Pulse</a></p>
+        </main>
+      </section>
+
+      <section id="view-impressum" class="view legal-page" hidden>
+        <main class="legal-main" id="impressum-main">
+          <div class="legal-toolbar no-print">
+            <button type="button" id="impressum-print" class="btn ghost" data-i18n="privacy.print">Drucken / PDF</button>
+            <button type="button" id="impressum-download-html" class="btn ghost" data-i18n="privacy.downloadHtml">HTML herunterladen</button>
+            <a href="#/privacy" data-i18n="footer.privacy">Datenschutz</a>
+          </div>
+          <h1 data-i18n="imprint.title">Impressum</h1>
+          <p id="impressum-lang-note" class="legal-lang-note" hidden></p>
+          <article id="impressum-body"></article>
+          <p class="legal-nav no-print"><a href="#/privacy" data-i18n="footer.privacy">Datenschutz</a> · <a href="#/">← Pulse</a></p>
+        </main>
+      </section>
+
+      <section id="view-branding" class="view branding-page" hidden>
+        <h1 data-i18n="branding.title">Branding</h1>
+        <p class="muted" data-i18n="branding.intro">Erscheinungsbild: Name, Logo, Farben, Schrift und Leinwand. Datenschutz und Betrieb liegen in eigenen Menüs.</p>
+        <form id="branding-form" class="panel">
+          <fieldset class="field">
+            <legend data-i18n="branding.whiteLabel">White-Label</legend>
+            <label class="field"><span data-i18n="branding.appName">App-Name</span>
+              <input id="brand-app-name" maxlength="80" value="Pulse" autocomplete="organization" />
+            </label>
+            <p class="muted" data-i18n="branding.appNameHint">Titel, Logo-Kürzel und Startseite. Datei pulse.db und localStorage-Prefix bleiben intern unverändert.</p>
+            <label class="field"><span data-i18n="branding.favicon">Favicon (SVG/PNG)</span>
+              <input id="brand-favicon-file" type="file" accept="image/png,image/svg+xml,image/x-icon" />
+            </label>
+            <button type="button" id="brand-favicon-clear" class="btn ghost" data-i18n="branding.clear">Entfernen</button>
+            <label class="field"><span data-i18n="branding.customDomain">Eigene Domain (Hostname)</span>
+              <input id="brand-custom-domain" placeholder="pulse.example.de" autocomplete="off" />
+            </label>
+            <p class="muted" data-i18n="branding.customDomainHint">DNS-CNAME auf diesen Host zeigen, Zertifikat unter SSL beantragen. Join-URLs nutzen automatisch location.host.</p>
+            <p class="muted"><a href="#/admin/ssl" data-i18n="ssl.nav">SSL</a></p>
+            <label class="field"><input type="checkbox" id="brand-footer-hidden" /> <span data-i18n="branding.footerHidden">Footer ausblenden (vertrauliche Sessions)</span></label>
+            <p class="muted" data-i18n="branding.footerHiddenHint">Impressum und Datenschutz bleiben über #/privacy und #/impressum erreichbar.</p>
+            <label class="field"><input type="checkbox" id="brand-stage-logo" /> <span data-i18n="branding.stageShowLogo">Logo in der Präsentationsansicht</span></label>
+            <label class="field"><input type="checkbox" id="brand-stage-footer" /> <span data-i18n="branding.stageShowFooter">Footer in der Präsentationsansicht</span></label>
+            <p class="muted" data-i18n="branding.stageHint">Standard aus — nur die geteilte Leinwand, nicht die Presenter-Steuerung.</p>
+          </fieldset>
+          <label class="field">Logo (SVG/PNG, max. 200×60)
+            <input id="brand-logo-file" type="file" accept="image/png,image/svg+xml,image/jpeg" />
+          </label>
+          <img id="brand-logo-preview" class="brand-logo" alt="Logo-Vorschau" hidden />
+          <label class="field"><span data-i18n="branding.font">Eigene Schrift (woff2/woff/ttf, max. 500 KB)</span>
+            <input id="brand-font-file" type="file" accept=".woff2,.woff,.ttf,font/woff2,font/woff,font/ttf" />
+          </label>
+          <button type="button" id="brand-font-clear" class="btn ghost" data-i18n="branding.clear">Entfernen</button>
+          <p class="muted" data-i18n="branding.fontHint">Kein Google-Fonts-CDN. Ohne Datei bleibt Inter/Systemschrift.</p>
+          <label class="field"><span data-i18n="branding.slideBg">Hintergrundbild Folien</span>
+            <input id="brand-slide-bg-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+          </label>
+          <button type="button" id="brand-slide-bg-clear" class="btn ghost" data-i18n="branding.clear">Entfernen</button>
+          <p class="muted" data-i18n="branding.slideBgHint">Present-Bühne mit Kontrast-Overlay, damit der Text lesbar bleibt (WCAG).</p>
+          <label class="field"><span data-i18n="branding.transition">Folien-Übergang</span>
+            <select id="brand-transition">
+              <option value="none" data-i18n="branding.transitionNone">Kein Übergang</option>
+              <option value="fade" data-i18n="branding.transitionFade">Überblenden</option>
+              <option value="slide" selected data-i18n="branding.transitionSlide">Schieben</option>
+            </select>
+          </label>
+          <label class="field"><span data-i18n="branding.sound">Bestätigungs-Sound (mp3/ogg/wav, max. 200 KB)</span>
+            <input id="brand-sound-file" type="file" accept="audio/mpeg,audio/ogg,audio/wav,.mp3,.ogg,.wav" />
+          </label>
+          <button type="button" id="brand-sound-clear" class="btn ghost" data-i18n="branding.clear">Entfernen</button>
+          <p class="muted" data-i18n="branding.soundHint">Nur nach Klick/Geste, Standard stumm. Mute in Presenter- und Join-Ansicht.</p>
+          <label class="field">Primary <input id="brand-primary" type="color" value="#007CC1" /></label>
+          <label class="field">Secondary <input id="brand-secondary" type="color" value="#F99700" /></label>
+          <label class="field">Hintergrund <input id="brand-bg" type="color" value="#ffffff" /></label>
+          <label class="field">Footer-Text (Markdown: **fett**, [Link](url))
+            <textarea id="brand-footer" rows="2">© 2026 Landeshauptstadt Saarbrücken</textarea>
+          </label>
+          <!-- Homepage der verantwortlichen Stelle; Platzhalter nur im Input, nicht vorbefüllt. Leer = kein Footer-Link. -->
+          <label class="field"><span data-i18n="branding.homepage">Homepage-URL</span>
+            <input id="brand-homepage-url" type="url" placeholder="https://www.saarbruecken.de" autocomplete="url" />
+          </label>
+          <fieldset class="field">
+            <legend data-i18n="branding.languages">Sprachen</legend>
+            <label><input type="checkbox" name="lang" value="de" checked /> Deutsch</label>
+            <label><input type="checkbox" name="lang" value="en" checked /> English</label>
+            <label><input type="checkbox" name="lang" value="fr" checked /> Français</label>
+          </fieldset>
+          <p id="branding-msg" class="muted" role="status"></p>
+          <button type="submit" class="btn primary" data-i18n="branding.save">Speichern</button>
+        </form>
+      </section>
+
+      <section id="view-ssl" class="view branding-page" hidden>
+        <h1 data-i18n="ssl.title">SSL-Zertifikate</h1>
+        <p class="muted" data-i18n="ssl.intro">Kostenlose HTTPS-Zertifikate von Let’s Encrypt. Die Domain muss per DNS auf diesen Server zeigen, Port 80 muss aus dem Internet erreichbar sein.</p>
+        <div id="ssl-https-meta" class="ssl-meta">
+          <p>HTTPS wartet auf ein gültiges Zertifikat.</p>
+          <p class="muted">Let’s-Encrypt-Client ist bereit.</p>
+        </div>
+        <form id="ssl-form" class="panel">
+          <label class="field">
+            <span data-i18n="ssl.domain">Domain</span>
+            <input id="ssl-domain" name="domain" autocomplete="url" placeholder="pulse.example.de" required />
+          </label>
+          <label class="field">
+            <span data-i18n="ssl.email">E-Mail (Let’s Encrypt)</span>
+            <input id="ssl-email" name="email" type="email" autocomplete="email" required />
+          </label>
+          <label class="field">
+            <input type="checkbox" id="ssl-terms" required />
+            <span data-i18n="ssl.terms">Ich akzeptiere die Nutzungsbedingungen von Let’s Encrypt</span>
+          </label>
+          <label class="field">
+            <input type="checkbox" id="ssl-autorenew" checked />
+            <span data-i18n="ssl.autorenew">Automatisch vor Ablauf erneuern (alle 90 Tage, 30 Tage vorher)</span>
+          </label>
+          <label class="field">
+            <input type="checkbox" id="ssl-staging" />
+            <span data-i18n="ssl.stagingCheck">Staging-Umgebung (Tests, vom Browser nicht vertraut)</span>
+          </label>
+          <p id="ssl-form-msg" class="muted" role="status"></p>
+          <button type="submit" class="btn primary" data-i18n="ssl.issue">Zertifikat beantragen</button>
+        </form>
+        <h2 data-i18n="ssl.list">Vorhandene Zertifikate</h2>
+        <div id="ssl-list" class="ssl-list"></div>
+      </section>
+
+      <section id="view-admin-privacy" class="view legal-page" hidden>
+        <main class="legal-main">
+          <h1 data-i18n="privacy.admin.title">Datenschutz &amp; Impressum</h1>
+          <p class="muted privacy-admin-hint" data-i18n="privacy.admin.hint">Mustertexte für die öffentliche Verwaltung. Keine Rechtsberatung — Prüfung durch die/den DSB erforderlich. Öffentliche Ansicht: Datenschutz und Impressum.</p>
+          <p class="no-print"><a href="#/privacy" data-i18n="privacy.title">Datenschutzerklärung</a> · <a href="#/impressum" data-i18n="imprint.title">Impressum</a></p>
+          <form id="privacy-admin-form" class="panel privacy-admin-form">
+            <fieldset>
+              <legend data-i18n="privacy.admin.controllerLegend">Verantwortliche Stelle</legend>
+              <label class="field"><span data-i18n="privacy.admin.controllerName">Name</span>
+                <input id="privacy-controller-name" autocomplete="organization" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.controllerAddress">Anschrift</span>
+                <textarea id="privacy-controller-address" rows="3"></textarea>
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.controllerEmail">E-Mail</span>
+                <input id="privacy-controller-email" type="text" autocomplete="email" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.controllerPhone">Telefon</span>
+                <input id="privacy-controller-phone" type="text" autocomplete="tel" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.controllerLegal">Gesetzliche Vertretung</span>
+                <input id="privacy-controller-legal" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.vat">USt-IdNr. (Impressum)</span>
+                <input id="privacy-vat" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.adminSupervisory">Kommunal- / Rechtsaufsicht</span>
+                <textarea id="privacy-admin-supervisory" rows="2"></textarea>
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend data-i18n="privacy.admin.dsbLegend">Datenschutzbeauftragte Stelle</legend>
+              <label class="field"><span data-i18n="privacy.admin.dsbName">Name</span>
+                <input id="privacy-dsb-name" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.dsbEmail">E-Mail</span>
+                <input id="privacy-dsb-email" type="text" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.dsbPhone">Telefon</span>
+                <input id="privacy-dsb-phone" type="text" />
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend data-i18n="privacy.admin.supervisoryLegend">Aufsichtsbehörde (DSGVO Art. 77)</legend>
+              <label class="field"><span data-i18n="privacy.admin.supervisoryName">Name</span>
+                <textarea id="privacy-supervisory-name" rows="2"></textarea>
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.supervisoryAddress">Anschrift</span>
+                <textarea id="privacy-supervisory-address" rows="3"></textarea>
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.supervisoryWebsite">Website</span>
+                <input id="privacy-supervisory-website" type="text" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.supervisoryEmail">E-Mail</span>
+                <input id="privacy-supervisory-email" type="text" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.supervisoryPhone">Telefon</span>
+                <input id="privacy-supervisory-phone" type="text" />
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend data-i18n="privacy.admin.hostingLegend">Hosting, Ergänzungen, Stand</legend>
+              <label class="field"><span data-i18n="privacy.admin.hosting">Hosting-Text</span>
+                <textarea id="privacy-hosting" rows="3"></textarea>
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.processor">Auftragsverarbeiter Art. 28 (leer = bedingter Standardabsatz)</span>
+                <textarea id="privacy-processor" rows="3"></textarea>
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.extra">Ergänzungen (Markdown/Klartext)</span>
+                <textarea id="privacy-extra" rows="5"></textarea>
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.a11y">Kontakt Barrierefreiheit</span>
+                <input id="privacy-a11y-contact" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.standDate">Stand-Datum</span>
+                <input id="privacy-stand-date" type="date" />
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend data-i18n="privacy.admin.linksLegend">Links und Aufbewahrung</legend>
+              <label class="field"><span data-i18n="privacy.admin.privacyUrl">Datenschutz-URL</span>
+                <input id="brand-privacy-url" value="#/privacy" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.impressumUrl">Impressum-URL</span>
+                <input id="brand-impressum-url" value="#/impressum" />
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.retention">Daten automatisch löschen nach</span>
+                <select id="brand-retention">
+                  <option value="7">7 Tage</option>
+                  <option value="30" selected>30 Tage</option>
+                  <option value="90">90 Tage</option>
+                  <option value="0">nie</option>
+                </select>
+              </label>
+              <label class="field"><span data-i18n="privacy.admin.privacyExtra">Ergänzungen zur öffentlichen Datenschutzerklärung</span>
+                <textarea id="brand-privacy-extra" rows="4"></textarea>
+              </label>
+            </fieldset>
+            <p id="privacy-admin-msg" class="muted" role="status"></p>
+            <button type="submit" class="btn primary" data-i18n="privacy.admin.save">Speichern</button>
+          </form>
+          <h2 data-i18n="privacy.admin.versions">Versionshistorie</h2>
+          <div id="privacy-version-list"></div>
+        </main>
+      </section>
+
+      <section id="view-events" class="view events-page" data-view="events" hidden>
+        <div id="events-root"></div>
+      </section>
+
+      <section id="view-settings" class="view branding-page" hidden>
+        <h1 data-i18n="settings.title">Einstellungen</h1>
+        <p class="muted" data-i18n="settings.opsIntro">Betrieb der Instanz: Intervalle, Filter und Sicherung. Erscheinungsbild unter Branding, Rechtstexte unter Datenschutz.</p>
+        <form id="settings-ops-form" class="panel">
+          <label class="field"><span data-i18n="settings.interval">Frage-Intervall (Sekunden)</span>
+            <input id="brand-interval" type="number" min="10" max="120" value="30" />
+          </label>
+          <label class="field"><span data-i18n="branding.qaDefaultLimit">Q&amp;A-Zeitlimit Standard (Sekunden, 0 = aus)</span>
+            <input id="brand-qa-limit" type="number" min="0" max="300" step="10" value="60" />
+          </label>
+          <p class="muted" data-i18n="branding.qaDefaultLimitHint">10–300 in 10-Sekunden-Schritten. 0 schaltet das Limit nicht vor. Standard 60.</p>
+          <label class="field"><input type="checkbox" id="brand-wordfilter" checked /> <span data-i18n="settings.wordfilter">Wortfilter aktivieren</span></label>
+          <label class="field"><span data-i18n="settings.extraWords">Eigene Filterwörter (kommagetrennt)</span>
+            <input id="brand-extra-words" />
+          </label>
+          <p id="settings-ops-msg" class="muted" role="status"></p>
+          <button type="submit" class="btn primary" data-i18n="settings.saveOps">Speichern</button>
+        </form>
+        <section id="settings-panel" class="panel settings-panel" aria-labelledby="settings-heading">
+          <h2 id="settings-heading" data-i18n="settings.backupTitle">Sicherung</h2>
+          <p class="muted" data-i18n="settings.intro">Branding (inkl. Logo), Rechtstexte und SSL-Zertifikate als Datei sichern. Die Datei enthält private Schlüssel — wie ein Passwort aufbewahren. Umfragen und Sessions sind nicht enthalten.</p>
+          <div class="settings-actions">
+            <button type="button" id="settings-export" class="btn primary" data-i18n="settings.export">Exportieren</button>
+            <label class="field settings-file-label">
+              <span data-i18n="settings.import">Importieren</span>
+              <input id="settings-import-file" type="file" accept="application/json,.json" />
+            </label>
+          </div>
+          <div id="settings-preview" class="settings-preview" hidden>
+            <h3 data-i18n="settings.previewTitle">Was wird überschrieben?</h3>
+            <p class="muted" data-i18n="settings.overwrites">Der Import ersetzt die genannten Einstellungsbereiche. Laufende Sessions bleiben erhalten.</p>
+            <ul id="settings-preview-list"></ul>
+            <div class="settings-actions">
+              <button type="button" id="settings-import-confirm" class="btn primary" data-i18n="settings.confirm">Bestätigen</button>
+              <button type="button" id="settings-import-cancel" class="btn ghost" data-i18n="settings.cancel">Abbrechen</button>
+            </div>
+          </div>
+          <p id="settings-msg" class="muted" role="status"></p>
+        </section>
+        <section id="auth-settings-panel" class="panel settings-panel" hidden aria-labelledby="auth-settings-heading">
+          <h2 id="auth-settings-heading">Benutzerverwaltung</h2>
+          <p class="muted">Einstellungen für Anmeldung und Registrierung. Änderungen erfordern eine erneute PIN-Bestätigung.</p>
+          <label class="field">
+            <input type="checkbox" id="auth-self-reg" />
+            <span>Selbstregistrierung erlauben (neue Kontos per Registrierungsformular)</span>
+          </label>
+          <p id="auth-settings-msg" class="muted" role="status"></p>
+        </section>
+      </section>
+    </div>
+
+    <footer class="app-footer" id="app-footer">
+      <button type="button" class="btn ghost footer-drawer-toggle" id="footer-toggle">Info</button>
+      <img id="footer-logo" class="brand-logo" alt="" hidden />
+      <p id="footer-copy">© 2026 Landeshauptstadt Saarbrücken</p>
+      <nav class="footer-links" aria-label="Rechtliches">
+        <a href="#/impressum" id="footer-imprint" data-i18n="footer.imprint">Impressum</a>
+        <a href="#/privacy" id="footer-privacy" data-i18n="footer.privacy">Datenschutz</a>
+      </nav>
+      <nav id="footer-home" class="footer-home" hidden data-i18n-aria="footer.home" aria-label="Homepage">
+        <a id="footer-home-link" href="#" target="_blank" rel="noopener noreferrer" data-i18n="footer.home">Homepage</a>
+      </nav>
+      <p class="footer-meta muted" id="footer-retention"></p>
+    </footer>
+
+    <!--
+      Kein natives <dialog>: showModal() blockiert alle Klicks auf der Seite.
+      Hinweis ist eine Leiste, Join/Footer bleiben bedienbar.
+    -->
+    <aside id="consent-dialog" class="consent-dialog" hidden aria-labelledby="consent-title" role="region">
+      <h2 id="consent-title" data-i18n="consent.title">Datenschutz</h2>
+      <p data-i18n="consent.body">Diese Umfrage ist anonym. Keine Cookies. Lokale Speicherung nur für die Session-ID.</p>
+      <p><a id="consent-privacy-link" href="#/privacy" data-i18n="consent.privacy">Datenschutzerklärung</a></p>
+      <button type="button" id="consent-ok" class="btn primary" data-i18n="consent.ok">Verstanden</button>
+    </aside>
+
+    <script type="module" src="./js/help.js?v=nav12"></script>
+    <script type="module" src="./js/app.js?v=nav32"></script>
+  </body>
+</html>

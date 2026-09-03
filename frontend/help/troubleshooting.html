@@ -1,0 +1,86 @@
+<article class="help-article-body" data-article="troubleshooting">
+  <h2>Fehlerbehebung</h2>
+  <p>Entscheidungsbäume für häufige Probleme — Schritt für Schritt abarbeiten.</p>
+
+  <nav class="help-toc" aria-label="Auf dieser Seite">
+    <strong>Auf dieser Seite</strong>
+    <ul>
+      <li><a href="#join-flow">Teilnehmer können nicht joinen</a></li>
+      <li><a href="#https-flow">HTTPS funktioniert nicht</a></li>
+      <li><a href="#websocket">Verbindung / WebSocket</a></li>
+      <li><a href="#admin-lock">Präsentation gesperrt</a></li>
+      <li><a href="#debug-admin">Debug-Checkliste (Admin)</a></li>
+    </ul>
+  </nav>
+
+  <h3 id="join-flow">Teilnehmer können nicht joinen</h3>
+  <pre class="help-flowchart" aria-label="Flowchart Join-Probleme">Start: Teilnehmer meldet Fehler beim Beitritt
+│
+├─ Event auf Startseite? ── Nein ──► Ad-hoc: Code/QR von Leinwand teilen
+│   │
+│   └─ Ja: Status = aktiv? ── Nein (geplant) ──► Admin: Status auf „aktiv“ setzen
+│       │
+│       └─ Ja: Join-Code exakt 6 Ziffern? ── Nein ──► Code von Leinwand kopieren
+│           │
+│           └─ Server erreichbar? ── Nein ──► IT / Healthcheck prüfen
+│               │
+│               └─ HTTPS ok? ── Nein ──► Siehe „HTTPS funktioniert nicht“
+│                   │
+│                   └─ Lobby aktiv? ── Ja ──► Presenter: „Los geht's“ klicken
+│                       │
+│                       └─► Teilnehmer: Seite neu laden</pre>
+
+  <h3 id="https-flow">HTTPS funktioniert nicht</h3>
+  <pre class="help-flowchart" aria-label="Flowchart HTTPS">Start: Browser warnt vor Zertifikat / keine HTTPS-Verbindung
+│
+├─ DNS zeigt auf Server? ── Nein ──► A/AAAA-Eintrag korrigieren
+│   │
+│   └─ Port 80 erreichbar? ── Nein ──► Firewall (UFW) / nginx prüfen
+│       │
+│       └─ Zertifikat in Admin aktiv? ── Nein ──► #/admin/ssl — Domain beantragen
+│           │
+│           └─ ACME-Challenge durchgereicht? ── Nein ──► nginx: /.well-known/acme-challenge/
+│               │
+│               └─ Staging-Zertifikat? ── Ja ──► Produktions-Zertifikat ohne Staging
+│                   │
+│                   └─► Browser-Cache leeren, erneut testen</pre>
+  <p>Details: <a href="#/help/ssl">SSL-Zertifikate</a>.</p>
+
+  <h3 id="websocket">Die Anzeige bleibt bei „Verbinde …“</h3>
+  <p>Pulse baut die Live-Leitung (WebSocket) automatisch wieder auf. Offline-Banner bis „Live“. WLAN prüfen, Seite neu laden. Lokal ohne Server: „Demo“. Mehrere Server-Instanzen: <code>REDIS_URL</code> setzen.</p>
+
+  <h3 id="admin-lock">Präsentation gesperrt / Zugriff verweigert</h3>
+  <p>Admin-Schlüssel (Start-Browser) oder Presenter-Passwort. Nach drei Fehlversuchen: 5 Minuten Sperre.</p>
+
+  <h3>Weitere Symptome</h3>
+  <table class="help-table">
+    <thead><tr><th>Symptom</th><th>Lösung</th></tr></thead>
+    <tbody>
+      <tr><td>„Diese Session gibt es nicht“</td><td>6 Ziffern, Session beendet oder falscher Server</td></tr>
+      <tr><td>Stimmen kommen nicht an</td><td>Status „Live“, Rate-Limit, Lobby/Notfall beendet</td></tr>
+      <tr><td>Admin-API 401</td><td><code>ADMIN_SECRET</code> in <code>.env</code>, Container neu starten</td></tr>
+      <tr><td>Docker Healthcheck fehl</td><td><code>docker compose logs pulse</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="debug-admin">Debug-Checkliste (Admin)</h3>
+  <ol class="help-steps">
+    <li>Logs: <code>docker compose logs pulse</code></li>
+    <li>Health: <code>https://&lt;domain&gt;/api/health</code></li>
+    <li>SSL-Status: <a href="#/admin/ssl">#/admin/ssl</a></li>
+    <li>Sessions: <a href="#/admin">#/admin</a></li>
+    <li>Audit: <a href="#/admin/audit">#/admin/audit</a></li>
+    <li>Frische VPS-Installation: <code>INSTALL-CREDENTIALS.txt</code></li>
+  </ol>
+
+  <aside class="help-callout help-callout--danger">
+    <strong>Kritisch:</strong> <code>ADMIN_SECRET</code> und Admin-Schlüssel nie öffentlich teilen.
+  </aside>
+
+  <nav class="help-see-also">
+    <strong>Siehe auch:</strong>
+    <a href="#/help/installation">Installation</a> ·
+    <a href="#/help/ssl">SSL</a> ·
+    <a href="#/help/events">Events (Status)</a>
+  </nav>
+</article>

@@ -1,0 +1,56 @@
+<article class="help-article-body" data-article="glossary">
+  <h2>Glossar</h2>
+  <dl class="help-dl">
+    <dt>Session</dt>
+    <dd>Laufende Umfrage mit Join-Code, Deck (Folien), Stimmen und Q&amp;A. Persistiert in <code>pulse.db</code>.</dd>
+    <dt>Event</dt>
+    <dd>Metadaten zur Session: Titel, Zeitraum, Status, optionales Event-Branding. <code>joinCode</code> und <code>sessionCode</code> sind identisch. Folien liegen im Deck der Session, nicht in <code>events.json</code>.</dd>
+    <dt>sessionCode</dt>
+    <dd>Sechsstelliger numerischer Join-Code — derselbe Wert für Event und Session.</dd>
+    <dt>Deck</dt>
+    <dd>Die geordnete Folienfolge einer Session (max. 40). Keine parallelen „Sets“ — nur dieses eine Deck. Bearbeitung unter <code>#/admin/sessions/&lt;code&gt;</code> (Inline/Modal, Bulk).</dd>
+    <dt>Raum</dt>
+    <dd>Technische Klammer um die Session (WebSocket-Gruppe). Für Nutzer gleichbedeutend mit „dieser Code“.</dd>
+    <dt>Join-Code</dt>
+    <dd>Sechs Ziffern auf der Leinwand. Damit finden Teilnehmende die Session.</dd>
+    <dt>Folie / Slide</dt>
+    <dd>Eine Frage oder ein Interaktionstyp innerhalb der Session. Höchstens 40 Folien.</dd>
+    <dt>Lobby</dt>
+    <dd>Warteraum, bis der Präsentator startet. Keine Stimmen, Wörter oder neuen Fragen.</dd>
+    <dt>Ergebnisse zeigen / Reveal</dt>
+    <dd>Blendet die Auswertung auf der Bühne ein (Taste <kbd>R</kbd>). Gilt für Umfrage, Skala, Wortwolke, Ranking, 100 Punkte, Freitext, Bildwahl, Termin und <strong>Picker</strong> — nicht für Q&amp;A und Quiz.</dd>
+    <dt>Moderation</dt>
+    <dd>Fragen freigeben oder verstecken, bevor oder während sie auf der Bühne stehen. Filter nach Kategorie, privat oder verdächtig.</dd>
+    <dt>Upvote</dt>
+    <dd>Eine Stimme „diese Frage ist mir wichtig“ — kein zweites Abstimmungs-Thema, nur Sortierung.</dd>
+    <dt>Rate-Limit</dt>
+    <dd>Bremse gegen zu viele Aktionen in kurzer Zeit (Schutz vor Spam und Überlast).</dd>
+    <dt>Admin-Schlüssel</dt>
+    <dd>Geheimer Token im Browser des Start-Rechners. Ohne ihn keine Steuerung der Folien.</dd>
+    <dt>Presenter-Passwort</dt>
+    <dd>Optionales Passwort beim Anlegen der Session, um von einem anderen Gerät zu entsperren.</dd>
+    <dt>Probe</dt>
+    <dd>Session ohne erwartetes Live-Publikum. Der Join-Link wird in der UI nicht kopiert; ein Hinweis erscheint auf Bühne und Handy.</dd>
+    <dt>Folien-Notizen</dt>
+    <dd>Stichworte nur für den Präsentator. Sie stehen nicht auf der Leinwand und nicht in der öffentlichen Session-Payload. Anzeigedauer in Sekunden (1–3600) ebenfalls nur intern.</dd>
+    <dt>Power-Up</dt>
+    <dd>Im Quiz je einmal pro Person und Session: 50:50 oder Doppelpunkte.</dd>
+    <dt>White-Label</dt>
+    <dd>App-Name, Favicon, eigene Domain als Hostname, optional ausgeblendeter Footer. Interne Dateinamen bleiben unverändert.</dd>
+    <dt>Settings-Export</dt>
+    <dd>JSON-Sicherung der Instanz (Schema 2: Branding inkl. Logo, Rechtstexte, SSL-PEMs). Keine Sessions, keine Events, keine Audit-Logs.</dd>
+    <dt>Folien kopieren</dt>
+    <dd>Im Deck-Editor (<code>#/admin/sessions/&lt;code&gt;</code>) Folien aus einer anderen Session übernehmen — neue Folien-IDs, Cap 40. Inhalt einzelner Folien ändern Sie mit dem Stift-Icon (nicht zu verwechseln mit Kopieren).</dd>
+    <dt>Folien bearbeiten</dt>
+    <dd>Frage, Optionen und Einstellungen einer bestehenden Folie ändern — Inline (einfache Typen) oder Modal (komplexe Typen). Speichern per API <code>PATCH /api/sessions/:code/slides/:id</code>; Live-Sync per WebSocket <code>deck</code> / <code>slide_updated</code>.</dd>
+    <dt>Picker</dt>
+    <dd>Folientyp für <strong>10–50 Auswahloptionen</strong> mit optionaler Suche, Kategorien und Single-/Mehrfachauswahl. Darstellung Liste, Raster oder Dropdown.</dd>
+    <dt>Dynamisches Session-Formular</dt>
+    <dd>Admin-Formular unter <code>#/admin</code>: zeigt nur passende Felder je Folientyp (Grundlagen, Optionen, Typ-Einstellungen, erweiterte Einstellungen). Wechsel des Typs mit Bestätigung, wenn Optionen verworfen würden.</dd>
+    <dd>Unterer Bereich der Join-Ansicht auf schmalen Bildschirmen: Abstimmung und Reaktionen in Reichweite des Daumens.</dd>
+    <dt>ADMIN_SECRET</dt>
+    <dd>Instanz-Geheimnis in <code>.env</code> (Server). Schützt Branding-, Datenschutz-, SSL- und Settings-API — nicht zu verwechseln mit dem Session-Admin-Schlüssel im Browser.</dd>
+    <dt>data/</dt>
+    <dd>Datenverzeichnis auf dem Server: <code>pulse.db</code>, <code>branding.json</code>, <code>events.json</code>, <code>privacy.json</code>, <code>ssl/</code>. Bei Docker: Host-Ordner <code>./data</code> gemountet nach <code>/app/data</code>.</dd>
+  </dl>
+</article>

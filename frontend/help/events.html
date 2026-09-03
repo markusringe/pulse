@@ -1,0 +1,63 @@
+<article class="help-article-body" data-article="events">
+  <h2>Events und Session-Decks</h2>
+  <p>Ein <strong>Event</strong> ist die öffentliche Hülle einer <strong>Session</strong>: Titel, Zeitraum, Status und sechsstelliger Join-Code. Der Code ist zugleich der <strong>Session-Code</strong> (<code>sessionCode</code>). Das <strong>Deck</strong> (Folienfolge) liegt nur in der Session — nicht im Event-Datensatz. Es gibt <em>keine</em> parallelen „Sets“ mehr; pro Event genau ein Deck.</p>
+
+  <h3>Startuhrzeit und Countdown</h3>
+  <p>Optional können Sie eine <strong>Startuhrzeit</strong> setzen. Auf der Leinwand (<code>#/stage/&lt;code&gt;</code>) und in der Presenter-Ansicht erscheint dann ein Countdown mit Tagen, Stunden, Minuten und Sekunden. Unter 5 Minuten erscheint der Hinweis „In wenigen Augenblicken geht es los…“. Bei 0 wechselt die Ansicht automatisch zur ersten Folie. Presenter können den Countdown überspringen.</p>
+
+  <h3>Event-Grafik</h3>
+  <p>Optional eine Hintergrundgrafik (PNG, JPEG, WebP, SVG, max. 2&nbsp;MB, empfohlen 1920×1080). Beim Upload wird auf max. 4096&nbsp;px Breite skaliert. Die Grafik erscheint dezent hinter dem Countdown. Ohne Grafik gilt der Branding-Farbverlauf.</p>
+
+  <h3>Administration</h3>
+  <ul>
+    <li><a href="#/admin/events">Events</a> (<code>#/admin/events</code>) — Liste, Anlegen, Metadaten, Statistik, QR, Einladungstext</li>
+    <li><a href="#/admin/events/new">Neues Event</a> — nach dem Speichern Weiterleitung zum Session-Deck</li>
+    <li><code>#/admin/sessions/&lt;code&gt;</code> — <strong>Deck-Editor</strong> (siehe unten)</li>
+    <li><a href="#/admin">Sessions</a> (<code>#/admin</code>) — ad-hoc-Session ohne Event-Karte auf der Startseite</li>
+  </ul>
+  <p>In der Admin-Menüleiste ist beim Deck-Editor der Punkt <strong>Sessions</strong> hervorgehoben (nicht Events), weil Sie dort die Folien der Session bearbeiten.</p>
+
+  <h3 id="deck-editor">Deck-Editor — Folien bearbeiten</h3>
+  <p>Unter <code>#/admin/sessions/&lt;code&gt;</code> pflegen Sie die gesamte Folienfolge (max. 40).</p>
+  <dl class="help-dl">
+    <dt>Inhalt ändern</dt>
+    <dd>Stift-Icon oder Doppelklick auf den Titel. <strong>Einfache Typen</strong> (Multiple Choice, Bewertung, Wortwolke, Freitext, Q&amp;A): Inline-Editor in der Zeile. <strong>Komplexe Typen</strong> (Quiz, Ranking, 100 Punkte, Bildwahl, Terminfindung, <strong>Picker</strong>): Modal mit allen Feldern — beim Picker inkl. Kategorien-Editor und Live-Vorschau. Alt+Stift öffnet immer das Modal. „Alle Felder…“ wechselt vom Inline zum Modal.</dd>
+    <dt>Speichern</dt>
+    <dd>Button oder <kbd>Ctrl/Cmd+S</kbd>. Nach 30&nbsp;s Pause ohne Tippen: <strong>Auto-Save</strong>. Beim Schließen mit ungespeicherten Änderungen erscheint eine Warnung.</dd>
+    <dt>Löschen</dt>
+    <dd>Mit Bestätigung. Anschließend Toast mit <strong>Rückgängig</strong> (5&nbsp;Sekunden) — stellt den Inhalt wieder her (Live-Stimmen entfallen).</dd>
+    <dt>Mehrfachauswahl</dt>
+    <dd>Checkboxen neben den Folien; Shift+Klick wählt einen Bereich. Bulk: <strong>Eigenschaften…</strong> (Reveal, geplante Minuten, Notizen), duplizieren, löschen.</dd>
+    <dt>Reihenfolge</dt>
+    <dd>Drag &amp; Drop oder Pfeil-Buttons.</dd>
+    <dt>Shortcuts</dt>
+    <dd><kbd>↑</kbd>/<kbd>↓</kbd> Fokus · <kbd>Ctrl/Cmd+E</kbd> bearbeiten · <kbd>Ctrl/Cmd+D</kbd> duplizieren · <kbd>Entf</kbd> löschen</dd>
+  </dl>
+
+  <h3>Status</h3>
+  <dl class="help-dl">
+    <dt>Geplant</dt>
+    <dd>Event sichtbar auf der Startseite, Join für Teilnehmende noch gesperrt. Staff (Presenter) darf testen.</dd>
+    <dt>Aktiv</dt>
+    <dd>Join freigegeben — Teilnehmende nutzen <code>#/join/&lt;code&gt;</code> oder die Event-Karte.</dd>
+    <dt>Abgeschlossen</dt>
+    <dd>Ergebnisse/Einblick; Join weiter möglich für die bestehende Session.</dd>
+    <dt>Archiviert</dt>
+    <dd>Nicht mehr auf der Startseite gelistet; Join für Nicht-Admins blockiert.</dd>
+  </dl>
+  <p>Statuswechsel per Zeitplan (stündlich) oder manuell im Event-Detail. Kein E-Mail-Versand — nur Audit-Eintrag.</p>
+
+  <h3>Startseite und Join</h3>
+  <p>Öffentliche Karten unter „Aktuelle Events“ / „Vergangene Events“ mit QR, Join-Link und Copy-Text. Teilnehmer-Link zeigt immer auf die Session (<code>#/join/123456</code>), nicht auf eine Event-ID. Alte Links <code>#/event/&lt;id&gt;</code> leiten auf den Join-Code um.</p>
+
+  <h3>Folien kopieren</h3>
+  <p>Im Deck-Editor: Modal <strong>Folien kopieren</strong> — Quell-Session wählen (andere Events oder Sessions), optional einzelne Folien. Maximal 40 Folien je Session. Beim Anlegen kann optional ein bestehendes Event als Vorlage dienen (<code>copyFromId</code>).</p>
+
+  <h3>Event-Branding</h3>
+  <p>Optionales Logo/Farben/Footer pro Event überlagern die Instanz-CI in Join- und Presenter-Ansicht — nicht die globale Branding-Seite.</p>
+
+  <h3>Löschen</h3>
+  <p>Nur bei Status <em>geplant</em> oder <em>archiviert</em>. Sessions und Umfragedaten bleiben in <code>pulse.db</code>, bis die Aufbewahrungsfrist greift.</p>
+
+  <p>Technische Details: <code>docs/projektdokumentation.md</code> Abschnitte 3.2 und 3.24 · <a href="#/help/session-manage">Session verwalten</a> · <a href="#/help/picker">Picker</a> · <a href="#/help/installation">Installation</a></p>
+</article>

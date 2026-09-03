@@ -1,0 +1,164 @@
+/**
+ * Theme-Tokens — Light ist der Standard (:root und data-theme="light").
+ * Dark gilt ausschließlich bei data-theme="dark" (explizite User-Wahl).
+ *
+ * Kontraste nach WCAG 2.1 AA:
+ *   Text  ≥ 4,5:1   |  großer Text ≥ 3:1  |  UI/Border/Icon ≥ 3:1
+ * Akzent (--secondary-color / --accent-surface, aktuell #f99700) nie als Text auf hellem Grund.
+ */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Flächen */
+  --bg: #f4f6f8;
+  --bg-elev: #ffffff;
+  --bg-soft: #e8ecf0;
+  --ink: #1a1d23;
+  --muted: #3d4450;
+  --placeholder: #4a5568;
+  --line: #6b7280;
+  --shadow: 0 18px 40px rgba(26, 29, 35, 0.08);
+  --radius: 18px;
+  --pad: clamp(12px, 2.4vw, 28px);
+
+  /* Marken-Fallbacks (Saarbrücken, Stand saarbruecken.de 2026-09-02). JS darf sie überschreiben, nie unter AA. */
+  --primary-color: #007cc1;
+  --secondary-color: #f99700;
+  --bg-color: #ffffff;
+  --text-color: #1a171b;
+
+  /* Aktionen: Stadtblau, weißer Button-Text (4,51:1 — AA knapp erfüllt) */
+  --btn-primary-bg: #007cc1;
+  --btn-primary-ink: #ffffff;
+  --btn-primary-hover: #005b8e;
+  --accent: var(--btn-primary-bg);
+  --accent-2: #0b7a48;
+  --feedback: #0b7a48;
+  --focus: #0052cc;
+  /* Link-Token bleibt dunkler als Stadtblau: #007cc1 auf --bg #f4f6f8 liegt bei 4,17:1 unter AA. */
+  --link: #0052cc;
+  --link-hover: #005b8e;
+
+  /* Orange-Akzent nur als Fläche mit dunklem Text (nie als Fließtext) */
+  --accent-surface: #f99700;
+  --accent-surface-ink: #1a1d23;
+
+  /* Status: kräftige Fläche + dunkler Text (kein Pastell+hell) */
+  --status-ok: #14532d;
+  --status-ok-bg: #86efac;
+  --status-warn: #1a1d23;
+  --status-warn-bg: #facc15;
+  --status-err: #7f1d1d;
+  --status-err-bg: #fca5a5;
+  --status-info: #1e3a8a;
+  --status-info-bg: #93c5fd;
+  --status-pending: #1a1d23;
+  --status-pending-bg: #cbd5e1;
+
+  /* Poll-/Quiz-Optionen: dunkle Flächen, weißer Text (≥ 4,5:1) */
+  --c1: #b42318;
+  --c1-ink: #ffffff;
+  --c2: #0f6b3d;
+  --c2-ink: #ffffff;
+  --c3: #007cc1;
+  --c3-ink: #ffffff;
+  --c4: #b45309;
+  --c4-ink: #ffffff;
+  --c5: #6b21a8;
+  --c5-ink: #ffffff;
+  --c6: #0e7490;
+  --c6-ink: #ffffff;
+
+  /* Timer */
+  --timer-ok: #007cc1;
+  --timer-warn: #c2410c;
+  --timer-critical: #b91c1c;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #1c2128;
+  --bg-elev: #252b34;
+  --bg-soft: #2c3440;
+  --ink: #e8eaed;
+  --muted: #c5cad3;
+  --placeholder: #c5cad3;
+  --line: #9aa3b0;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+
+  --bg-color: #1c2128;
+  --text-color: #e8eaed;
+
+  /*
+   * Stadtblau #007cc1 liegt auf Dark-BG bei ~3,59:1 (UI-AA). Als Link-Text
+   * unter 4,5:1 — deshalb helleres Blau mit dunklem Text als CSS-Fallback,
+   * falls applyBrandingContrast die Marke nicht übernimmt.
+   */
+  --btn-primary-bg: #7eb6ff;
+  --btn-primary-ink: #1a1d23;
+  --btn-primary-hover: #a8cfff;
+  --accent: var(--btn-primary-bg);
+  --accent-2: #5ee0a8;
+  --feedback: #5ee0a8;
+  --focus: #7eb6ff;
+  --link: #7eb6ff;
+  --link-hover: #a8cfff;
+
+  --accent-surface: #f99700;
+  --accent-surface-ink: #1a1d23;
+
+  --status-ok: #1a1d23;
+  --status-ok-bg: #86efac;
+  --status-warn: #1a1d23;
+  --status-warn-bg: #facc15;
+  --status-err: #1a1d23;
+  --status-err-bg: #fca5a5;
+  --status-info: #1a1d23;
+  --status-info-bg: #93c5fd;
+  --status-pending: #1a1d23;
+  --status-pending-bg: #cbd5e1;
+
+  /* Helle Balken: dunkler Text, nie Weiß auf Gelb/Cyan */
+  --c1: #ff8a70;
+  --c1-ink: #1a1d23;
+  --c2: #5ee0a8;
+  --c2-ink: #1a1d23;
+  --c3: #7eb6ff;
+  --c3-ink: #1a1d23;
+  --c4: #ffd166;
+  --c4-ink: #1a1d23;
+  --c5: #c084fc;
+  --c5-ink: #1a1d23;
+  --c6: #22d3ee;
+  --c6-ink: #1a1d23;
+
+  --timer-ok: #7eb6ff;
+  --timer-warn: #fb923c;
+  --timer-critical: #f87171;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg);
+  color: var(--ink);
+}
+
+/* Dezenter Markenverlauf — nur Farbe, kein Layout-Shift, Compositor-freundlich */
+body {
+  background-image:
+    radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--primary-color) 10%, transparent), transparent 55%),
+    radial-gradient(900px 480px at 110% 10%, color-mix(in srgb, var(--focus) 10%, transparent), transparent 50%);
+}

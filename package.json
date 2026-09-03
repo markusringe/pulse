@@ -1,0 +1,40 @@
+{
+  "name": "pulse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pulse — Live-Interaktion für Umfragen, Wortwolken, Q&A und Quiz (Vanilla JS + Node.js)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "start:prod": "NODE_ENV=production node server.js",
+    "test:security": "node scripts/test-security.js",
+    "test:deck": "node scripts/test-deck.js",
+    "test:live": "node scripts/test-live.js",
+    "test:presenter": "node scripts/test-presenter.js",
+    "test:ssl": "node scripts/test-ssl.js",
+    "test:theme": "node scripts/test-theme.js",
+    "test:privacy": "node scripts/test-privacy.js",
+    "test:help": "node scripts/test-help.js",
+    "test:branding": "node scripts/test-branding.js",
+    "test:settings": "node scripts/test-settings.js",
+    "test:slides": "node scripts/test-slides.js",
+    "test:qa-timer": "node scripts/test-qa-timer.js",
+    "test:events": "node scripts/test-events.js",
+    "test:auth": "node scripts/test-auth.js",
+    "bootstrap:admin": "node scripts/bootstrap-admin.js",
+    "migrate:events": "node scripts/migrate-events.js",
+    "setup": "bash scripts/install.sh",
+    "setup:vps": "bash scripts/install-vps-ubuntu.sh",
+    "test": "node scripts/test-security.js && node scripts/test-deck.js && node scripts/test-live.js && node scripts/test-presenter.js && node scripts/test-ssl.js && node scripts/test-theme.js && node scripts/test-privacy.js && node scripts/test-help.js && node scripts/test-branding.js && node scripts/test-settings.js && node scripts/test-slides.js && node scripts/test-qa-timer.js && node scripts/test-events.js && node scripts/test-auth.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "acme-client": "^5.4.0"
+  },
+  "optionalDependencies": {
+    "pg": "^8.13.1"
+  }
+}

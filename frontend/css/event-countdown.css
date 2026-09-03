@@ -1,0 +1,242 @@
+/**
+ * Event-Countdown und Event-Grafik (Präsentations-/Stage-Ansicht).
+ */
+
+.event-countdown-host {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #fff;
+  text-align: center;
+}
+
+.event-countdown-host[hidden] {
+  display: none !important;
+}
+
+.event-countdown-host.is-ending .event-countdown-panel {
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.event-countdown-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.28;
+  filter: saturate(1.05);
+  animation: event-countdown-pulse 12s ease-in-out infinite alternate;
+}
+
+.event-countdown-bg--plain {
+  opacity: 1;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary-color, #007cc1) 55%, #0b1220),
+    color-mix(in srgb, var(--secondary-color, #f99700) 35%, #0b1220)
+  );
+  animation: event-countdown-shift 16s ease-in-out infinite alternate;
+}
+
+.event-countdown-panel {
+  position: relative;
+  z-index: 1;
+  max-width: min(56rem, 94vw);
+  padding: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+}
+
+.event-countdown-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.5vw, 2rem);
+  font-weight: 650;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+}
+
+.event-countdown-imminent {
+  margin: 0;
+  font-size: clamp(1.75rem, 5vw, 4.5rem);
+  font-weight: 750;
+  line-height: 1.15;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.event-countdown-label {
+  margin: 0;
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  opacity: 0.92;
+}
+
+.event-countdown-digits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(0.75rem, 2vw, 1.75rem);
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.event-countdown-digits > div {
+  min-width: 5.5rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.event-countdown-num {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(3rem, 10vw, 7.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+}
+
+.event-countdown-digits--sec .event-countdown-num {
+  font-size: clamp(5rem, 18vw, 10rem);
+  color: #ff6b6b;
+}
+
+.event-countdown-unit {
+  font-size: clamp(0.85rem, 1.5vw, 1.35rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.event-countdown-bar {
+  width: min(28rem, 80vw);
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+  margin-top: 0.75rem;
+}
+
+.event-countdown-bar > span {
+  display: block;
+  height: 100%;
+  background: color-mix(in srgb, var(--secondary-color, #f99700) 80%, #fff);
+  border-radius: inherit;
+  transition: width 0.9s linear;
+}
+
+.event-countdown-panel[data-urgency="warn"] .event-countdown-num {
+  color: #ffd666;
+}
+
+.event-countdown-panel[data-urgency="imminent"] .event-countdown-imminent {
+  color: #ffe8a3;
+}
+
+.event-countdown-panel[data-urgency="critical"] {
+  color: #fff;
+}
+
+.event-countdown-skip {
+  margin-top: 1rem;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Presenter: Overlay über der Stage */
+#present-stage {
+  position: relative;
+}
+
+#present-event-countdown {
+  border-radius: inherit;
+}
+
+/* Stage-Leinwand */
+#view-stage {
+  position: relative;
+}
+
+#stage-event-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+}
+
+/* Admin: Grafik-Upload */
+.event-image-upload {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--bg-soft);
+}
+
+.event-image-upload.is-drag {
+  outline: 2px solid var(--focus);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-soft));
+}
+
+.event-image-preview {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #111;
+}
+
+.event-image-meta {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.events-table .event-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  vertical-align: middle;
+  background: var(--bg-soft);
+}
+
+.events-table .event-thumb-ph {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+@keyframes event-countdown-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes event-countdown-shift {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(18deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-countdown-bg,
+  .event-countdown-bg--plain,
+  .event-countdown-host.is-ending .event-countdown-panel {
+    animation: none;
+    transition: none;
+  }
+}

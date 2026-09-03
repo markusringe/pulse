@@ -1,0 +1,40 @@
+<article class="help-article-body" data-article="roles-admin">
+  <h2>Guide: Instanz-Admin</h2>
+  <p><strong>Dauer:</strong> ca. 30 Minuten · Zugang: <code>ADMIN_SECRET</code> in <code>.env</code> (Header <code>X-Admin-Key</code>)</p>
+
+  <h3 id="einrichtung">1. Einrichtung</h3>
+  <ol class="help-steps">
+    <li><a href="#/help/installation">Installation</a> (lokal, Docker oder VPS).</li>
+    <li><a href="#/admin/branding">Branding</a>: Logo, Farben, App-Name, Sprachen.</li>
+    <li><a href="#/admin/privacy">Datenschutz</a> &amp; Impressum pflegen.</li>
+    <li><a href="#/admin/ssl">SSL</a> (Let’s Encrypt) nach DNS &amp; Port 80.</li>
+    <li><a href="#/admin/settings">Einstellungen</a>: Export <code>pulse-settings.json</code> (Schema 2) sichern.</li>
+  </ol>
+
+  <h3 id="betrieb">2. Betrieb</h3>
+  <ul>
+    <li><a href="#/admin/events">Events</a>: Status <em>aktiv</em> für öffentlichen Join.</li>
+    <li>Deck-Editor: <code>#/admin/sessions/&lt;code&gt;</code> — Folieninhalt bearbeiten, Bulk, kopieren.</li>
+    <li>Daten-Backup: Verzeichnis <code>data/</code> (<code>pulse.db</code>, JSON, <code>ssl/</code>).</li>
+    <li>Updates: <code>git pull</code>, <code>docker compose up -d --build</code>.</li>
+  </ul>
+
+  <h3 id="debug">3. Debug-Checkliste</h3>
+  <table class="help-table">
+    <tr><td>Health</td><td><code>/api/health</code></td></tr>
+    <tr><td>Logs</td><td><code>docker compose logs pulse</code></td></tr>
+    <tr><td>SSL</td><td><a href="#/admin/ssl">#/admin/ssl</a></td></tr>
+    <tr><td>Secrets</td><td><code>.env</code> / <code>INSTALL-CREDENTIALS.txt</code> (VPS)</td></tr>
+  </table>
+
+  <aside class="help-callout help-callout--warn">
+    <code>pulse-settings.json</code> enthält private SSL-Schlüssel — wie ein Passwort behandeln. Keine Sessions/Events im Export.
+  </aside>
+
+  <nav class="help-see-also">
+    <strong>Siehe auch:</strong>
+    <a href="#/help/admin">Admin-Details</a> ·
+    <a href="#/help/troubleshooting">Fehlerbehebung</a> ·
+    <a href="./help/guides/admin-checklist.html">Admin-Checkliste (Druck)</a>
+  </nav>
+</article>

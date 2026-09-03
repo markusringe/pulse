@@ -1,0 +1,110 @@
+/**
+ * Moderations-Drawer, Notfallbanner, Consent.
+ * Farben über Theme-Tokens — Status-Aktionen als kräftige Badges, nicht als blasse Links.
+ */
+
+.moderation-panel {
+  position: absolute;
+  right: var(--pad);
+  top: 72px;
+  width: min(360px, 92vw);
+  max-height: 70vh;
+  overflow: auto;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  z-index: 20;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+
+.question-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  margin-top: 8px;
+  background: var(--bg-soft);
+  color: var(--ink);
+}
+
+.question-card .actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.question-card .actions button {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.question-card .approve {
+  background: var(--status-ok-bg);
+  color: var(--status-ok);
+  border-color: var(--status-ok);
+}
+
+.question-card .hide {
+  background: var(--status-err-bg);
+  color: var(--status-err);
+  border-color: var(--status-err);
+}
+
+.emergency-banner {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 40;
+  background: #9b1c1c;
+  color: #fff;
+  text-align: center;
+  padding: 12px;
+  font-weight: 750;
+}
+
+#panic-button {
+  background: #9b1c1c;
+  color: #fff;
+}
+
+#panic-button.panic-on {
+  background: var(--status-ok-bg);
+  color: var(--status-ok);
+}
+
+.mod-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.mod-filters .is-on {
+  border-color: var(--focus);
+  background: var(--bg-soft);
+}
+
+@media print {
+  .app-footer,
+  .present-dock,
+  .skip-link,
+  .lang-switch,
+  .moderation-panel,
+  #consent-dialog {
+    display: none !important;
+  }
+}
+
+.consent-dialog {
+  max-width: 28rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg-elev);
+  color: var(--ink);
+  padding: 22px;
+}

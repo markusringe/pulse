@@ -1,0 +1,33 @@
+<article class="help-article-body" data-article="faq">
+  <h2>Häufige Fragen</h2>
+  <h3>Brauchen Teilnehmende ein Konto?</h3>
+  <p>Nein. Code eingeben oder QR scannen reicht. Optional ein Teamname beim Quiz.</p>
+  <h3>Funktioniert es ohne Internet?</h3>
+  <p>Der Live-Modus braucht den Server. Ohne Backend schaltet die App auf einen Demo-Kanal (zwei Tabs im selben Browser können sich sehen). Bei Verbindungsabbruch erscheint ein Offline-Banner; die App baut die Leitung selbst wieder auf.</p>
+  <h3>Kann ich Ergebnisse erst später zeigen?</h3>
+  <p>Ja. „Ergebnisse zeigen“ bzw. Taste <kbd>R</kbd>. Vorher sehen Sie nur, dass Stimmen da sind. Q&amp;A und Quiz sind davon ausgenommen.</p>
+  <h3>Wie viele Folien?</h3>
+  <p>Mehrere Folien als Liste vorbereiten oder live hinzufügen. Höchstens 40 Folien. Typen: Multiple Choice, Wortwolke, Q&amp;A, Quiz, Bewertungsskala, Ranking, 100 Punkte, Freitext, Bildwahl, Terminfindung, <strong>Picker</strong> (10–50 Optionen).</p>
+  <h3>Was ist der Proben-Modus?</h3>
+  <p>Checkbox oder Button „Probe“ auf der Startseite. Banner ohne Live-Publikum; der Join-Link lässt sich in der UI nicht kopieren. Beitritt per bekanntem Code bleibt technisch möglich.</p>
+  <h3>Geht das auf dem Handy?</h3>
+  <p>Ja. Abstimmung und Reaktionen liegen unten in der Daumenzone. Wischen wechselt nur lokale Karten, nicht die Folie auf der Bühne.</p>
+  <h3>Kann eine Q&amp;A-Frage privat sein?</h3>
+  <p>Ja. Andere Teilnehmende sehen sie nicht; Autor und Präsentator schon. Kategorien helfen beim Filtern.</p>
+  <h3>Was ist der Unterschied zwischen Session und Event?</h3>
+  <p>Eine <strong>Session</strong> ist die laufende Umfrage mit Code, Folien und Ergebnissen. Ein <strong>Event</strong> ist die öffentliche Hülle (Titel, Datum, Status) mit demselben sechsstelligen Code. Es gibt nur ein Deck pro Event — keine getrennten „Sets“. Ad-hoc-Sessions ohne Event-Karte legen Sie unter <code>#/admin</code> an.</p>
+  <h3>Warum kann ich einem Event nicht beitreten?</h3>
+  <p>Bei Status <em>geplant</em> oder <em>archiviert</em> ist der Join für Teilnehmende gesperrt. Nur <em>aktive</em> Events erlauben den Beitritt über die Startseite. Beendete Events zeigen Ergebnisse, aber keinen neuen Live-Join für Unbekannte.</p>
+  <h3>Wo bearbeite ich die Folien eines Events?</h3>
+  <p>Unter <code>#/admin/sessions/&lt;code&gt;</code> (Link aus der Event-Liste oder nach dem Anlegen). Dort Folieninhalte ändern (Stift oder Doppelklick), sortieren, aus einer anderen Session kopieren und löschen. Einfache Typen öffnen einen Inline-Editor, komplexe ein Modal — siehe <a href="#/help/events">Events und Session-Decks</a>.</p>
+
+  <h3>Was ist der Unterschied zwischen Picker und Multiple Choice?</h3>
+  <p><strong>Multiple Choice</strong> hat 2–6 Optionen auf einen Blick. <strong>Picker</strong> ist für lange Listen (10–50): mit Suche, optionalen Kategorien und Darstellung als Liste, Raster oder Dropdown. Details: <a href="#/help/picker">Picker-Hilfe</a>.</p>
+
+  <h3>Kann ich mehrere Folien auf einmal ändern?</h3>
+  <p>Ja. Im Deck-Editor Folien per Checkbox auswählen (Shift = Bereich). Die Bulk-Leiste bietet Eigenschaften (Ergebnisse verbergen/zeigen, geplante Minuten, Notizen), Duplizieren und Löschen.</p>
+  <h3>Gibt es ein Video?</h3>
+  <p>Noch nicht. Artikel mit „Video folgt“ sind Transkripte; es werden keine Filmdateien mitgeliefert.</p>
+  <h3>Wie installiere ich Pulse auf einem Server?</h3>
+  <p><strong>VPS Ubuntu:</strong> <code>sudo ./scripts/install-vps-ubuntu.sh</code> (Docker inklusive). <strong>Docker lokal:</strong> <code>./scripts/install.sh --docker</code>. <strong>Ohne Docker:</strong> <code>./scripts/install.sh</code> und <code>npm start</code>. Ausführlich: <a href="#/help/installation">Installation und Betrieb</a>.</p>
+</article>

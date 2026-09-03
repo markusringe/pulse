@@ -1,0 +1,82 @@
+x-pulse: &pulse
+  build: .
+  restart: unless-stopped
+  environment:
+    PORT: "3000"
+    ADMIN_SECRET: ${ADMIN_SECRET:-bitte-in-produktion-setzen}
+    SQLITE_PATH: /app/data/pulse.db
+    REDIS_URL: redis://redis:6379
+    BATCH_INTERVAL_MS: "100"
+    SSL_DIR: /app/data/ssl
+    HTTPS_PORT: ${HTTPS_PORT:-3443}
+    # Optional: Prefix für /css /js /assets in index.html (eigenes CDN).
+    # ASSET_BASE: ${ASSET_BASE:-}
+  volumes:
+    # Host-./data: Branding, Events, SQLite und SSL persistent und backup-freundlich
+    - ./data:/app/data
+  expose:
+    - "3000"
+  depends_on:
+    - redis
+
+services:
+  # Zwei App-Prozesse hinter nginx ip_hash. Ohne Redis (lokal npm start) nur EIN Prozess.
+  # SQLite auf dem gemeinsamen Volume ist nicht multi-writer-hart — Produktiv: DATABASE_URL.
+  pulse:
+    <<: *pulse
+
+  pulse-b:
+    <<: *pulse
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis-data:/data
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    depends_on:
+      - pulse
+      - pulse-b
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+    expose:
+      - "9090"
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  redis-data:
+  prometheus-data:
+  grafana-data:

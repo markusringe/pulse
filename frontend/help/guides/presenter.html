@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Präsentator-Guide — Pulse</title>
+    <link rel="stylesheet" href="../../css/help.css" />
+  </head>
+  <body class="help-guide-page">
+    <header class="help-guide-head">
+      <p class="eyebrow">Pulse</p>
+      <h1>Präsentator-Guide</h1>
+      <p>Kurzcheck vor und während der Live-Veranstaltung. Zum PDF: im Browser „Drucken“ → „Als PDF sichern“.</p>
+      <p class="help-no-print">
+        <button type="button" class="btn primary" data-help-print>Drucken</button>
+        <a class="btn ghost" href="../../#/help">Zur Hilfe</a>
+      </p>
+    </header>
+    <main>
+      <h2>Vor dem Start</h2>
+      <ol>
+        <li>Beamer auf die Present-Ansicht (großer Text, dunkler Hintergrund prüft Kontrast).</li>
+        <li>Session unter <a href="#/admin">Sessions</a> anlegen, Event-Karte auf der Startseite nutzen oder Demo laden. Optional Presenter-Passwort. Für einen Test ohne Publikum „Probe“ wählen.</li>
+        <li>Folienliste prüfen (höchstens 40). Bei Events: Deck unter <code>#/admin/sessions/&lt;code&gt;</code> — Fragen und Optionen dort bearbeiten, bevor Sie live gehen. QR und sechsstelliger Code müssen von hinten lesbar sein.</li>
+        <li>Handy als Teilnehmer testen (zweites Gerät, nicht denselben Tab).</li>
+      </ol>
+      <h2>Während der Session</h2>
+      <ul>
+        <li>Lobby: warten, bis genug Leute da sind, dann „Los geht’s“.</li>
+        <li>Ergebnisse mit „Ergebnisse zeigen“ oder Taste <kbd>R</kbd> einblenden (nicht nötig für Q&amp;A und Quiz).</li>
+        <li>Live-Statistik: Teilnehmer, Stimmenanteil, geplante Minuten vs. Timer. Notizen nur für Sie, nicht auf der Leinwand.</li>
+        <li>Wortwolke: Klick zeigt die Anzahl; PNG exportieren, wenn die Wolke auf der Bühne stehen soll.</li>
+        <li><strong>Picker</strong> (10–50 Optionen): Teilnehmende nutzen Suche und ggf. Kategorien; Ergebnisse mit <kbd>R</kbd> einblenden. Details: <code>#/help/picker</code>.</li>
+        <li>Moderation für Q&amp;A offen halten (Kategorien, Gruppieren, privat). Export: Q&amp;A CSV / PDF mit <code>User_xxxx</code>.</li>
+        <li>Quiz: Timer nicht mit der Leertaste abbrechen. Teams und Power-Ups steuern die Teilnehmenden selbst.</li>
+        <li>Notfall blendet die Bühne ab, bis Sie fortsetzen. Probe: Join-Link in der UI deaktiviert. „Link kopieren“ nur außerhalb der Probe.</li>
+      </ul>
+      <h2>Tastatur (nur was die App wirklich kann)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Taste</th>
+            <th>Wirkung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><kbd>→</kbd> oder <kbd>Leertaste</kbd></td>
+            <td>Nächste Folie. Leertaste gilt <em>nicht</em> auf Quiz-Folien (Timer schützen).</td>
+          </tr>
+          <tr>
+            <td><kbd>←</kbd></td>
+            <td>Vorherige Folie</td>
+          </tr>
+          <tr>
+            <td><kbd>R</kbd></td>
+            <td>Ergebnisse zeigen / verbergen</td>
+          </tr>
+          <tr>
+            <td><kbd>T</kbd></td>
+            <td>Hell- / Dunkelmodus</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Es gibt keine Stummschaltung per Taste und keine Extra-Shortcuts für Moderation — das sind Buttons in der Leiste.</p>
+      <h2>Wenn etwas hakt</h2>
+      <p>Status „Verbinde …“ und Offline-Banner: warten, die App verbindet neu. Falscher Code: sechs Ziffern von der Leinwand. Gesperrt: Admin-Schlüssel oder Presenter-Passwort.</p>
+      <p class="muted">Hilfe v6 · Stand 2026-09-03 · Online: <code>#/help</code> · Picker: <code>#/help/picker</code></p>
+      <section class="help-guide-notes" aria-label="Eigene Notizen">
+        <h2>Notizen</h2>
+        <p class="muted">Platz für eigene Checklisten vor der Veranstaltung.</p>
+        <div style="min-height:6rem;border:1px dashed var(--line,#ccc);border-radius:8px;"></div>
+      </section>
+    </main>
+    <script>
+      document.querySelector("[data-help-print]")?.addEventListener("click", () => window.print());
+    </script>
+  </body>
+</html>
