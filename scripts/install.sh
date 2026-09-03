@@ -62,6 +62,9 @@ log "Node $(node -v), npm $(npm -v)"
 log "Abhängigkeiten installieren (npm install)…"
 npm install
 
+log "Tailwind CSS v4 kompilieren (pulse.css)…"
+npm run css:build
+
 # .env aus Vorlage, ADMIN_SECRET nur setzen wenn noch Platzhalter
 if [ ! -f .env ]; then
   if [ -f .env.example ]; then

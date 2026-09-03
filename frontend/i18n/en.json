@@ -382,7 +382,7 @@
   "events.field.start": "Start date",
   "events.field.end": "End date",
   "events.field.startTime": "Start time (countdown)",
-  "events.field.startTimeHint": "Optional. Countdown on stage until this time. Empty = start immediately.",
+  "events.field.startTimeHint": "Optional. Countdown on home page and stage until this time. Empty = start immediately.",
   "events.field.image": "Event image",
   "events.field.imageHint": "PNG, JPEG, WebP or SVG · max 2 MB · recommended 1920×1080",
   "events.field.imageDrop": "Drop image here or choose a file",

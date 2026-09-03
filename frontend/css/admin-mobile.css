@@ -1,0 +1,499 @@
+/**
+ * Admin-Bereich — mobile-first Layout, Karten statt Tabellen, Touch-Formulare.
+ * Ergänzt pulse.css; Stage/Presenter bleiben unverändert.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Shell — alle Admin-Views (#/admin…)                                 */
+/* ------------------------------------------------------------------ */
+
+body.admin-area {
+  overflow-x: hidden;
+}
+
+.pulse-admin-shell,
+body.admin-area .view:not([hidden]) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: max(0.75rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+
+body.admin-area .view:not([hidden]) {
+  padding-top: 0.5rem;
+}
+
+.events-page.pulse-admin-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.pulse-admin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.pulse-admin-head > div {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.pulse-admin-shell .admin-page-head,
+.pulse-admin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pulse-admin-shell .admin-page-head h1 {
+  margin: 0;
+  font-size: clamp(1.15rem, 4vw, 1.45rem);
+}
+
+/* ------------------------------------------------------------------ */
+/* Admin-Chrome — kompakt auf Smartphones                              */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 47.99rem) {
+  .admin-chrome {
+    padding: 8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+  }
+
+  .admin-chrome-title {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .admin-chrome-tools {
+    order: 3;
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .admin-chrome-tools .admin-user-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-chrome-tools .admin-back {
+    font-size: 0.88rem;
+  }
+
+  .admin-chrome-tools .lang-switch {
+    scale: 0.92;
+    transform-origin: right center;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Session-Hub — Formular + Sidebar                                    */
+/* ------------------------------------------------------------------ */
+
+.pulse-admin-shell .admin-sessions-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (min-width: 56rem) {
+  .pulse-admin-shell .admin-sessions-layout {
+    grid-template-columns: minmax(0, 1fr) min(17rem, 100%);
+  }
+}
+
+.pulse-admin-shell .admin-create-form.pulse-card,
+.pulse-admin-shell .admin-create-form.panel {
+  padding: clamp(14px, 3vw, 18px);
+  border-radius: var(--radius-pulse, 1.125rem);
+  border: 1px solid color-mix(in srgb, var(--line) 40%, transparent);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+}
+
+.pulse-admin-section,
+.pulse-admin-shell .admin-form-section {
+  border-radius: var(--radius-pulse-sm, 0.75rem);
+  border: 1px solid color-mix(in srgb, var(--line) 35%, transparent);
+  background: var(--bg-soft);
+  padding: 12px 14px;
+}
+
+/* Eingabefelder — Touch-Höhe, Labels oben */
+.pulse-admin-shell .field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.pulse-admin-shell .field select,
+.pulse-admin-shell .field textarea,
+.pulse-admin-shell .users-toolbar input,
+.pulse-admin-shell .users-toolbar select,
+.pulse-admin-shell .events-filters select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-pulse-sm, 0.75rem);
+  border: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+  background: var(--bg-elev);
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.pulse-admin-shell .field textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.pulse-admin-shell .admin-form-grid--2,
+.pulse-admin-shell .admin-form-grid--type-q {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .pulse-admin-shell .admin-form-grid--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pulse-admin-shell .admin-form-grid--type-q {
+    grid-template-columns: minmax(9rem, 11rem) minmax(0, 1fr);
+  }
+}
+
+.pulse-admin-shell .admin-template-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 30rem) {
+  .pulse-admin-shell .admin-template-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Primäre Aktionen — sticky unten auf schmalen Screens */
+@media (max-width: 47.99rem) {
+  .pulse-admin-shell .admin-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    margin-inline: -14px;
+    padding: 12px 14px max(12px, env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
+    backdrop-filter: blur(6px);
+    border-top: 1px solid var(--line);
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pulse-admin-shell .admin-form-actions .btn.primary,
+  .pulse-admin-shell .admin-form-actions .pulse-btn-primary {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .pulse-admin-shell .admin-form-actions__secondary {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.pulse-admin-shell .admin-sessions-sidebar {
+  position: static;
+  top: auto;
+}
+
+.pulse-admin-shell .recent-list--compact a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* Folienliste (Draft) — Karten auf Mobil */
+@media (max-width: 640px) {
+  .pulse-admin-shell .deck-item {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px 10px;
+    padding: 10px 12px;
+  }
+
+  .pulse-admin-shell .deck-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  .pulse-admin-shell .deck-actions .btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive Tabellen → Karten (data-label auf td)                    */
+/* ------------------------------------------------------------------ */
+
+.table-wrap--responsive {
+  overflow: visible;
+}
+
+@media (max-width: 47.99rem) {
+  .table-wrap--responsive table {
+    border-collapse: separate;
+    border-spacing: 0 10px;
+  }
+
+  .table-wrap--responsive thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .table-wrap--responsive tbody tr {
+    display: block;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg-elev);
+    box-shadow: var(--shadow);
+  }
+
+  .table-wrap--responsive tbody tr td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border: none;
+    text-align: right;
+  }
+
+  .table-wrap--responsive tbody tr td::before {
+    content: attr(data-label);
+    font-weight: 650;
+    font-size: 0.82rem;
+    color: var(--muted);
+    text-align: left;
+    flex: 0 0 42%;
+    max-width: 11rem;
+  }
+
+  .table-wrap--responsive tbody tr td:not([data-label])::before,
+  .table-wrap--responsive tbody tr td[data-label=""]::before {
+    content: none;
+  }
+
+  .table-wrap--responsive .users-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .table-wrap--responsive .users-actions .btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .table-wrap--responsive tbody tr td.users-actions::before {
+    content: attr(data-label);
+    align-self: flex-start;
+    margin-bottom: 4px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Events / Benutzer — Toolbar & Kopf                                  */
+/* ------------------------------------------------------------------ */
+
+.events-head .btn.primary,
+.events-head .pulse-btn-primary,
+.admin-page-head .btn.primary,
+.admin-page-head .pulse-btn-primary {
+  min-height: 44px;
+  align-self: flex-start;
+}
+
+.users-toolbar,
+.events-filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+@media (min-width: 40rem) {
+  .users-toolbar {
+    grid-template-columns: 1fr auto auto;
+    align-items: end;
+  }
+
+  .events-filters {
+    grid-template-columns: minmax(12rem, 16rem);
+  }
+}
+
+/* Session-Deck — Folienzeilen mobil */
+@media (max-width: 640px) {
+  .session-slide-row {
+    grid-template-columns: 1.25rem 1.5rem minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+
+  .session-slide-tools {
+    grid-column: 1 / -1;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .session-slide-tools .btn {
+    min-height: 44px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Dialoge — nahezu Vollbild auf Mobil                                 */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 640px) {
+  .admin-dialog,
+  dialog.modal,
+  .admin-login-dialog {
+    max-width: 100vw;
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+
+  .admin-dialog .modal-actions,
+  dialog.modal .modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .admin-dialog .modal-actions .btn,
+  dialog.modal .modal-actions .btn {
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+/* Branding / Einstellungsseiten */
+body.admin-area .branding-page,
+body.admin-area .legal-page.panel {
+  max-width: 48rem;
+}
+
+body.admin-area .branding-page .field input,
+body.admin-area .branding-page .field select,
+body.admin-area .branding-page .field textarea {
+  min-height: 44px;
+  width: 100%;
+}
+
+.table-wrap--responsive .backup-actions {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+
+.table-wrap--responsive .backup-actions .btn {
+  width: 100%;
+  min-height: 44px;
+}
+
+/* Teams — Karten und Mitglieder mobil */
+.pulse-admin-shell .teams-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 30rem) {
+  .pulse-admin-shell .teams-grid {
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  }
+}
+
+.pulse-admin-shell .team-card-btn {
+  min-height: 44px;
+  padding: 4px;
+}
+
+.pulse-admin-shell .add-member-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.pulse-admin-shell .add-member-row select,
+.pulse-admin-shell .add-member-row .btn {
+  width: 100%;
+  min-height: 44px;
+}
+
+@media (max-width: 640px) {
+  .pulse-admin-shell .member-item {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .pulse-admin-shell .member-actions {
+    flex-direction: column;
+  }
+
+  .pulse-admin-shell .member-actions .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+/* Backups / Updates — Panels */
+.pulse-admin-shell .backups-panel,
+.pulse-admin-shell .backups-upload,
+.pulse-admin-shell .backup-list-wrap {
+  margin-bottom: 1rem;
+}
+
+.pulse-admin-shell .update-version-row.panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .pulse-admin-shell .update-version-row.panel {
+    grid-template-columns: 1fr;
+  }
+
+  .pulse-admin-shell .update-version-current {
+    font-size: 1.5rem;
+  }
+
+  body.admin-area .branding-page form.panel {
+    padding: 14px;
+  }
+}

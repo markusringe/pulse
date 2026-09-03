@@ -138,16 +138,16 @@ function buildToolbar(role) {
 }
 
 function buildComposer() {
-  const form = el("form", "qa-composer");
+  const form = el("form", "qa-composer pulse-card");
   form.innerHTML = `
     <label class="field">
       <span>Deine Frage</span>
-      <textarea id="qa-input" maxlength="${MAX_LEN}" rows="3" placeholder="Frage an das Podium…" required></textarea>
+      <textarea id="qa-input" class="pulse-input" maxlength="${MAX_LEN}" rows="3" placeholder="Frage an das Podium…" required></textarea>
     </label>
     <div class="qa-composer-row">
       <label class="field qa-cat-field">
         <span>Kategorie</span>
-        <select id="qa-category">
+        <select id="qa-category" class="pulse-input">
           <option value="tech">Technik</option>
           <option value="org">Organisation</option>
           <option value="content">Inhalt</option>
@@ -158,7 +158,7 @@ function buildComposer() {
     </div>
     <div class="qa-composer-row">
       <span id="qa-count" class="muted">0/${MAX_LEN}</span>
-      <button type="submit" class="btn primary">Frage senden</button>
+      <button type="submit" class="btn primary pulse-btn-primary">Frage senden</button>
     </div>`;
   const input = form.querySelector("#qa-input");
   const count = form.querySelector("#qa-count");

@@ -41,7 +41,7 @@ import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
 import { showProfilePage } from "./profilePage.js?v=nav30";
 import { ensureStepUp } from "./stepUp.js?v=nav47";
-import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav32";
+import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav54";
 import { drawQrCode, joinUrlFromLocation, absorbPathJoinRoute } from "./qrRender.js?v=nav48";
 import {
   initTheme,
@@ -69,6 +69,8 @@ import {
   destroyPresenterStats,
 } from "./presenterStats.js";
 import { bindJoinGestures, hapticSuccess } from "./joinMobile.js";
+import { bindPresentMobileUi } from "./presentMobile.js?v=nav54";
+import { bindAdminMobileNav, bindPublicMobileMenu } from "./mobileNav.js?v=nav54";
 import {
   renderRankingInput,
   renderPointsInput,
@@ -308,6 +310,9 @@ async function bootUi() {
   bindSslPage();
   bindPrivacyPages();
   bindHelp();
+  bindPresentMobileUi();
+  bindAdminMobileNav();
+  bindPublicMobileMenu();
   bindEvents({
     drawQrCode,
     joinUrl,
@@ -1157,14 +1162,14 @@ async function enterJoin(code) {
   if (!code) {
     const err = explainError("session_missing_code");
     els.joinQuestion.textContent = err.title;
-    if (els.joinFeedback) els.joinFeedback.innerHTML = err.html;
+    setJoinFeedback(err.html, { html: true, state: "error" });
     return;
   }
   const session = await loadSession(code);
   if (!session) {
     const err = explainError("session_not_found");
     els.joinQuestion.textContent = err.title;
-    if (els.joinFeedback) els.joinFeedback.innerHTML = err.html;
+    setJoinFeedback(err.html, { html: true, state: "error" });
     els.joinChoice.hidden = true;
     els.joinWordForm.hidden = true;
     return;
@@ -1387,11 +1392,11 @@ function connectRealtime(role) {
   rt.on("error", (payload) => {
     const msg = payload?.message || payload?.error || "Verbindungsfehler";
     if (ctx.role === "join") {
-      if (payload?.error === "blocked") els.joinFeedback.textContent = t("qa.blocked");
-      else if (payload?.error === "qa_closed") els.joinFeedback.textContent = t("qa.closed");
-      else if (payload?.error === "rate") els.joinFeedback.textContent = t("qa.rateWait", { n: payload.waitTime || 30 });
-      else if (payload?.pendingReview) els.joinFeedback.textContent = t("qa.pendingHint");
-      else els.joinFeedback.innerHTML = explainError(msg).html;
+      if (payload?.error === "blocked") setJoinFeedback(t("qa.blocked"), { state: "error" });
+      else if (payload?.error === "qa_closed") setJoinFeedback(t("qa.closed"), { state: "error" });
+      else if (payload?.error === "rate") setJoinFeedback(t("qa.rateWait", { n: payload.waitTime || 30 }), { state: "error" });
+      else if (payload?.pendingReview) setJoinFeedback(t("qa.pendingHint"));
+      else setJoinFeedback(explainError(msg).html, { html: true, state: "error" });
     }
     if (msg.toLowerCase().includes("admin")) els.adminDialog?.showModal?.();
   });
@@ -1560,7 +1565,7 @@ function renderJoinSlide() {
     return;
   }
   els.joinQuestion.textContent = slide.question;
-  els.joinFeedback.textContent = "";
+  setJoinFeedback("");
   const voted = ctx.votedSlide.has(slide.id);
   els.joinChoice.hidden = slide.type !== "choice";
   els.joinWordForm.hidden = slide.type !== "wordcloud";
@@ -1580,7 +1585,7 @@ function renderJoinSlide() {
     slide.options.forEach((opt, i) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "choice-btn";
+      btn.className = "choice-btn pulse-choice-btn";
       btn.dataset.color = String(i);
       btn.dataset.optionId = opt.id;
       btn.setAttribute("role", "option");
@@ -1652,7 +1657,7 @@ function submitTypedVote(payload) {
   ctx.rt?.send("vote", { code: ctx.session.code, slideId: slide.id, ...payload });
   hapticSuccess();
   playBrandSound();
-  els.joinFeedback.textContent = t("join.voted");
+  setJoinFeedback(t("join.voted"));
   if (els.joinExtra) {
     els.joinExtra.querySelectorAll("button, input, textarea").forEach((el) => {
       el.disabled = true;
@@ -1665,12 +1670,13 @@ function submitVote(optionId, btn) {
   if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused) return;
   ctx.votedSlide.add(slide.id);
   btn.classList.add("is-selected");
+  btn.setAttribute("aria-selected", "true");
   const group = btn.parentElement || els.joinChoice;
   for (const b of group.querySelectorAll("button")) b.disabled = true;
   ctx.rt?.send("vote", { code: ctx.session.code, optionId, slideId: slide.id });
   hapticSuccess();
   playBrandSound();
-  els.joinFeedback.textContent = t("join.voted");
+  setJoinFeedback(t("join.voted"));
 }
 
 function onChoiceKeys(ev) {
@@ -1737,7 +1743,21 @@ function onWordSubmit(ev) {
   els.wordInput.value = "";
   hapticSuccess();
   playBrandSound();
-  els.joinFeedback.textContent = t("join.wordSent");
+  setJoinFeedback(t("join.wordSent"));
+}
+
+/**
+ * Statuszeile in der Teilnehmeransicht — Text und optionaler Zustand (success/error).
+ * @param {string} content
+ * @param {{ html?: boolean, state?: string }} [opts]
+ */
+function setJoinFeedback(content, { html = false, state = "" } = {}) {
+  const el = els.joinFeedback;
+  if (!el) return;
+  if (html) el.innerHTML = content || "";
+  else el.textContent = content || "";
+  if (state) el.dataset.state = state;
+  else el.removeAttribute("data-state");
 }
 
 function currentSlide() {

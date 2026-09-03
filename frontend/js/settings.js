@@ -52,7 +52,7 @@ export function bindSettingsPanel(options = {}) {
 
 /** Auth-Einstellungen (Selbstregistrierung) laden — nur für Admins sichtbar. */
 export async function refreshAuthSettingsPanel() {
-  const box = document.getElementById("auth-settings-panel");
+  const box = document.getElementById("auth-settings-accordion");
   if (!box) return;
   const me = getAuthUser();
   if (!me || me.role !== "admin") {

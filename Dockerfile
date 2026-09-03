@@ -1,3 +1,13 @@
+FROM node:22-alpine AS css-builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install
+COPY frontend/css/tailwind.input.css ./frontend/css/tailwind.input.css
+COPY frontend/index.html ./frontend/index.html
+COPY frontend/js ./frontend/js
+COPY frontend/help ./frontend/help
+RUN npm run css:build
+
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
@@ -8,10 +18,11 @@ RUN apk add --no-cache postfix su-exec ca-certificates \
   && postconf -e 'smtpd_relay_restrictions = permit_mynetworks,reject_unauth_destination' \
   && postconf -e 'smtpd_recipient_restrictions = permit_mynetworks,reject' \
   && mkdir -p /app/data
-COPY package.json ./
-RUN npm install --omit=dev
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 COPY lib ./lib
 COPY frontend ./frontend
+COPY --from=css-builder /app/frontend/css/pulse.css ./frontend/css/pulse.css
 COPY server.js ./
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \

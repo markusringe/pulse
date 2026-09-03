@@ -74,7 +74,7 @@ function renderTeamList(teams) {
   wrap.innerHTML = teams
     .map(
       (team) => `
-    <article class="panel team-card" data-team-id="${esc(team.id)}">
+    <article class="panel team-card pulse-card" data-team-id="${esc(team.id)}">
       <button type="button" class="team-card-btn" data-open-team="${esc(team.id)}">
         <h3>${esc(team.name)}</h3>
         <p class="muted">${esc(team.description || "Keine Beschreibung")}</p>
@@ -111,8 +111,8 @@ async function renderMembers(teamId, team) {
       ${
         showActions
           ? `<div class="member-actions">
-        <button type="button" class="btn ghost btn-sm" data-role-change="${esc(m.id)}" data-role="teammember">Zu Teammember</button>
-        <button type="button" class="btn ghost btn-sm" data-role-change="${esc(m.id)}" data-role="teamleader">Zu Teamleiter</button>
+        <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-role-change="${esc(m.id)}" data-role="teammember">Zu Teammember</button>
+        <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-role-change="${esc(m.id)}" data-role="teamleader">Zu Teamleiter</button>
         <button type="button" class="btn danger btn-sm" data-remove-member="${esc(m.id)}">Entfernen</button>
       </div>`
           : ""
@@ -213,32 +213,32 @@ export async function showTeamsPage() {
   }
 
   root.innerHTML = `
-    <header class="admin-page-head">
+    <header class="admin-page-head pulse-admin-head">
       <div>
-        <p class="eyebrow">Administration</p>
+        <p class="eyebrow pulse-eyebrow">Administration</p>
         <h1>Teams</h1>
       </div>
-      ${canCreateTeam() ? `<button type="button" class="btn primary" id="teams-create">Neues Team</button>` : ""}
+      ${canCreateTeam() ? `<button type="button" class="btn primary pulse-btn-primary" id="teams-create">Neues Team</button>` : ""}
     </header>
     <div id="teams-list" class="teams-grid"></div>
-    <dialog id="teams-dialog" class="modal">
-      <form method="dialog" id="teams-form" class="panel teams-dialog-panel">
+    <dialog id="teams-dialog" class="modal admin-dialog">
+      <form method="dialog" id="teams-form" class="panel teams-dialog-panel pulse-card">
         <h2 id="teams-dialog-title">Team</h2>
-        <label class="field"><span>Name</span><input id="teams-form-name" required maxlength="120" /></label>
-        <label class="field"><span>Beschreibung</span><textarea id="teams-form-desc" rows="3" maxlength="500"></textarea></label>
+        <label class="field"><span>Name</span><input id="teams-form-name" class="pulse-input" required maxlength="120" /></label>
+        <label class="field"><span>Beschreibung</span><textarea id="teams-form-desc" class="pulse-input" rows="3" maxlength="500"></textarea></label>
         <div class="form-actions">
-          <button type="button" class="btn ghost" id="teams-form-cancel">Schließen</button>
-          <button type="submit" class="btn primary" id="teams-form-save">Speichern</button>
+          <button type="button" class="btn ghost pulse-btn-ghost" id="teams-form-cancel">Schließen</button>
+          <button type="submit" class="btn primary pulse-btn-primary" id="teams-form-save">Speichern</button>
         </div>
         <section class="team-members-section">
           <h3>Mitglieder</h3>
           <div id="teams-add-member" class="add-member-row" hidden>
-            <select id="teams-member-select" aria-label="Benutzer wählen"></select>
-            <select id="teams-member-role" aria-label="Team-Rolle">
+            <select id="teams-member-select" class="pulse-input" aria-label="Benutzer wählen"></select>
+            <select id="teams-member-role" class="pulse-input" aria-label="Team-Rolle">
               <option value="teammember">Teammember</option>
               <option value="teamleader">Teamleiter</option>
             </select>
-            <button type="button" class="btn" id="teams-add-member-btn">Hinzufügen</button>
+            <button type="button" class="btn pulse-btn-primary" id="teams-add-member-btn">Hinzufügen</button>
           </div>
           <ul id="teams-members-list" class="members-list"></ul>
         </section>
@@ -248,14 +248,14 @@ export async function showTeamsPage() {
         </section>
       </form>
     </dialog>
-    <dialog id="teams-create-dialog" class="modal">
-      <form method="dialog" id="teams-create-form" class="panel">
+    <dialog id="teams-create-dialog" class="modal admin-dialog">
+      <form method="dialog" id="teams-create-form" class="panel pulse-card">
         <h2>Neues Team</h2>
-        <label class="field"><span>Name</span><input id="teams-create-name" required maxlength="120" /></label>
-        <label class="field"><span>Beschreibung</span><textarea id="teams-create-desc" rows="3" maxlength="500"></textarea></label>
+        <label class="field"><span>Name</span><input id="teams-create-name" class="pulse-input" required maxlength="120" /></label>
+        <label class="field"><span>Beschreibung</span><textarea id="teams-create-desc" class="pulse-input" rows="3" maxlength="500"></textarea></label>
         <div class="form-actions">
-          <button type="button" class="btn ghost" id="teams-create-cancel">Abbrechen</button>
-          <button type="submit" class="btn primary">Anlegen</button>
+          <button type="button" class="btn ghost pulse-btn-ghost" id="teams-create-cancel">Abbrechen</button>
+          <button type="submit" class="btn primary pulse-btn-primary">Anlegen</button>
         </div>
       </form>
     </dialog>`;

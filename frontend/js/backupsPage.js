@@ -69,12 +69,12 @@ function renderBackupTable(backups) {
       const checksumShort = b.checksum ? `${esc(b.checksum.slice(7, 23))}…` : "—";
       const date = new Date(b.createdAt).toLocaleString("de-DE");
       return `<tr>
-        <td>${esc(date)}</td>
-        <td>${esc(formatBytes(b.size))}</td>
-        <td><code class="backup-checksum">${checksumShort}</code></td>
-        <td class="backup-actions">
-          <button type="button" class="btn ghost btn-sm" data-backup-download="${esc(b.filename)}">Download</button>
-          <button type="button" class="btn ghost btn-sm btn-warning" data-backup-restore="${esc(b.filename)}">Wiederherstellen</button>
+        <td data-label="Datum">${esc(date)}</td>
+        <td data-label="Größe">${esc(formatBytes(b.size))}</td>
+        <td data-label="Checksum"><code class="backup-checksum">${checksumShort}</code></td>
+        <td class="backup-actions" data-label="Aktionen">
+          <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-backup-download="${esc(b.filename)}">Download</button>
+          <button type="button" class="btn ghost btn-sm btn-warning pulse-btn-ghost" data-backup-restore="${esc(b.filename)}">Wiederherstellen</button>
         </td>
       </tr>`;
     })

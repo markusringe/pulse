@@ -1,0 +1,257 @@
+/**
+ * Presenter-Ansicht — Tablet/Smartphone, kompakte Dock-Leiste, responsive Wortwolke.
+ * Stage-Ansicht (#/stage) bleibt unverändert.
+ */
+
+.view-present {
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+.view-present .present-head {
+  min-width: 0;
+}
+
+/* Kopfzeile — Brand, Frage, Meta */
+@media (max-width: 1024px) {
+  .view-present .present-top {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .view-present .present-meta {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .view-present #present-question {
+    font-size: clamp(1.1rem, 4.2vw, 1.65rem);
+    text-align: left;
+  }
+}
+
+/* Bühne — Mindesthöhe für Folien */
+.view-present .present-stage {
+  position: relative;
+  min-height: min(42dvh, 100%);
+  min-width: 0;
+}
+
+/* Wortwolke — Canvas an Container, Rangliste darunter (nicht ausblenden) */
+.view-present .wordcloud-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr minmax(160px, 22%);
+  min-height: min(48dvh, 100%);
+  height: 100%;
+  min-width: 0;
+}
+
+.view-present #wordcloud-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  display: block;
+}
+
+@media (max-width: 860px) {
+  .view-present .wordcloud-stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(220px, 1fr) auto;
+    gap: 0;
+  }
+
+  /* Global in styles.css ausgeblendet — Presenter zeigt Rangliste unter dem Canvas */
+  .view-present .word-rank {
+    display: grid !important;
+    border-left: none;
+    border-top: 1px solid var(--line);
+    max-height: min(28dvh, 220px);
+    padding: 10px 12px;
+  }
+
+  .view-present .wordcloud-export {
+    top: max(8px, env(safe-area-inset-top));
+    right: 8px;
+  }
+}
+
+/* Dock — Join-Block und Navigation */
+.pulse-present-dock,
+.view-present .present-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  min-width: 0;
+}
+
+.view-present .present-deck {
+  flex: none;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.view-present .join-block {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .view-present .join-block {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .view-present .join-block .qr {
+    width: min(140px, 40vw);
+    height: auto;
+  }
+}
+
+/* Folien-Navigation — Kernaktionen sichtbar, Rest im Overflow-Menü */
+.view-present .present-slide-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.view-present .present-nav-core {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.view-present .present-nav-core .btn,
+.view-present .present-nav-overflow summary {
+  min-height: 44px;
+}
+
+.view-present .present-nav-overflow {
+  position: relative;
+}
+
+.view-present .present-nav-overflow summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-pulse-sm, 0.75rem);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  font-weight: 650;
+}
+
+.view-present .present-nav-overflow summary::-webkit-details-marker {
+  display: none;
+}
+
+.view-present .present-nav-overflow[open] summary {
+  background: var(--bg-soft);
+  outline: 2px solid var(--focus);
+}
+
+.view-present .present-nav-overflow-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: min(100vw - 2rem, 16rem);
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 640px) {
+  .view-present .present-nav-overflow-panel {
+    position: fixed;
+    inset: auto 12px max(12px, env(safe-area-inset-bottom)) 12px;
+    max-height: min(50dvh, 100%);
+    overflow-y: auto;
+  }
+}
+
+.view-present .present-nav-overflow-panel .btn {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+}
+
+/* Notfall — visuell getrennt, größere Touch-Fläche */
+.view-present .present-panic-btn {
+  min-height: 48px;
+  min-width: 48px;
+  margin-left: auto;
+  font-weight: 750;
+}
+
+@media (max-width: 640px) {
+  .view-present .present-panic-btn {
+    width: 100%;
+    margin-left: 0;
+    order: 10;
+  }
+
+  .view-present .present-slide-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-present .present-nav-core {
+    justify-content: space-between;
+  }
+
+  .view-present .present-nav-overflow {
+    width: 100%;
+  }
+
+  .view-present .present-nav-overflow summary {
+    width: 100%;
+  }
+}
+
+/* Presenter-Statistik einklappbar */
+.view-present .presenter-stats {
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .view-present .presenter-stats-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Moderation — volle Breite auf schmalen Screens */
+@media (max-width: 640px) {
+  .view-present .moderation-panel {
+    position: fixed;
+    inset: auto 0 max(0px, env(safe-area-inset-bottom)) 0;
+    width: 100%;
+    max-height: min(70dvh, 100%);
+    border-radius: 16px 16px 0 0;
+    top: auto;
+    right: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-present .reaction-float {
+    animation: none;
+  }
+}

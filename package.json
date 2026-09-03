@@ -1,6 +1,6 @@
 {
   "name": "pulse",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "private": true,
   "description": "Pulse — Live-Interaktion für Umfragen, Wortwolken, Q&A und Quiz (Vanilla JS + Node.js)",
   "main": "server.js",
@@ -30,6 +30,9 @@
     "bootstrap:admin": "node scripts/bootstrap-admin.js",
     "migrate:events": "node scripts/migrate-events.js",
     "docs:sync-version": "node scripts/sync-doc-version.js",
+    "css:build": "bash scripts/build-css.sh",
+    "css:watch": "npx @tailwindcss/cli -i ./frontend/css/tailwind.input.css -o ./frontend/css/pulse.css --watch",
+    "build": "npm run css:build",
     "setup": "bash scripts/install.sh",
     "setup:vps": "bash scripts/install-vps-ubuntu.sh",
     "test": "node scripts/test-security.js && node scripts/test-deck.js && node scripts/test-live.js && node scripts/test-presenter.js && node scripts/test-ssl.js && node scripts/test-theme.js && node scripts/test-privacy.js && node scripts/test-help.js && node scripts/test-branding.js && node scripts/test-settings.js && node scripts/test-slides.js && node scripts/test-qa-timer.js && node scripts/test-events.js && node scripts/test-auth.js && node scripts/test-email-config.js && node scripts/test-updates.js && node scripts/test-backups.js && node scripts/test-qr.js && bash scripts/test-install-vps-path.sh && bash scripts/test-uninstall-vps-path.sh"
@@ -45,5 +48,9 @@
   },
   "optionalDependencies": {
     "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.12",
+    "tailwindcss": "^4.1.12"
   }
 }

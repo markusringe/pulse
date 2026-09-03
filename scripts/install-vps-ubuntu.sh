@@ -982,7 +982,10 @@ start_npm_stack() {
   cd "$dir"
   install_nodejs
   log "npm install (Produktion)…"
-  npm install --omit=dev || die "npm install fehlgeschlagen."
+  npm install || die "npm install fehlgeschlagen."
+  log "Tailwind CSS v4 kompilieren…"
+  npm run css:build || die "css:build fehlgeschlagen."
+  npm prune --omit=dev || die "npm prune fehlgeschlagen."
   chmod +x scripts/seed-data.sh 2>/dev/null || true
   ./scripts/seed-data.sh "$dir/data"
   ok "npm-Abhängigkeiten installiert — Start: cd $dir && npm start"

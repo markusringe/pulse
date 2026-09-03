@@ -80,4 +80,10 @@ export function syncAdminNav(viewName, hashOverride) {
     if (active) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
+  document.querySelectorAll("#admin-nav-drawer [data-admin-nav]").forEach((a) => {
+    const active = a.getAttribute("data-admin-nav") === key;
+    a.classList.toggle("is-active", active);
+    if (active) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
 }

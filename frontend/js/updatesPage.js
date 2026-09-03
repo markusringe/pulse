@@ -390,17 +390,17 @@ function renderHistory(history) {
         ? `<button type="button" class="btn ghost btn-sm" data-rollback="${esc(h.id)}">Backup wiederherstellen</button>`
         : "";
       return `<tr>
-        <td>${esc(new Date(h.at).toLocaleString())}</td>
-        <td>v${esc(h.fromVersion)} → v${esc(h.toVersion)}</td>
-        <td>${esc(statusLabel(h))}</td>
-        <td>${esc(formatDuration(h.durationMs))}</td>
-        <td>${rollbackBtn}</td>
+        <td data-label="Datum">${esc(new Date(h.at).toLocaleString())}</td>
+        <td data-label="Version">v${esc(h.fromVersion)} → v${esc(h.toVersion)}</td>
+        <td data-label="Status">${esc(statusLabel(h))}</td>
+        <td data-label="Dauer">${esc(formatDuration(h.durationMs))}</td>
+        <td data-label="Aktion">${rollbackBtn}</td>
       </tr>`;
     })
     .join("");
-  root.innerHTML = `<table class="update-history-table"><thead><tr>
-    <th>Datum</th><th>Version</th><th>Status</th><th>Dauer</th><th></th>
-  </tr></thead><tbody>${rows}</tbody></table>`;
+  root.innerHTML = `<div class="table-wrap table-wrap--responsive"><table class="update-history-table"><thead><tr>
+    <th>Datum</th><th>Version</th><th>Status</th><th>Dauer</th><th>Aktion</th>
+  </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function renderProgress(status) {

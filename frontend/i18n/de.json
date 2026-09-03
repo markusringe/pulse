@@ -382,7 +382,7 @@
   "events.field.start": "Startdatum",
   "events.field.end": "Enddatum",
   "events.field.startTime": "Startuhrzeit (Countdown)",
-  "events.field.startTimeHint": "Optional. Countdown auf der Leinwand bis zu diesem Zeitpunkt. Leer = sofort.",
+  "events.field.startTimeHint": "Optional. Countdown auf Startseite und Leinwand bis zu diesem Zeitpunkt. Leer = sofort.",
   "events.field.image": "Event-Grafik",
   "events.field.imageHint": "PNG, JPEG, WebP oder SVG · max. 2 MB · empfohlen 1920×1080",
   "events.field.imageDrop": "Grafik hierher ziehen oder Datei wählen",

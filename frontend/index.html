@@ -30,21 +30,33 @@
     <meta name="theme-color" content="#f4f6f8" />
     <meta name="description" content="Pulse — Echtzeit-Interaktion für Umfragen, Wortwolken, Q&amp;A und Quiz." />
     <title>Pulse — Live-Interaktion</title>
-    <link rel="icon" id="favicon" type="image/svg+xml" href="./assets/favicon.svg" />
-    <link rel="stylesheet" href="./css/theme.css" />
-    <link rel="stylesheet" href="./css/typography.css" />
-    <link rel="stylesheet" href="./css/components.css?v=nav5" />
-    <link rel="stylesheet" href="./css/accessibility.css" />
-    <link rel="stylesheet" href="./css/styles.css?v=nav28" />
-    <link rel="stylesheet" href="./css/join-mobile.css" />
-    <link rel="stylesheet" href="./css/branding.css?v=nav31" />
-    <link rel="stylesheet" href="./css/moderation.css" />
-    <link rel="stylesheet" href="./css/privacy-legal.css?v=nav5" />
-    <link rel="stylesheet" href="./css/help.css" />
-    <link rel="stylesheet" href="./css/stage.css" />
-    <link rel="stylesheet" href="./css/events.css?v=nav24" />
-    <link rel="stylesheet" href="./css/event-countdown.css?v=nav1" />
-    <link rel="stylesheet" href="./css/updates.css?v=nav43" />
+    <link rel="icon" id="favicon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="stylesheet" href="/css/pulse.css?v=nav54" />
+    <link rel="stylesheet" href="/css/home-mobile.css?v=nav54" />
+    <link rel="stylesheet" href="/css/admin-mobile.css?v=nav54" />
+    <link rel="stylesheet" href="/css/theme.css" />
+    <link rel="stylesheet" href="/css/typography.css" />
+    <link rel="stylesheet" href="/css/components.css?v=nav54" />
+    <link rel="stylesheet" href="/css/accessibility.css" />
+    <link rel="stylesheet" href="/css/styles.css?v=nav54" />
+    <link rel="stylesheet" href="/css/join-mobile.css?v=nav54" />
+    <link rel="stylesheet" href="/css/branding.css?v=nav31" />
+    <link rel="stylesheet" href="/css/moderation.css" />
+    <link rel="stylesheet" href="/css/privacy-legal.css?v=nav5" />
+    <link rel="stylesheet" href="/css/help.css" />
+    <link rel="stylesheet" href="/css/stage.css" />
+    <link rel="stylesheet" href="/css/events.css?v=nav54" />
+    <link rel="stylesheet" href="/css/event-countdown.css?v=nav54" />
+    <link rel="stylesheet" href="/css/join-slides.css?v=nav54" />
+    <link rel="stylesheet" href="/css/admin-settings.css?v=nav54" />
+    <link rel="stylesheet" href="/css/present-mobile.css?v=nav54" />
+    <link rel="stylesheet" href="/css/updates.css?v=nav43" />
+    <!-- Minimaler Fallback, falls einzelne Stylesheets auf Mobilnetzen ausbleiben. -->
+    <style>
+      html { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f4f6f8; color: #1a1d23; }
+      .icon-btn svg { width: 24px; height: 24px; display: block; }
+      .logo { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: #007cc1; color: #fff; font-weight: 800; }
+    </style>
   </head>
   <body>
     <a class="skip-link" href="#app" data-i18n="nav.skip">Zum Inhalt springen</a>
@@ -65,7 +77,17 @@
       <header id="admin-chrome" class="admin-chrome" hidden>
         <div class="admin-chrome-bar">
           <p class="admin-chrome-title" data-i18n="admin.hubTitle">Administration</p>
-          <nav class="admin-nav" aria-label="Administration">
+          <button
+            type="button"
+            id="admin-nav-toggle"
+            class="pulse-btn-ghost admin-nav-toggle"
+            aria-expanded="false"
+            aria-controls="admin-nav-drawer"
+            aria-label="Administrationsmenü öffnen"
+          >
+            Menü
+          </button>
+          <nav class="admin-nav admin-nav--desktop" aria-label="Administration">
             <a href="#/admin" data-admin-nav="sessions" data-i18n="admin.nav.sessions">Sessions</a>
             <a href="#/admin/events" data-admin-nav="events" data-i18n="admin.nav.events">Events</a>
             <a href="#/admin/teams" data-admin-nav="teams">Teams</a>
@@ -90,6 +112,8 @@
             <a class="admin-back" href="#/" data-i18n="admin.back">← Mitmachen</a>
           </div>
         </div>
+        <div id="admin-nav-overlay" class="pulse-drawer-overlay" hidden></div>
+        <nav id="admin-nav-drawer" class="pulse-drawer-panel admin-nav-drawer" hidden aria-hidden="true" aria-label="Administration (mobil)"></nav>
         <div id="admin-update-progress" class="update-progress-panel admin-chrome-progress" hidden>
           <p id="admin-update-progress-text" class="muted update-progress-label"></p>
           <div class="update-progress-bar" aria-hidden="true"><div class="update-progress-fill"></div></div>
@@ -116,9 +140,9 @@
         </div>
       </section>
       <!-- Benutzerverwaltung (#/admin/users) -->
-      <section id="view-users" class="view view-users" data-view="users" hidden></section>
+      <section id="view-users" class="view view-users pulse-admin-shell" data-view="users" hidden></section>
       <!-- Team-Verwaltung (#/admin/teams) -->
-      <section id="view-teams" class="view view-teams" data-view="teams" hidden></section>
+      <section id="view-teams" class="view view-teams pulse-admin-shell" data-view="teams" hidden></section>
       <!-- Benutzerprofil (#/admin/profile) -->
       <section id="view-profile" class="view view-profile" data-view="profile" hidden></section>
       <!--
@@ -126,24 +150,32 @@
         das Join-Formular sichtbar bleibt und nicht nur der Footer.
         Session anlegen und Admin-Chrome liegen auf #/admin (#view-admin).
       -->
-      <section id="view-home" class="view view-home" data-view="home">
-        <header class="home-brand">
-          <img id="brand-logo-home" class="brand-logo" alt="" hidden />
-          <span class="logo" id="home-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
+      <section id="view-home" class="view view-home pulse-home-shell" data-view="home">
+        <header class="home-brand pulse-home-header">
+          <img id="brand-logo-home" class="brand-logo pulse-home-logo-img" alt="" hidden />
+          <span class="logo pulse-home-logo" id="home-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
           <div class="home-title">
-            <p class="eyebrow" id="home-app-name" data-brand-name data-i18n="app.name">Pulse</p>
-            <h1 data-i18n="app.tagline">Live-Feedback, ohne Ballast.</h1>
+            <p class="eyebrow pulse-eyebrow" id="home-app-name" data-brand-name data-i18n="app.name">Pulse</p>
+            <h1 class="pulse-home-headline" data-i18n="app.tagline">Live-Feedback, ohne Ballast.</h1>
           </div>
-          <!-- Sprache, Theme, Admin: eigene Grid-Spalte, damit das Zahnrad nicht aus dem Viewport geschoben wird. -->
-          <div class="home-tools">
+          <div class="home-tools pulse-home-tools">
+            <button
+              type="button"
+              id="home-menu-toggle"
+              class="pulse-btn-ghost home-menu-toggle"
+              aria-expanded="false"
+              aria-controls="home-menu-drawer"
+              aria-label="Menü öffnen"
+            >
+              Menü
+            </button>
             <div id="lang-switch" class="lang-switch" role="group" aria-label="Sprache"></div>
-            <button type="button" id="btn-theme-home" class="icon-btn" data-theme-toggle aria-pressed="false" aria-label="Dunkles Design aktivieren" title="Zum dunklen Design wechseln">
+            <button type="button" id="btn-theme-home" class="icon-btn pulse-btn-ghost" data-theme-toggle aria-pressed="false" aria-label="Dunkles Design aktivieren" title="Zum dunklen Design wechseln">
               <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>
               <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13.5A7.5 7.5 0 1 1 10.5 5 6 6 0 0 0 19 13.5Z"/></svg>
             </button>
-            <!-- Echtes href, damit Administration auch ohne Click-Handler per Hash-Route öffnet. -->
-            <a href="#/admin" id="btn-admin-home" class="icon-btn" data-i18n-aria="home.adminLink" data-i18n-title="home.adminLink" aria-label="Administration" title="Administration">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
+            <a href="#/admin" id="btn-admin-home" class="icon-btn pulse-btn-ghost admin-home-link" data-i18n-aria="home.adminLink" data-i18n-title="home.adminLink" aria-label="Administration" title="Administration">
+              <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
                 <path d="M4 7h16M4 12h16M4 17h16" />
                 <circle cx="9" cy="7" r="2.1" />
                 <circle cx="15" cy="12" r="2.1" />
@@ -153,14 +185,20 @@
           </div>
         </header>
 
+        <p class="pulse-muted home-intro" data-i18n="home.joinHint">Sechsstelligen Code eingeben und live abstimmen.</p>
+
+        <section id="home-event-hero" class="home-event-hero" hidden aria-live="polite">
+          <div id="home-event-countdown" class="home-event-countdown"></div>
+        </section>
+
         <div class="home-join">
-          <form id="join-form" class="panel join-panel" autocomplete="off">
-            <h2 data-i18n="home.join">Teilnehmen</h2>
-            <p class="muted" data-i18n="home.joinHint">Sechsstelligen Code eingeben und live abstimmen.</p>
+          <form id="join-form" class="panel join-panel pulse-card" autocomplete="off">
+            <h2 class="pulse-section-title" data-i18n="home.join">Teilnehmen</h2>
             <label class="field">
               <span data-i18n="home.code">Join-Code</span>
               <input
                 id="join-code-input"
+                class="pulse-input pulse-input-code"
                 name="code"
                 inputmode="numeric"
                 maxlength="6"
@@ -169,16 +207,22 @@
                 aria-label="Sechsstelliger Join-Code"
               />
             </label>
-            <button type="submit" class="btn primary" data-i18n="home.enter">Beitreten</button>
-            <!-- Teamname nur wenn joinTeamEnabled im Branding — standardmäßig ausgeblendet. -->
+            <button type="submit" class="btn primary pulse-btn-primary" data-i18n="home.enter">Beitreten</button>
             <label class="field" id="join-team-wrap" hidden>
               <span data-i18n="join.team">Teamname (optional)</span>
-              <input id="join-team" maxlength="40" autocomplete="off" data-i18n-placeholder="join.teamPlaceholder" placeholder="z. B. Team Blau" />
+              <input id="join-team" class="pulse-input" maxlength="40" autocomplete="off" data-i18n-placeholder="join.teamPlaceholder" placeholder="z. B. Team Blau" />
             </label>
           </form>
         </div>
-        <!-- Event-Karten mit Join-Link, QR und Copy-Paste-Text; leer wenn keine Events. -->
         <section id="home-events" class="home-events" hidden></section>
+        <div id="home-menu-overlay" class="pulse-drawer-overlay" hidden></div>
+        <nav id="home-menu-drawer" class="pulse-drawer-panel home-menu-drawer" hidden aria-hidden="true" aria-label="Navigation">
+          <button type="button" class="pulse-btn-ghost pulse-drawer-close" data-home-menu-close aria-label="Menü schließen">Schließen</button>
+          <a href="#/help">Hilfe</a>
+          <a href="#/privacy" data-i18n="footer.privacy">Datenschutz</a>
+          <a href="#/impressum" data-i18n="footer.imprint">Impressum</a>
+          <a href="#/admin" data-i18n="home.adminLink">Administration</a>
+        </nav>
       </section>
 
       <!--
@@ -187,26 +231,25 @@
         app.js weiter über getElementById binden kann.
         hidden: ohne JS bleibt die Startseite (Mitmachen) sichtbar.
       -->
-      <section id="view-admin" class="view view-admin" data-view="adminHub" hidden>
-        <header class="admin-page-head">
+      <section id="view-admin" class="view view-admin pulse-admin-shell" data-view="adminHub" hidden>
+        <header class="admin-page-head pulse-admin-head">
           <img id="brand-logo-admin" class="brand-logo" alt="" hidden />
-          <span class="logo" id="admin-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
+          <span class="logo pulse-home-logo" id="admin-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
           <div>
-            <p class="eyebrow" id="admin-app-name" data-brand-name data-i18n="app.name">Pulse</p>
+            <p class="eyebrow pulse-eyebrow" id="admin-app-name" data-brand-name data-i18n="app.name">Pulse</p>
             <h1 data-i18n="admin.sessionsTitle">Sessions</h1>
           </div>
         </header>
 
-        <!-- Zweispaltig: Formular links, letzte Sessions rechts (untereinander auf schmalen Screens). -->
         <div class="admin-sessions-layout">
-          <form id="create-form" class="panel create-panel admin-create-form" autocomplete="off">
+          <form id="create-form" class="panel create-panel admin-create-form pulse-card" autocomplete="off">
             <header class="admin-form-intro">
               <h2 data-i18n="home.create">Neue Session</h2>
               <p class="muted admin-form-lead" data-i18n="admin.sessionsLead">Ad-hoc-Session anlegen — für geplante Veranstaltungen nutzen Sie Events.</p>
             </header>
 
             <div class="admin-form-sections">
-              <section class="admin-form-section" aria-labelledby="admin-section-basics">
+              <section class="admin-form-section pulse-admin-section" aria-labelledby="admin-section-basics">
                 <h3 class="admin-form-section__title" id="admin-section-basics" data-i18n="admin.section.basics">Grundlagen</h3>
                 <div class="admin-form-grid admin-form-grid--type-q">
                   <label class="field field--compact">
@@ -376,7 +419,7 @@
               </section>
 
               <footer class="admin-form-actions">
-                <button type="submit" class="btn primary" data-i18n="home.start">Session starten</button>
+                <button type="submit" class="btn primary pulse-btn-primary" data-i18n="home.start">Session starten</button>
                 <div class="admin-form-actions__secondary">
                   <label class="field rehearsal-check field--inline">
                     <input type="checkbox" id="create-rehearsal" />
@@ -388,7 +431,7 @@
             </div>
           </form>
 
-          <aside id="recent-sessions" class="panel recent-panel admin-sessions-sidebar" hidden>
+          <aside id="recent-sessions" class="panel recent-panel admin-sessions-sidebar pulse-card" hidden>
             <h2 class="admin-sidebar-title" data-i18n="home.recent">Letzte Sessions</h2>
             <ul id="recent-list" class="recent-list recent-list--compact"></ul>
           </aside>
@@ -396,7 +439,7 @@
       </section>
 
       <!-- ===== Präsentator / Beamer ===== -->
-      <section id="view-present" class="view view-present" data-view="present" hidden>
+      <section id="view-present" class="view view-present pulse-present-shell" data-view="present" hidden>
         <div class="present-head">
         <div id="present-offline-banner" class="offline-banner" hidden role="status"></div>
         <div id="rehearsal-banner" class="rehearsal-banner" hidden role="status"></div>
@@ -454,7 +497,7 @@
 
         <aside id="presenter-stats" class="presenter-stats" hidden></aside>
 
-        <footer class="present-dock">
+        <footer class="present-dock pulse-present-dock">
           <div id="present-deck" class="present-deck"></div>
           <div class="join-block">
             <canvas id="qr-canvas" class="qr" width="200" height="200" aria-label="QR-Code zum Beitreten"></canvas>
@@ -462,22 +505,29 @@
               <p class="eyebrow">Beitreten</p>
               <p id="join-code-display" class="join-code">------</p>
               <p id="join-url" class="join-url muted"></p>
-              <button type="button" id="btn-copy-link" class="btn ghost" data-i18n="present.copy">Link kopieren</button>
+              <button type="button" id="btn-copy-link" class="btn ghost pulse-btn-ghost" data-i18n="present.copy">Link kopieren</button>
             </div>
           </div>
-          <nav class="slide-nav" aria-label="Folien">
-            <button type="button" id="btn-prev" class="btn ghost" data-i18n="present.prev">Zurück</button>
-            <span id="slide-indicator" class="muted" aria-live="polite">1 / 1</span>
-            <button type="button" id="btn-next" class="btn ghost" data-i18n="present.next">Weiter</button>
-            <button type="button" id="btn-stage-view" class="btn primary" data-i18n="present.stageView">Präsentationsansicht öffnen</button>
-            <button type="button" id="btn-slide-dup" class="btn ghost" data-i18n="deck.duplicate">Duplizieren</button>
-            <button type="button" id="btn-slide-del" class="btn ghost" data-i18n="deck.removeLive">Folie löschen</button>
-            <button type="button" id="btn-results" class="btn ghost" data-i18n="results.show">Ergebnisse zeigen</button>
-            <button type="button" id="btn-reset" class="btn ghost" data-i18n="present.reset">Ergebnisse leeren</button>
-            <button type="button" id="btn-moderation" class="btn ghost" data-i18n="present.moderation">Moderation</button>
-            <button type="button" id="btn-export-csv" class="btn ghost" data-i18n="present.exportCsv">Q&amp;A CSV</button>
-            <button type="button" id="btn-export-pdf" class="btn ghost" data-i18n="present.exportPdf">Q&amp;A PDF</button>
-            <button type="button" id="panic-button" class="btn" data-i18n="present.panic">Notfall</button>
+          <nav class="slide-nav present-slide-nav" aria-label="Folien">
+            <div class="present-nav-core">
+              <button type="button" id="btn-prev" class="btn ghost pulse-btn-ghost" data-i18n="present.prev">Zurück</button>
+              <span id="slide-indicator" class="muted" aria-live="polite">1 / 1</span>
+              <button type="button" id="btn-next" class="btn ghost pulse-btn-ghost" data-i18n="present.next">Weiter</button>
+              <button type="button" id="btn-stage-view" class="btn primary pulse-btn-primary" data-i18n="present.stageView">Präsentationsansicht öffnen</button>
+              <button type="button" id="btn-results" class="btn ghost pulse-btn-ghost" data-i18n="results.show">Ergebnisse zeigen</button>
+            </div>
+            <details class="present-nav-overflow">
+              <summary aria-label="Weitere Presenter-Aktionen">Mehr</summary>
+              <div class="present-nav-overflow-panel">
+                <button type="button" id="btn-slide-dup" class="btn ghost pulse-btn-ghost" data-i18n="deck.duplicate">Duplizieren</button>
+                <button type="button" id="btn-slide-del" class="btn ghost pulse-btn-ghost" data-i18n="deck.removeLive">Folie löschen</button>
+                <button type="button" id="btn-reset" class="btn ghost pulse-btn-ghost" data-i18n="present.reset">Ergebnisse leeren</button>
+                <button type="button" id="btn-moderation" class="btn ghost pulse-btn-ghost" data-i18n="present.moderation">Moderation</button>
+                <button type="button" id="btn-export-csv" class="btn ghost pulse-btn-ghost" data-i18n="present.exportCsv">Q&amp;A CSV</button>
+                <button type="button" id="btn-export-pdf" class="btn ghost pulse-btn-ghost" data-i18n="present.exportPdf">Q&amp;A PDF</button>
+              </div>
+            </details>
+            <button type="button" id="panic-button" class="btn present-panic-btn" data-i18n="present.panic">Notfall</button>
           </nav>
         </footer>
         <aside id="moderation-panel" class="moderation-panel" hidden></aside>
@@ -546,43 +596,43 @@
       </section>
 
       <!-- ===== Teilnehmer (Mobil) ===== -->
-      <section id="view-join" class="view view-join" data-view="join" hidden>
-        <header class="join-top">
-          <span class="logo sm" id="join-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
-          <strong id="join-session-code">------</strong>
-          <span id="join-connection-status" class="status" data-state="connecting" hidden>
+      <section id="view-join" class="view view-join pulse-join-shell" data-view="join" hidden>
+        <header class="join-top pulse-join-header">
+          <span class="logo sm pulse-home-logo" id="join-logo-mark" data-brand-mono aria-hidden="true">Pu</span>
+          <strong id="join-session-code" class="pulse-join-code">------</strong>
+          <span id="join-connection-status" class="status pulse-join-status" data-state="connecting" hidden>
             <i></i><span>Verbinde</span>
           </span>
-          <button type="button" id="btn-sound-join" class="icon-btn" data-sound-toggle aria-pressed="true" data-i18n-aria="sound.muteOn" aria-label="Ton aus (Standard)" title="Ton aus (Standard)">
+          <button type="button" id="btn-sound-join" class="icon-btn pulse-btn-ghost" data-sound-toggle aria-pressed="true" data-i18n-aria="sound.muteOn" aria-label="Ton aus (Standard)" title="Ton aus (Standard)">
             <span aria-hidden="true">🔇</span>
           </button>
-          <button type="button" id="btn-theme-join" class="icon-btn" data-theme-toggle aria-pressed="false" aria-label="Dunkles Design aktivieren" title="Zum dunklen Design wechseln">
+          <button type="button" id="btn-theme-join" class="icon-btn pulse-btn-ghost" data-theme-toggle aria-pressed="false" aria-label="Dunkles Design aktivieren" title="Zum dunklen Design wechseln">
             <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>
             <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13.5A7.5 7.5 0 1 1 10.5 5 6 6 0 0 0 19 13.5Z"/></svg>
           </button>
         </header>
-        <main class="join-main" id="join-main">
-          <div id="join-offline-banner" class="offline-banner" hidden role="status"></div>
-          <p id="join-rehearsal-hint" class="rehearsal-banner" hidden role="status"></p>
-          <p id="join-question" class="slide-question">Verbinde…</p>
-          <div id="join-lobby" class="join-lobby" hidden>
+        <main class="join-main pulse-join-main" id="join-main">
+          <div id="join-offline-banner" class="offline-banner pulse-offline-banner" hidden role="status" aria-live="assertive"></div>
+          <p id="join-rehearsal-hint" class="rehearsal-banner pulse-rehearsal-banner" hidden role="status"></p>
+          <p id="join-question" class="slide-question pulse-join-question">Verbinde…</p>
+          <div id="join-lobby" class="join-lobby pulse-muted" hidden>
             <p data-i18n="lobby.wait">Gleich geht’s los. Der Code steht auf der Leinwand.</p>
           </div>
-          <div class="join-thumb" id="join-thumb">
-            <div id="join-choice" class="choice-grid" hidden role="listbox" aria-labelledby="join-question"></div>
-            <form id="join-word-form" class="word-form" hidden>
+          <div class="join-thumb pulse-join-thumb" id="join-thumb">
+            <div id="join-choice" class="choice-grid pulse-choice-grid" hidden role="listbox" aria-labelledby="join-question"></div>
+            <form id="join-word-form" class="word-form pulse-card" hidden>
               <label class="field">
                 <span>Dein Wort</span>
-                <input id="word-input" maxlength="32" placeholder="Ein kurzes Wort" autocomplete="off" />
+                <input id="word-input" class="pulse-input" maxlength="32" placeholder="Ein kurzes Wort" autocomplete="off" />
               </label>
-              <button type="submit" class="btn primary">Senden</button>
+              <button type="submit" class="btn primary pulse-btn-primary">Senden</button>
             </form>
             <div id="join-qa" class="qa-container" hidden></div>
             <div id="join-quiz" class="quiz-container" hidden></div>
-            <div id="join-rating" class="rating-scale" hidden></div>
+            <div id="join-rating" class="rating-scale pulse-rating-scale" hidden></div>
             <div id="join-extra" class="slide-input" hidden></div>
-            <p id="join-feedback" class="feedback" role="status" aria-live="polite"></p>
-            <div id="join-reactions" class="reaction-bar"></div>
+            <p id="join-feedback" class="feedback pulse-join-feedback" role="status" aria-live="polite"></p>
+            <div id="join-reactions" class="reaction-bar pulse-join-reactions"></div>
           </div>
         </main>
       </section>
@@ -629,12 +679,20 @@
         </main>
       </section>
 
-      <section id="view-branding" class="view branding-page" hidden>
-        <h1 data-i18n="branding.title">Branding</h1>
+      <section id="view-branding" class="view branding-page pulse-admin-shell" hidden>
+        <header class="admin-page-head pulse-admin-head">
+          <div>
+            <p class="eyebrow pulse-eyebrow" data-i18n="admin.hubTitle">Administration</p>
+            <h1 data-i18n="branding.title">Branding</h1>
+          </div>
+        </header>
         <p class="muted" data-i18n="branding.intro">Erscheinungsbild: Name, Logo, Farben, Schrift und Leinwand. Datenschutz und Betrieb liegen in eigenen Menüs.</p>
-        <form id="branding-form" class="panel">
+        <form id="branding-form" class="panel pulse-card pulse-admin-form">
+          <details class="pulse-admin-accordion" open>
+            <summary data-i18n="branding.whiteLabel">White-Label</summary>
+            <div class="pulse-admin-accordion__body">
           <fieldset class="field">
-            <legend data-i18n="branding.whiteLabel">White-Label</legend>
+            <legend class="sr-only" data-i18n="branding.whiteLabel">White-Label</legend>
             <label class="field"><span data-i18n="branding.appName">App-Name</span>
               <input id="brand-app-name" maxlength="80" value="Pulse" autocomplete="organization" />
             </label>
@@ -656,6 +714,11 @@
             <label class="field"><input type="checkbox" id="brand-join-team-enabled" /> <span data-i18n="branding.joinTeamEnabled">Teamname beim Beitreten (optional)</span></label>
             <p class="muted" data-i18n="branding.joinTeamEnabledHint">Optionales Feld auf der Startseite für Quiz-Teams. Standard aus, damit Besucher nicht verwirrt werden.</p>
           </fieldset>
+            </div>
+          </details>
+          <details class="pulse-admin-accordion">
+            <summary>Logo, Schrift &amp; Medien</summary>
+            <div class="pulse-admin-accordion__body">
           <label class="field">Logo (SVG/PNG, max. 200×60)
             <input id="brand-logo-file" type="file" accept="image/png,image/svg+xml,image/jpeg" />
           </label>
@@ -682,9 +745,16 @@
           </label>
           <button type="button" id="brand-sound-clear" class="btn ghost" data-i18n="branding.clear">Entfernen</button>
           <p class="muted" data-i18n="branding.soundHint">Nur nach Klick/Geste, Standard stumm. Mute in Presenter- und Join-Ansicht.</p>
+            </div>
+          </details>
+          <details class="pulse-admin-accordion">
+            <summary>Farben, Footer &amp; Sprachen</summary>
+            <div class="pulse-admin-accordion__body">
+          <div class="pulse-brand-colors">
           <label class="field">Primary <input id="brand-primary" type="color" value="#007CC1" /></label>
           <label class="field">Secondary <input id="brand-secondary" type="color" value="#F99700" /></label>
           <label class="field">Hintergrund <input id="brand-bg" type="color" value="#ffffff" /></label>
+          </div>
           <label class="field">Footer-Text (Markdown: **fett**, [Link](url))
             <textarea id="brand-footer" rows="2">© 2026 Landeshauptstadt Saarbrücken</textarea>
           </label>
@@ -692,25 +762,34 @@
           <label class="field"><span data-i18n="branding.homepage">Homepage-URL</span>
             <input id="brand-homepage-url" type="url" placeholder="https://www.saarbruecken.de" autocomplete="url" />
           </label>
-          <fieldset class="field">
+          <fieldset class="field pulse-brand-langs">
             <legend data-i18n="branding.languages">Sprachen</legend>
             <label><input type="checkbox" name="lang" value="de" checked /> Deutsch</label>
             <label><input type="checkbox" name="lang" value="en" checked /> English</label>
             <label><input type="checkbox" name="lang" value="fr" checked /> Français</label>
           </fieldset>
+            </div>
+          </details>
+          <div class="pulse-admin-form-sticky">
           <p id="branding-msg" class="muted" role="status"></p>
-          <button type="submit" class="btn primary" data-i18n="branding.save">Speichern</button>
+          <button type="submit" class="btn primary pulse-btn-primary" data-i18n="branding.save">Speichern</button>
+          </div>
         </form>
       </section>
 
-      <section id="view-ssl" class="view branding-page" hidden>
-        <h1 data-i18n="ssl.title">SSL-Zertifikate</h1>
+      <section id="view-ssl" class="view branding-page pulse-admin-shell" hidden>
+        <header class="admin-page-head pulse-admin-head">
+          <div>
+            <p class="eyebrow pulse-eyebrow" data-i18n="admin.hubTitle">Administration</p>
+            <h1 data-i18n="ssl.title">SSL-Zertifikate</h1>
+          </div>
+        </header>
         <p class="muted" data-i18n="ssl.intro">Kostenlose HTTPS-Zertifikate von Let’s Encrypt. Die Domain muss per DNS auf diesen Server zeigen, Port 80 muss aus dem Internet erreichbar sein.</p>
-        <div id="ssl-https-meta" class="ssl-meta">
+        <div id="ssl-https-meta" class="ssl-meta pulse-card panel">
           <p>HTTPS wartet auf ein gültiges Zertifikat.</p>
           <p class="muted">Let’s-Encrypt-Client ist bereit.</p>
         </div>
-        <form id="ssl-form" class="panel">
+        <form id="ssl-form" class="panel pulse-card pulse-admin-form">
           <label class="field">
             <span data-i18n="ssl.domain">Domain</span>
             <input id="ssl-domain" name="domain" autocomplete="url" placeholder="pulse.example.de" required />
@@ -732,17 +811,24 @@
             <span data-i18n="ssl.stagingCheck">Staging-Umgebung (Tests, vom Browser nicht vertraut)</span>
           </label>
           <p id="ssl-form-msg" class="muted" role="status"></p>
-          <button type="submit" class="btn primary" data-i18n="ssl.issue">Zertifikat beantragen</button>
+          <div class="pulse-admin-form-sticky">
+          <button type="submit" class="btn primary pulse-btn-primary" data-i18n="ssl.issue">Zertifikat beantragen</button>
+          </div>
         </form>
         <h2 data-i18n="ssl.list">Vorhandene Zertifikate</h2>
         <div id="ssl-list" class="ssl-list"></div>
       </section>
 
-      <section id="view-email" class="view branding-page" hidden>
-        <h1>E-Mail-Versand</h1>
+      <section id="view-email" class="view branding-page pulse-admin-shell" hidden>
+        <header class="admin-page-head pulse-admin-head">
+          <div>
+            <p class="eyebrow pulse-eyebrow">Administration</p>
+            <h1>E-Mail-Versand</h1>
+          </div>
+        </header>
         <p class="muted">SMTP, Sendmail oder kein Versand. Ohne E-Mail-Anbindung erfolgt die Anmeldung per Kennwort.</p>
         <p id="email-status" class="muted" role="status"></p>
-        <form id="email-form" class="panel" onsubmit="return false">
+        <form id="email-form" class="panel pulse-card pulse-admin-form" onsubmit="return false">
           <label class="field">
             <span>Provider</span>
             <select id="email-provider">
@@ -781,26 +867,33 @@
             <label class="field"><span>Absender-E-Mail</span><input id="email-sendmail-from" type="email" /></label>
           </div>
           <label class="field"><span>Absender-Name</span><input id="email-from-name" value="Team Townhall" /></label>
+          <div class="pulse-admin-form-sticky">
           <p id="email-msg" class="muted" role="status"></p>
           <div class="btn-row">
-            <button type="button" class="btn primary" id="email-save">Speichern</button>
+            <button type="button" class="btn primary pulse-btn-primary" id="email-save">Speichern</button>
             <button type="button" class="btn ghost" id="email-test">Test-E-Mail senden</button>
+          </div>
           </div>
         </form>
       </section>
 
-      <section id="view-backups" class="view view-backups branding-page" data-view="backups" hidden>
-        <h1>Backups</h1>
+      <section id="view-backups" class="view view-backups pulse-admin-shell branding-page" data-view="backups" hidden>
+        <header class="admin-page-head pulse-admin-head">
+          <div>
+            <p class="eyebrow pulse-eyebrow">Administration</p>
+            <h1>Backups</h1>
+          </div>
+        </header>
         <p class="muted">Vollständige Sicherung aller Instanzdaten als ZIP — Wiederherstellung gruppenweise nach Admin-Bereichen.</p>
 
-        <div class="backups-panel panel">
+        <div class="backups-panel panel pulse-card">
           <h2>Neues Backup</h2>
-          <p class="muted">Erstellt ein vollständiges Backup aller Daten als ZIP-Datei und startet den Download.</p>
-          <button type="button" id="backup-create-btn" class="btn primary">Backup erstellen</button>
+          <p class="muted">Erstellt ein vollständiges Backup aller Daten als ZIP-Datei auf dem Server.</p>
+          <button type="button" id="backup-create-btn" class="btn primary pulse-btn-primary">Backup erstellen</button>
         </div>
 
         <h2>Verfügbare Backups</h2>
-        <div class="backup-list-wrap panel">
+        <div class="backup-list-wrap panel pulse-card table-wrap table-wrap--responsive">
           <table class="backup-table" id="backups-table">
             <thead>
               <tr>
@@ -814,7 +907,7 @@
           </table>
         </div>
 
-        <div class="backups-upload panel">
+        <div class="backups-upload panel pulse-card">
           <h2>Backup hochladen</h2>
           <p class="muted">ZIP-Datei für die Wiederherstellung hochladen (max. 100&nbsp;MB).</p>
           <label class="field settings-file-label">
@@ -825,7 +918,7 @@
         </div>
 
         <h2>Automatische Backups</h2>
-        <form id="backup-config-form" class="panel">
+        <form id="backup-config-form" class="panel pulse-card">
           <label class="field">
             <input type="checkbox" id="backup-auto-enabled" checked />
             <span>Automatische Backups aktivieren</span>
@@ -850,18 +943,23 @@
             <input id="backup-dir-label" readonly />
           </label>
           <p id="backup-config-msg" class="muted" role="status"></p>
-          <button type="submit" class="btn primary">Einstellungen speichern</button>
+          <button type="submit" class="btn primary pulse-btn-primary">Einstellungen speichern</button>
         </form>
 
         <p id="backup-msg" class="muted" role="status"></p>
       </section>
 
-      <section id="view-updates" class="view branding-page" hidden>
-        <h1>Updates</h1>
+      <section id="view-updates" class="view pulse-admin-shell branding-page" hidden>
+        <header class="admin-page-head pulse-admin-head">
+          <div>
+            <p class="eyebrow pulse-eyebrow">Administration</p>
+            <h1>Updates</h1>
+          </div>
+        </header>
         <p class="muted">Automatische Prüfung auf neue GitHub-Releases und sichere Installation mit Backup.</p>
         <p id="update-disabled-hint" class="muted" hidden></p>
 
-        <div class="update-version-row panel">
+        <div class="update-version-row panel pulse-card">
           <div>
             <p class="muted">Aktuelle Version</p>
             <p id="update-current-version" class="update-version-current">v—</p>
@@ -882,8 +980,8 @@
         </div>
 
         <p>
-          <button type="button" id="btn-update-check" class="btn ghost">Jetzt prüfen</button>
-          <button type="button" id="btn-update-install" class="btn primary" hidden>Update jetzt installieren</button>
+          <button type="button" id="btn-update-check" class="btn ghost pulse-btn-ghost">Jetzt prüfen</button>
+          <button type="button" id="btn-update-install" class="btn primary pulse-btn-primary" hidden>Update jetzt installieren</button>
         </p>
         <p id="update-msg" class="muted" role="status"></p>
 
@@ -1043,14 +1141,22 @@
         </main>
       </section>
 
-      <section id="view-events" class="view events-page" data-view="events" hidden>
+      <section id="view-events" class="view events-page pulse-admin-shell" data-view="events" hidden>
         <div id="events-root"></div>
       </section>
 
-      <section id="view-settings" class="view branding-page" hidden>
-        <h1 data-i18n="settings.title">Einstellungen</h1>
+      <section id="view-settings" class="view branding-page pulse-admin-shell" hidden>
+        <header class="admin-page-head pulse-admin-head">
+          <div>
+            <p class="eyebrow pulse-eyebrow" data-i18n="admin.hubTitle">Administration</p>
+            <h1 data-i18n="settings.title">Einstellungen</h1>
+          </div>
+        </header>
         <p class="muted" data-i18n="settings.opsIntro">Betrieb der Instanz: Intervalle, Filter und Sicherung. Erscheinungsbild unter Branding, Rechtstexte unter Datenschutz.</p>
-        <form id="settings-ops-form" class="panel">
+        <details class="pulse-admin-accordion pulse-card panel" open>
+          <summary data-i18n="settings.title">Betrieb</summary>
+          <div class="pulse-admin-accordion__body">
+        <form id="settings-ops-form" class="pulse-admin-form">
           <label class="field"><span data-i18n="settings.interval">Frage-Intervall (Sekunden)</span>
             <input id="brand-interval" type="number" min="10" max="120" value="30" />
           </label>
@@ -1063,10 +1169,16 @@
             <input id="brand-extra-words" />
           </label>
           <p id="settings-ops-msg" class="muted" role="status"></p>
-          <button type="submit" class="btn primary" data-i18n="settings.saveOps">Speichern</button>
+          <div class="pulse-admin-form-sticky">
+          <button type="submit" class="btn primary pulse-btn-primary" data-i18n="settings.saveOps">Speichern</button>
+          </div>
         </form>
-        <section id="settings-panel" class="panel settings-panel" aria-labelledby="settings-heading">
-          <h2 id="settings-heading" data-i18n="settings.backupTitle">Sicherung</h2>
+          </div>
+        </details>
+        <details class="pulse-admin-accordion pulse-card panel">
+          <summary id="settings-heading" data-i18n="settings.backupTitle">Sicherung</summary>
+          <div class="pulse-admin-accordion__body">
+        <section id="settings-panel" class="settings-panel" aria-labelledby="settings-heading">
           <p class="muted" data-i18n="settings.intro">Branding (inkl. Logo), Rechtstexte und SSL-Zertifikate als Datei sichern. Für vollständige Instanz-Backups siehe <a href="#/admin/backups">Backups</a>. Die Datei enthält private Schlüssel — wie ein Passwort aufbewahren. Umfragen und Sessions sind nicht enthalten.</p>
           <div class="settings-actions">
             <button type="button" id="settings-export" class="btn primary" data-i18n="settings.export">Exportieren</button>
@@ -1086,8 +1198,12 @@
           </div>
           <p id="settings-msg" class="muted" role="status"></p>
         </section>
-        <section id="auth-settings-panel" class="panel settings-panel" hidden aria-labelledby="auth-settings-heading">
-          <h2 id="auth-settings-heading">Benutzerverwaltung</h2>
+          </div>
+        </details>
+        <details class="pulse-admin-accordion pulse-card panel" id="auth-settings-accordion" hidden>
+          <summary id="auth-settings-heading">Benutzerverwaltung</summary>
+          <div class="pulse-admin-accordion__body">
+        <section id="auth-settings-panel" class="settings-panel" aria-labelledby="auth-settings-heading">
           <p class="muted">Einstellungen für Anmeldung und Registrierung. Änderungen erfordern eine erneute PIN-Bestätigung.</p>
           <label class="field">
             <input type="checkbox" id="auth-self-reg" />
@@ -1095,6 +1211,8 @@
           </label>
           <p id="auth-settings-msg" class="muted" role="status"></p>
         </section>
+          </div>
+        </details>
       </section>
     </div>
 
@@ -1123,6 +1241,6 @@
       <button type="button" id="consent-ok" class="btn primary" data-i18n="consent.ok">Verstanden</button>
     </aside>
 
-    <script type="module" src="./js/app.js?v=nav48"></script>
+    <script type="module" src="/js/app.js?v=nav54"></script>
   </body>
 </html>

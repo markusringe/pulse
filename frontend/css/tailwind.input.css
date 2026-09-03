@@ -1,0 +1,322 @@
+/**
+ * Pulse — Tailwind CSS v4 (CSS-first).
+ * Build: npm run css:build  →  frontend/css/pulse.css (minified, purge)
+ * Quellen: index.html, JS-Templates, Hilfe-HTML
+ */
+
+@import "tailwindcss";
+
+@source "../index.html";
+@source "../js/**/*.js";
+@source "../help/**/*.html";
+
+/* ------------------------------------------------------------------ */
+/* Design Tokens (Light = Standard; Dark via data-theme="dark")         */
+/* ------------------------------------------------------------------ */
+
+@theme {
+  /* Breakpoints — mobile-first */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 90rem;
+  --breakpoint-2xl: 120rem;
+
+  /* Markenfarben (Saarbrücken-Fallback; Branding überschreibt per CSS-Variablen) */
+  --color-pulse-primary: #007cc1;
+  --color-pulse-primary-hover: #005b8e;
+  --color-pulse-primary-ink: #ffffff;
+  --color-pulse-secondary: #f99700;
+  --color-pulse-secondary-ink: #1a1d23;
+
+  --color-pulse-bg: #f4f6f8;
+  --color-pulse-bg-elev: #ffffff;
+  --color-pulse-bg-soft: #e8ecf0;
+  --color-pulse-ink: #1a1d23;
+  --color-pulse-muted: #3d4450;
+  --color-pulse-line: #6b7280;
+  --color-pulse-link: #0052cc;
+  --color-pulse-focus: #0052cc;
+
+  --color-pulse-ok: #14532d;
+  --color-pulse-ok-bg: #86efac;
+  --color-pulse-warn-bg: #facc15;
+  --color-pulse-err: #7f1d1d;
+  --color-pulse-err-bg: #fca5a5;
+  --color-pulse-info-bg: #93c5fd;
+
+  --radius-pulse: 1.125rem;
+  --radius-pulse-sm: 0.75rem;
+  --radius-pulse-lg: 1.375rem;
+
+  --shadow-pulse: 0 18px 40px rgb(26 29 35 / 0.08);
+  --shadow-pulse-lg: 0 24px 48px rgb(26 29 35 / 0.12);
+
+  --font-sans: "Inter", system-ui, "Segoe UI", -apple-system, "Avenir Next", sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --spacing-touch: 2.75rem;
+  --spacing-safe-b: env(safe-area-inset-bottom, 0px);
+  --spacing-safe-t: env(safe-area-inset-top, 0px);
+
+  --animate-fade-in: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dark Mode — nur bei expliziter Nutzerwahl (data-theme="dark") */
+[data-theme="dark"] {
+  --color-pulse-bg: #1c2128;
+  --color-pulse-bg-elev: #252b34;
+  --color-pulse-bg-soft: #2c3440;
+  --color-pulse-ink: #e8eaed;
+  --color-pulse-muted: #c5cad3;
+  --color-pulse-line: #9aa3b0;
+  --color-pulse-primary: #7eb6ff;
+  --color-pulse-primary-hover: #a8cfff;
+  --color-pulse-primary-ink: #1a1d23;
+  --color-pulse-link: #7eb6ff;
+  --color-pulse-focus: #7eb6ff;
+  --shadow-pulse: 0 18px 50px rgb(0 0 0 / 0.35);
+}
+
+/* Legacy-Branding-Variablen (theme.js / applyBranding) */
+:root,
+[data-theme="light"] {
+  --primary-color: var(--color-pulse-primary);
+  --secondary-color: var(--color-pulse-secondary);
+  --bg: var(--color-pulse-bg);
+  --bg-elev: var(--color-pulse-bg-elev);
+  --ink: var(--color-pulse-ink);
+  --muted: var(--color-pulse-muted);
+  --line: var(--color-pulse-line);
+  --btn-primary-bg: var(--color-pulse-primary);
+  --btn-primary-ink: var(--color-pulse-primary-ink);
+  --btn-primary-hover: var(--color-pulse-primary-hover);
+  --link: var(--color-pulse-link);
+  --focus: var(--color-pulse-focus);
+  --radius: var(--radius-pulse);
+  --shadow: var(--shadow-pulse);
+  --pad: clamp(12px, 2.4vw, 28px);
+}
+
+/* ------------------------------------------------------------------ */
+/* Basis — mobile-first, kein horizontaler Overflow                   */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  html {
+    @apply antialiased;
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply m-0 min-h-dvh overflow-x-hidden bg-pulse-bg text-pulse-ink;
+    background-image:
+      radial-gradient(1200px 500px at 10% -10%, color-mix(in srgb, var(--color-pulse-primary) 10%, transparent), transparent 55%),
+      radial-gradient(900px 480px at 110% 10%, color-mix(in srgb, var(--color-pulse-focus) 8%, transparent), transparent 50%);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Komponenten — schrittweise Migration (Legacy-Klassen bleiben gültig) */
+/* ------------------------------------------------------------------ */
+
+@layer components {
+  .pulse-card {
+    @apply rounded-pulse border border-pulse-line/40 bg-pulse-bg-elev p-5 shadow-pulse;
+  }
+
+  .pulse-btn-primary {
+    @apply inline-flex min-h-11 w-full items-center justify-center rounded-pulse-sm bg-pulse-primary px-4 py-3 text-base font-semibold text-pulse-primary-ink shadow-sm transition-colors hover:bg-pulse-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pulse-focus disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .pulse-btn-ghost {
+    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-pulse-sm border border-pulse-line/35 bg-pulse-bg-elev px-3 py-2 text-sm font-medium text-pulse-ink transition-colors hover:bg-pulse-bg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pulse-focus;
+  }
+
+  .pulse-input {
+    @apply w-full min-h-11 rounded-pulse-sm border border-pulse-line/50 bg-pulse-bg-elev px-4 py-3 text-base text-pulse-ink placeholder:text-pulse-muted/70 focus-visible:border-pulse-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-pulse-focus;
+  }
+
+  .pulse-input-code {
+    @apply pulse-input text-center text-2xl font-semibold tracking-[0.28em] tabular-nums sm:text-3xl;
+    min-height: 3.25rem;
+  }
+
+  .pulse-eyebrow {
+    @apply m-0 text-xs font-bold uppercase tracking-[0.14em] text-pulse-muted;
+  }
+
+  .pulse-section-title {
+    @apply m-0 text-xl font-bold tracking-tight text-pulse-ink sm:text-2xl;
+  }
+
+  .pulse-muted {
+    @apply text-sm leading-relaxed text-pulse-muted;
+  }
+
+  /* Startseite — Hero + Join */
+  .pulse-home-shell {
+    @apply mx-auto flex w-full max-w-lg flex-col gap-4 px-4 pb-[max(1rem,var(--spacing-safe-b))] pt-[max(0.75rem,var(--spacing-safe-t))] sm:gap-5 sm:px-5 md:max-w-2xl md:gap-6 lg:max-w-3xl;
+  }
+
+  .pulse-home-header {
+    @apply flex items-start gap-3 sm:gap-4;
+  }
+
+  .pulse-home-logo {
+    @apply grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-pulse-primary text-sm font-extrabold tracking-tighter text-pulse-primary-ink;
+  }
+
+  .pulse-home-headline {
+    @apply m-0 text-[clamp(1.25rem,5.5vw,1.75rem)] font-bold leading-tight tracking-tight text-pulse-ink;
+  }
+
+  .pulse-home-tools {
+    @apply ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1.5 sm:gap-2;
+  }
+
+  .pulse-event-card {
+    @apply pulse-card flex flex-col gap-3 @container;
+  }
+
+  .pulse-event-card__title {
+    @apply m-0 text-lg font-bold leading-snug text-pulse-ink;
+  }
+
+  .pulse-drawer-overlay {
+    @apply fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px];
+  }
+
+  .pulse-drawer-panel {
+    @apply fixed inset-y-0 right-0 z-50 flex w-[min(100%,20rem)] flex-col gap-1 overflow-y-auto border-l border-pulse-line/30 bg-pulse-bg-elev p-4 shadow-pulse-lg pt-[max(1rem,var(--spacing-safe-t))] pb-[max(1rem,var(--spacing-safe-b))];
+  }
+
+  /* Teilnehmeransicht — mobile-first, Daumenzone unten */
+  .pulse-join-shell {
+    @apply grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-x-hidden px-4 pb-[max(1rem,var(--spacing-safe-b))] pt-[max(0.75rem,var(--spacing-safe-t))];
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .pulse-join-header {
+    @apply flex min-h-11 flex-wrap items-center gap-2;
+  }
+
+  .pulse-join-code {
+    @apply ml-auto font-mono text-base font-bold tracking-[0.22em] text-pulse-ink;
+  }
+
+  .pulse-join-question {
+    @apply m-0 text-center text-[clamp(1.15rem,4.8vw,1.75rem)] font-bold leading-snug text-pulse-ink;
+  }
+
+  .pulse-join-main {
+    @apply flex min-h-0 flex-col gap-3 overflow-y-auto;
+  }
+
+  .pulse-join-thumb {
+    @apply mt-auto flex flex-col gap-3 pb-[max(0.25rem,var(--spacing-safe-b))];
+    min-height: min(32dvh, 100%);
+    justify-content: flex-end;
+  }
+
+  .pulse-choice-grid {
+    @apply grid grid-cols-1 gap-3;
+  }
+
+  @media (min-width: 40rem) {
+    .pulse-choice-grid {
+      @apply grid-cols-2;
+    }
+  }
+
+  .pulse-choice-btn {
+    @apply relative flex min-h-11 w-full items-center gap-3 rounded-pulse border border-pulse-line/45 bg-pulse-bg-elev px-4 py-4 text-left text-base font-semibold text-pulse-ink transition-colors;
+    border-left-width: 6px;
+  }
+
+  .pulse-choice-btn.is-selected,
+  .pulse-choice-btn:disabled.is-selected {
+    @apply border-pulse-primary bg-pulse-bg-soft outline outline-[3px] outline-offset-0 outline-pulse-focus;
+  }
+
+  .pulse-choice-btn.is-selected::after,
+  .pulse-choice-btn:disabled.is-selected::after {
+    content: "✓";
+    @apply ml-auto text-lg font-bold text-pulse-primary;
+  }
+
+  .pulse-rating-scale {
+    @apply flex flex-col gap-2;
+  }
+
+  @media (min-width: 30rem) {
+    .pulse-rating-scale {
+      @apply flex-row flex-wrap justify-between gap-2;
+    }
+  }
+
+  .pulse-rating-btn {
+    @apply inline-flex min-h-11 min-w-11 flex-1 items-center justify-center rounded-pulse-sm border border-pulse-line/45 bg-pulse-bg-elev text-xl text-pulse-ink transition-colors;
+  }
+
+  .pulse-rating-btn[aria-checked="true"],
+  .pulse-rating-btn.is-selected {
+    @apply border-pulse-primary bg-pulse-primary text-pulse-primary-ink outline outline-2 outline-offset-2 outline-pulse-focus;
+  }
+
+  .pulse-join-feedback {
+    @apply min-h-[1.4em] text-center text-sm font-semibold text-pulse-primary;
+  }
+
+  .pulse-join-feedback[data-state="error"] {
+    color: var(--color-pulse-err);
+  }
+
+  .pulse-offline-banner {
+    @apply rounded-pulse-sm border border-pulse-line/40 px-3 py-2 text-sm leading-snug;
+    background: var(--color-pulse-err-bg);
+    color: var(--color-pulse-err);
+  }
+
+  .pulse-rehearsal-banner {
+    @apply rounded-pulse-sm border border-pulse-line/40 px-3 py-2 text-center text-sm font-semibold text-pulse-ink;
+    background: var(--color-pulse-info-bg);
+  }
+}

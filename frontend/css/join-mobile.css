@@ -1,10 +1,181 @@
 /**
- * Join-View: Daumen-Zone, Safe-Area, Offline-Banner.
- * Tokens aus theme.css (Stadtblau --primary-color / --btn-primary-bg).
+ * Join-View: Daumen-Zone, Safe-Area, Offline-Banner, Tailwind pulse-* Komponenten.
+ * Ergänzt pulse.css — Haptik/Swipe bleiben in joinMobile.js.
  */
 
-.offline-banner,
-.rehearsal-banner {
+.view-join.pulse-join-shell {
+  /* Safe Areas übernimmt pulse-join-shell — kein doppeltes Padding von .view */
+  padding: 0;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+.pulse-join-shell {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+}
+
+.pulse-join-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.pulse-join-header .logo.sm {
+  width: 44px;
+  height: 44px;
+  font-size: 0.75rem;
+}
+
+.pulse-join-code {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+
+.pulse-join-status {
+  font-size: 0.85rem;
+}
+
+.pulse-join-question {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.15rem, 4.8vw, 1.75rem);
+  font-weight: 750;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.pulse-join-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pulse-join-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  min-height: min(32dvh, 100%);
+  justify-content: flex-end;
+}
+
+.pulse-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (min-width: 40rem) {
+  .pulse-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pulse-choice-btn,
+.view-join .choice-btn.pulse-choice-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 16px 18px;
+  border-radius: var(--radius-pulse, 1.125rem);
+  border: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+  border-left-width: 6px;
+  background: var(--bg-elev);
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 650;
+  text-align: left;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  cursor: pointer;
+}
+
+.pulse-choice-btn.is-selected,
+.pulse-choice-btn:disabled.is-selected {
+  outline: 3px solid var(--focus);
+  background: var(--bg-soft);
+}
+
+.pulse-choice-btn.is-selected::after,
+.pulse-choice-btn:disabled.is-selected::after {
+  content: "✓";
+  margin-left: auto;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--primary-color, #007cc1);
+  flex-shrink: 0;
+}
+
+.pulse-rating-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+@media (min-width: 30rem) {
+  .pulse-rating-scale {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+}
+
+.pulse-rating-btn {
+  flex: 1 1 auto;
+  min-height: 56px;
+  min-width: 56px;
+  font-size: 1.5rem;
+  border-radius: var(--radius-pulse-sm, 0.75rem);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  color: var(--ink);
+}
+
+.pulse-rating-btn[aria-checked="true"],
+.pulse-rating-btn.is-selected {
+  background: var(--btn-primary-bg, var(--primary-color));
+  color: var(--btn-primary-ink, #fff);
+  border-color: var(--btn-primary-bg, var(--primary-color));
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pulse-join-feedback {
+  min-height: 1.4em;
+  text-align: center;
+  font-weight: 650;
+  color: var(--primary-color, #007cc1);
+}
+
+.pulse-join-feedback[data-state="error"] {
+  color: var(--status-err, #7f1d1d);
+}
+
+.pulse-join-feedback:not(:empty) {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary-color, #007cc1) 10%, var(--bg-elev));
+}
+
+.pulse-offline-banner,
+.offline-banner.pulse-offline-banner {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -13,6 +184,19 @@
   border: 1px solid var(--line);
   font-size: 0.95rem;
   line-height: 1.35;
+  background: var(--status-err-bg);
+  color: var(--status-err);
+}
+
+.pulse-rehearsal-banner,
+.rehearsal-banner.pulse-rehearsal-banner {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  text-align: center;
+  font-weight: 650;
+  background: var(--status-info-bg);
+  color: var(--status-info);
 }
 
 .offline-banner[hidden],
@@ -20,69 +204,104 @@
   display: none !important;
 }
 
-.offline-banner {
-  background: var(--status-err-bg);
-  color: var(--status-err);
+.view-join .word-form.pulse-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
 }
 
-.offline-banner strong {
-  font-weight: 750;
+.view-join .qa-composer.pulse-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
 }
 
-.rehearsal-banner {
-  background: var(--status-info-bg);
-  color: var(--status-info);
-  text-align: center;
-  font-weight: 650;
+.view-join .qa-composer textarea.pulse-input {
+  min-height: 5rem;
+  resize: vertical;
+  font-size: 16px;
 }
 
-.view-present .offline-banner,
-.view-present .rehearsal-banner {
+.view-join .qa-composer select.pulse-input {
+  min-height: 44px;
+}
+
+.view-join .quiz-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 40rem) {
+  .view-join .quiz-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.view-join .quiz-multi-send.pulse-btn-primary {
   grid-column: 1 / -1;
 }
 
-.present-head {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
+.view-join .qa-card,
+.view-join .qa-row {
+  border-radius: 12px;
+  padding: 12px;
 }
 
-.view-join {
-  grid-template-rows: auto 1fr;
-  padding-bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0px));
-  padding-left: calc(var(--pad) + env(safe-area-inset-left, 0px));
-  padding-right: calc(var(--pad) + env(safe-area-inset-right, 0px));
+.view-join .qa-upvote,
+.view-join button[data-upvote] {
+  min-height: 44px;
+  min-width: 44px;
 }
 
-.join-main {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 0;
+.view-join .slide-input .pulse-btn-primary {
+  width: 100%;
 }
 
-#join-question {
-  flex: 0 0 auto;
-}
-
-.join-thumb {
+.view-join .slide-input {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: auto;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-.rehearsal-check {
+.view-join .rank-item {
+  min-height: 48px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
 }
 
-.rehearsal-check span {
-  font-weight: 650;
+.view-join .rank-handle {
+  min-width: 44px;
+  text-align: center;
+}
+
+
+.pulse-join-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+}
+
+.view-join .reaction-btn {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.view-join .choice-btn.is-swipe-focus,
+.view-join .qa-card.is-swipe-focus,
+.view-join .qa-featured.is-swipe-focus,
+.view-join .qa-row.is-swipe-focus,
+.view-join .pulse-choice-btn.is-swipe-focus {
+  outline: 3px solid var(--focus);
 }
 
 .view-join .choice-btn,
@@ -93,13 +312,6 @@
   min-height: 48px;
 }
 
-.view-join .choice-btn.is-swipe-focus,
-.view-join .qa-card.is-swipe-focus,
-.view-join .qa-featured.is-swipe-focus,
-.view-join .qa-row.is-swipe-focus {
-  outline: 3px solid var(--focus);
-}
-
 .join-block.is-rehearsal {
   opacity: 0.55;
 }
@@ -108,16 +320,14 @@
   cursor: not-allowed;
 }
 
-/* Startseite: Join-Feld bleibt in der Daumenzone gut treffbar. IDs unverändert. */
+/* Startseite: Join-Feld in Daumenzone */
 .view-home .join-panel .btn.primary,
 .view-home #join-code-input,
 .view-home #join-team {
   min-height: 48px;
 }
 
-/* Smartphone: Aktionen im unteren Drittel, Frage oben. */
 @media (max-width: 640px) {
-  /* Join in der Daumenzone, innerhalb der View-Zelle über dem Footer. */
   .view-home .home-join {
     width: 100%;
     align-self: end;
@@ -134,28 +344,8 @@
     font-size: 1.08rem;
   }
 
-  .view-join .join-main {
-    min-height: 0;
-  }
-
-  .join-thumb {
-    min-height: 32dvh;
-    justify-content: flex-end;
-  }
-
-  .view-join .choice-grid {
-    gap: 12px;
-  }
-
-  .view-join .choice-btn {
-    min-height: 56px;
-    padding: 16px 18px;
-    font-size: 1.08rem;
-  }
-
-  .view-join .reaction-bar {
-    margin-top: 4px;
-    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  .view-join .pulse-join-thumb {
+    min-height: 34dvh;
   }
 
   .view-join .qa-composer textarea,
@@ -164,14 +354,25 @@
   }
 }
 
-/* Sehr flache Smartphones: Join zentrieren, damit „Administration“ nicht in den Footer ragt. */
 @media (max-width: 640px) and (max-height: 740px) {
   .view-home .home-join {
     align-self: center;
   }
 }
 
-/* Presenter-Statistik-Leiste */
+/* Presenter offline/rehearsal — unverändert nutzbar */
+.view-present .offline-banner,
+.view-present .rehearsal-banner {
+  grid-column: 1 / -1;
+}
+
+.present-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
 .presenter-stats {
   background: var(--bg-elev);
   border: 1px solid var(--line);
@@ -210,4 +411,11 @@
   width: 100%;
   min-height: 4.5rem;
   resize: vertical;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-choice-btn,
+  .pulse-rating-btn {
+    transition: none;
+  }
 }

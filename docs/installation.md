@@ -65,7 +65,10 @@ Healthcheck: [http://localhost:3000/api/health](http://localhost:3000/api/health
 ```bash
 cd /pfad/zum/pulse
 npm install
+npm run css:build
 ```
+
+Das erzeugt `frontend/css/pulse.css` (Tailwind CSS v4, minified). Für Entwicklung mit Live-Rebuild: `npm run css:watch`.
 
 ### 3.2 Umgebung
 

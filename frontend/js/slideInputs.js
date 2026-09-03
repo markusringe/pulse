@@ -20,7 +20,7 @@ export function renderRankingInput(root, options, { disabled, onSubmit, t } = {}
   bindSortable(list, disabled);
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "btn primary";
+  btn.className = "btn primary pulse-btn-primary";
   btn.textContent = t ? t("join.send") : "Senden";
   btn.disabled = Boolean(disabled);
   btn.addEventListener("click", () => {
@@ -116,7 +116,7 @@ export function renderPointsInput(root, options, { disabled, onSubmit, t } = {})
   sumEl.setAttribute("aria-live", "polite");
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "btn primary";
+  btn.className = "btn primary pulse-btn-primary";
   btn.textContent = t ? t("join.send") : "Senden";
   const sync = () => {
     let sum = 0;
@@ -192,7 +192,7 @@ export function renderImageChoiceInput(root, options, { disabled, onSubmit } = {
   (options || []).forEach((opt, i) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "image-choice-btn";
+    btn.className = "image-choice-btn pulse-image-choice";
     btn.dataset.optionId = opt.id;
     btn.disabled = Boolean(disabled);
     btn.setAttribute("aria-label", opt.label);
@@ -200,6 +200,8 @@ export function renderImageChoiceInput(root, options, { disabled, onSubmit } = {
       const img = document.createElement("img");
       img.src = opt.image;
       img.alt = opt.label;
+      img.loading = "lazy";
+      img.decoding = "async";
       btn.append(img);
     }
     const cap = document.createElement("span");
@@ -228,7 +230,7 @@ export function renderDatetimeInput(root, options, { disabled, onSubmit, t } = {
   });
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "btn primary";
+  btn.className = "btn primary pulse-btn-primary";
   btn.textContent = t ? t("join.send") : "Senden";
   btn.disabled = Boolean(disabled);
   btn.addEventListener("click", () => {

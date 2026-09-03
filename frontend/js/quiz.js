@@ -243,7 +243,7 @@ function renderCards(options, interactive) {
   options.forEach((opt, i) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "quiz-card";
+    btn.className = "quiz-card pulse-choice-btn";
     btn.dataset.color = String(i);
     btn.dataset.index = String(i);
     btn.setAttribute("role", "option");
@@ -263,7 +263,7 @@ function renderCards(options, interactive) {
   if (multi && view.opts.role !== "presenter") {
     const send = document.createElement("button");
     send.type = "button";
-    send.className = "btn primary quiz-multi-send";
+    send.className = "btn primary pulse-btn-primary quiz-multi-send";
     send.textContent = "Auswahl senden";
     send.disabled = !interactive || view.status !== "running";
     send.addEventListener("click", () => commitMulti());

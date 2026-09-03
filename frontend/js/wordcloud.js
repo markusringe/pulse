@@ -154,16 +154,23 @@ function createLayoutWorker() {
 }
 
 function sizeCanvas(view) {
+  const container = view.container;
   const rect = view.canvas.getBoundingClientRect();
-  const w = Math.max(1, Math.floor(rect.width));
-  const h = Math.max(1, Math.floor(rect.height));
+  /* Fallback: Containerbreite nutzen, wenn Canvas-Höhe noch 0 (Mobile-Layout). */
+  const containerRect = container?.getBoundingClientRect?.();
+  let w = Math.max(1, Math.floor(rect.width || containerRect?.width || 1));
+  let h = Math.max(1, Math.floor(rect.height || containerRect?.height || 1));
+  if (h <= 1 && containerRect?.height) {
+    h = Math.max(220, Math.floor(containerRect.height * 0.65));
+  }
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
   view.dpr = dpr;
-  // Backing-Store nur setzen, wenn sich die Pixelgröße ändert — vermeidet Canvas-Clear.
   if (view.canvas.width !== Math.floor(w * dpr) || view.canvas.height !== Math.floor(h * dpr)) {
     view.canvas.width = Math.floor(w * dpr);
     view.canvas.height = Math.floor(h * dpr);
   }
+  view.canvas.style.width = `${w}px`;
+  view.canvas.style.height = `${h}px`;
 }
 
 function mergeSprites(view, entries) {

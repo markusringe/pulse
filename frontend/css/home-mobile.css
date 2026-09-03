@@ -1,0 +1,288 @@
+/**
+ * Startseite — mobile Optimierung, Tailwind-Komponenten, Drawer-Navigation.
+ */
+
+.home-intro {
+  margin: 0;
+  order: 1;
+}
+
+.home-event-hero {
+  order: 2;
+  width: min(42rem, 100%);
+  margin-inline: auto;
+}
+
+.home-join {
+  order: 3;
+  width: 100%;
+}
+
+.home-events {
+  order: 4;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.home-event-countdown.event-countdown-host {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  min-height: 11rem;
+}
+
+.home-event-countdown .event-countdown-panel {
+  position: relative;
+  z-index: 1;
+  padding: clamp(16px, 4vw, 28px);
+}
+
+.home-event-countdown .event-countdown-title {
+  font-size: clamp(1.1rem, 4.5vw, 1.45rem);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.home-event-countdown .event-countdown-digits {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.home-event-countdown .event-countdown-num {
+  font-size: clamp(1.75rem, 8vw, 2.75rem);
+}
+
+/* Mobilmenü: auf Desktop ausblenden (Hilfe/Rechtliches im Footer). */
+.home-menu-toggle {
+  display: inline-flex;
+}
+
+@media (min-width: 48rem) {
+  .home-menu-toggle {
+    display: none;
+  }
+}
+
+/* Admin-Drawer: Desktop-Leiste, mobil Toggle. */
+.admin-nav-toggle {
+  display: none;
+}
+
+@media (max-width: 47.99rem) {
+  .admin-nav--desktop {
+    display: none;
+  }
+
+  .admin-nav-toggle {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .admin-chrome-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.view-home.pulse-home-shell {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  min-width: 0;
+  /* Safe Areas übernimmt pulse-home-shell — kein doppeltes Padding von .view */
+  padding: 0;
+}
+
+.view-home .home-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.view-home .home-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.view-home .home-join .join-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.view-home .home-join .join-panel h2 {
+  margin: 0;
+}
+
+.view-home .home-join .field {
+  margin: 0;
+}
+
+/* Event-Karten — mobile-first, QR in Details. */
+.pulse-event-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.event-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.event-card-media {
+  margin: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-soft, #e8ecf0);
+}
+
+.event-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.event-card-media--placeholder {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary-color, #007cc1) 12%, var(--bg-elev)),
+    var(--bg-soft, #e8ecf0)
+  );
+}
+
+.event-card-when {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.event-card-when-label {
+  font-weight: 600;
+}
+
+.event-card-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.event-card-details {
+  border-top: 1px solid color-mix(in srgb, var(--line) 35%, transparent);
+  padding-top: 8px;
+}
+
+.event-card-details summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: var(--link);
+}
+
+.event-card-details-body {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.event-card-secondary-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.event-join-link {
+  margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.event-join-link a {
+  color: var(--link);
+}
+
+.event-card .event-qr {
+  width: min(160px, 100%);
+  height: auto;
+  max-width: 100%;
+}
+
+.event-invite {
+  font-size: 0.82rem;
+  max-height: 8rem;
+  overflow: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.home-events-title {
+  font-size: 1.125rem;
+  margin: 1rem 0 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .view-home {
+    gap: 16px;
+  }
+
+  .view-home .home-tools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .view-home .home-join .join-panel {
+    padding: clamp(16px, 4vw, 22px);
+    border-radius: 20px;
+    background: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--primary-color, #007cc1) 6%, var(--bg-elev)),
+      var(--bg-elev)
+    );
+  }
+
+  .admin-home-link {
+    display: none;
+  }
+}
+
+@media (min-width: 48rem) {
+  .home-events {
+    display: grid;
+    gap: 16px;
+  }
+
+  .home-events .pulse-event-card {
+    padding: 18px;
+  }
+
+  .event-card-secondary-actions {
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+}
+
+@container (min-width: 28rem) {
+  .event-card-secondary-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .home-events {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-events-title {
+    grid-column: 1 / -1;
+  }
+}

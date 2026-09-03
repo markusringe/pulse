@@ -8,7 +8,7 @@ import { t, applyDom, onLang, i18nReady } from "./i18n.js?v=nav13";
 import { syncAdminNav } from "./adminNav.js?v=nav42";
 import { canCreateEvents } from "./authClient.js?v=nav43";
 import { typeIcon, typeLabel } from "./deck.js";
-import { scaleEventImageFile } from "./eventCountdown.js?v=nav1";
+import { scaleEventImageFile, mountCountdown, remainingMs } from "./eventCountdown.js?v=nav49";
 import {
   mountCategoryEditor,
   collectCategoriesFromHost,
@@ -62,7 +62,7 @@ const DE = {
   "events.field.start": "Startdatum",
   "events.field.end": "Enddatum",
   "events.field.startTime": "Startuhrzeit (Countdown)",
-  "events.field.startTimeHint": "Optional. ISO-Zeit für den Countdown auf der Leinwand. Leer = sofort.",
+  "events.field.startTimeHint": "Optional. Countdown auf Startseite und Leinwand. Leer = sofort.",
   "events.field.image": "Event-Grafik",
   "events.field.imageHint": "PNG, JPEG, WebP oder SVG · max. 2 MB · empfohlen 1920×1080",
   "events.field.imageDrop": "Grafik hierher ziehen oder Datei wählen",
@@ -339,6 +339,9 @@ const HOME_PAST_LIMIT = 12;
 /** Laufende Startseiten-Aktualisierung — ältere Aufrufe verwerfen (Boot ruft zweimal auf). */
 let homeEventsSeq = 0;
 
+/** Countdown-Overlay auf der Startseite (nächstes Event mit Startuhrzeit). */
+let homeCountdownCtl = null;
+
 /** Gemeinsame API-Anfrage, wenn loadHomeEvents parallel startet. */
 let homeEventsFetch = null;
 
@@ -353,6 +356,10 @@ let homeEventsIdleHandle = null;
 export function cancelHomeEventsWork() {
   homeEventsSeq += 1;
   homeQrQueue.length = 0;
+  homeCountdownCtl?.stop();
+  homeCountdownCtl = null;
+  const hero = document.getElementById("home-event-hero");
+  if (hero) hero.hidden = true;
   if (homeEventsIdleHandle != null) {
     if (typeof cancelIdleCallback === "function") cancelIdleCallback(homeEventsIdleHandle);
     else clearTimeout(homeEventsIdleHandle);
@@ -417,6 +424,62 @@ function scheduleHomeQrDraw(root, seq) {
   }
 }
 
+/**
+ * Nächstes Event mit aktivem Countdown (früheste startTime in der Zukunft).
+ * @param {object[]} upcoming
+ */
+function pickCountdownEvent(upcoming) {
+  let best = null;
+  let bestMs = Infinity;
+  for (const ev of upcoming || []) {
+    if (!ev?.startTime || !ev.countdownActive) continue;
+    const ms = remainingMs(ev.startTime);
+    if (ms <= 0) continue;
+    if (ms < bestMs) {
+      bestMs = ms;
+      best = ev;
+    }
+  }
+  return best;
+}
+
+/**
+ * Countdown-Hero auf der Startseite — gleiche UI wie auf der Leinwand.
+ * @param {object[]} upcoming
+ * @param {number} seq
+ */
+function syncHomeEventCountdown(upcoming, seq) {
+  const hero = document.getElementById("home-event-hero");
+  const host = document.getElementById("home-event-countdown");
+  if (!hero || !host) return;
+
+  homeCountdownCtl?.stop();
+  homeCountdownCtl = null;
+
+  const ev = pickCountdownEvent(upcoming);
+  if (!ev || seq !== homeEventsSeq) {
+    hero.hidden = true;
+    host.innerHTML = "";
+    return;
+  }
+
+  hero.hidden = false;
+  homeCountdownCtl = mountCountdown(
+    host,
+    {
+      title: ev.title || "",
+      startTime: ev.startTime,
+      eventImage: ev.eventImage || "",
+    },
+    {
+      onEnded: () => {
+        if (seq !== homeEventsSeq) return;
+        void loadHomeEvents();
+      },
+    }
+  );
+}
+
 export async function loadHomeEvents() {
   await i18nReady;
   const box = document.getElementById("home-events");
@@ -434,6 +497,7 @@ export async function loadHomeEvents() {
 
     const upcoming = data?.upcoming || [];
     const past = (data?.past || []).slice(0, HOME_PAST_LIMIT);
+    syncHomeEventCountdown(upcoming, seq);
     if (!upcoming.length && !past.length) {
       box.innerHTML = "";
       box.hidden = true;
@@ -459,6 +523,7 @@ export async function loadHomeEvents() {
   } catch (err) {
     if (seq !== homeEventsSeq) return;
     console.error("[home-events]", err);
+    syncHomeEventCountdown([], seq);
     box.hidden = true;
     box.dataset.eventsReady = "";
   }
@@ -472,23 +537,34 @@ function homeCardHtml(ev) {
   const actionLabel = results ? tx("events.results") : tx("events.join");
   const actionHref = `#/join/${esc(code)}`;
   const canvasId = `home-qr-${esc(ev.id)}`;
-  return `<article class="event-card panel">
-    <header>
-      <h3>${esc(ev.title)}</h3>
+  const img = ev.eventImage
+    ? `<figure class="event-card-media"><img src="${esc(ev.eventImage)}" alt="" loading="lazy" decoding="async" /></figure>`
+    : `<figure class="event-card-media event-card-media--placeholder" aria-hidden="true"></figure>`;
+  return `<article class="event-card panel pulse-event-card pulse-card">
+    ${img}
+    <header class="event-card-head">
+      <h3 class="pulse-event-card__title">${esc(ev.title)}</h3>
       <span class="event-status event-status-${esc(ev.status)}">${esc(statusLabel(ev.status))}</span>
     </header>
-    <p class="muted">${esc(ev.description || "")}</p>
-    <p>${esc(tx("events.when"))}: ${esc(formatDate(ev.startAt))}${ev.endAt && ev.endAt !== ev.startAt ? ` – ${esc(formatDate(ev.endAt))}` : ""}</p>
-    <p class="event-code">${esc(hooks.formatCode(code))}</p>
-    <canvas id="${canvasId}" class="qr event-qr" width="160" height="160" data-qr data-url="${esc(joinUrl)}" aria-label="QR-Code"></canvas>
-    <p><a href="${esc(joinUrl)}">${esc(joinUrl)}</a></p>
-    <pre class="event-invite">${esc(ev.copyText || "")}</pre>
-    <div class="home-actions">
-      ${canJoin || results ? `<a class="btn primary" href="${actionHref}">${esc(actionLabel)}</a>` : `<span class="muted">${esc(tx("events.joinClosed"))}</span>`}
-      <button type="button" class="btn ghost" data-copy="${esc(joinUrl)}">${esc(tx("events.copyLink"))}</button>
-      <button type="button" class="btn ghost" data-copy="${esc(ev.copyText || "")}">${esc(tx("events.copyInvite"))}</button>
-      <button type="button" class="btn ghost" data-dl-qr data-canvas="${canvasId}" data-name="event-${esc(code)}.png">${esc(tx("events.qrDownload"))}</button>
+    ${ev.description ? `<p class="pulse-muted event-card-desc">${esc(ev.description)}</p>` : ""}
+    <p class="event-card-when"><span class="event-card-when-label">${esc(tx("events.when"))}</span> ${esc(formatDate(ev.startAt))}${ev.endAt && ev.endAt !== ev.startAt ? ` – ${esc(formatDate(ev.endAt))}` : ""}</p>
+    <p class="event-code" aria-label="Session-Code">${esc(hooks.formatCode(code))}</p>
+    <div class="home-actions event-card-actions">
+      ${canJoin || results ? `<a class="btn primary pulse-btn-primary event-card-join" href="${actionHref}">${esc(actionLabel)}</a>` : `<span class="pulse-muted">${esc(tx("events.joinClosed"))}</span>`}
     </div>
+    <details class="event-card-details">
+      <summary>${esc(tx("events.copyInvite"))} / QR</summary>
+      <div class="event-card-details-body">
+        <canvas id="${canvasId}" class="qr event-qr" width="160" height="160" data-qr data-url="${esc(joinUrl)}" aria-label="QR-Code"></canvas>
+        <p class="event-join-link"><a href="${esc(joinUrl)}">${esc(joinUrl)}</a></p>
+        <pre class="event-invite">${esc(ev.copyText || "")}</pre>
+        <div class="event-card-secondary-actions">
+          <button type="button" class="btn ghost pulse-btn-ghost" data-copy="${esc(joinUrl)}">${esc(tx("events.copyLink"))}</button>
+          <button type="button" class="btn ghost pulse-btn-ghost" data-copy="${esc(ev.copyText || "")}">${esc(tx("events.copyInvite"))}</button>
+          <button type="button" class="btn ghost pulse-btn-ghost" data-dl-qr data-canvas="${canvasId}" data-name="event-${esc(code)}.png">${esc(tx("events.qrDownload"))}</button>
+        </div>
+      </div>
+    </details>
   </article>`;
 }
 
@@ -626,8 +702,20 @@ async function renderList(root, seq = pageSeq) {
   if (seq !== pageSeq) return;
   adminCache.events = events;
   const newBtn = canCreateEvents()
-    ? `<a class="btn primary" href="#/admin/events/new">${esc(tx("events.new"))}</a>`
+    ? `<a class="btn primary pulse-btn-primary" href="#/admin/events/new">${esc(tx("events.new"))}</a>`
     : "";
+  const col = {
+    image: tx("events.col.image"),
+    title: tx("events.col.title"),
+    status: tx("events.col.status"),
+    date: tx("events.col.date"),
+    time: tx("events.col.time"),
+    session: tx("events.col.session"),
+    slides: tx("events.col.slides"),
+    participants: tx("events.col.participants"),
+    votes: tx("events.col.votes"),
+    questions: tx("events.col.questions"),
+  };
   root.innerHTML = `
     <header class="admin-page-head events-head">
       <div>
@@ -648,7 +736,7 @@ async function renderList(root, seq = pageSeq) {
         </select>
       </label>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap table-wrap--responsive">
       <table class="events-table">
         <thead>
           <tr>
@@ -678,16 +766,16 @@ async function renderList(root, seq = pageSeq) {
                       ? esc(new Date(ev.startTime).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" }))
                       : "—";
                     return `<tr>
-                      <td>${thumb}</td>
-                      <td><a href="#/admin/events/${esc(ev.id)}">${esc(ev.title)}</a></td>
-                      <td><span class="event-status event-status-${esc(ev.status)}">${esc(statusLabel(ev.status))}</span></td>
-                      <td>${esc(formatDate(ev.startAt))}</td>
-                      <td>${timeLabel}</td>
-                      <td><a href="#/admin/sessions/${esc(code)}">${esc(hooks.formatCode(code))}</a></td>
-                      <td>${esc(ev.slideCount || 0)}</td>
-                      <td>${esc(st.participants ?? 0)}</td>
-                      <td>${esc(st.votes ?? 0)}</td>
-                      <td>${esc(st.questions ?? 0)}</td>
+                      <td data-label="${esc(col.image)}">${thumb}</td>
+                      <td data-label="${esc(col.title)}"><a href="#/admin/events/${esc(ev.id)}">${esc(ev.title)}</a></td>
+                      <td data-label="${esc(col.status)}"><span class="event-status event-status-${esc(ev.status)}">${esc(statusLabel(ev.status))}</span></td>
+                      <td data-label="${esc(col.date)}">${esc(formatDate(ev.startAt))}</td>
+                      <td data-label="${esc(col.time)}">${timeLabel}</td>
+                      <td data-label="${esc(col.session)}"><a href="#/admin/sessions/${esc(code)}">${esc(hooks.formatCode(code))}</a></td>
+                      <td data-label="${esc(col.slides)}">${esc(ev.slideCount || 0)}</td>
+                      <td data-label="${esc(col.participants)}">${esc(st.participants ?? 0)}</td>
+                      <td data-label="${esc(col.votes)}">${esc(st.votes ?? 0)}</td>
+                      <td data-label="${esc(col.questions)}">${esc(st.questions ?? 0)}</td>
                     </tr>`;
                   })
                   .join("")

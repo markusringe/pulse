@@ -235,13 +235,13 @@ export function renderRatingInput(container, config, { disabled, selected, onPic
   const icons = config.rating?.icons || config.icons || DEFAULT_RATING.icons.slice(0, scale);
   const style = config.rating?.style || config.style || "icons";
   container.innerHTML = "";
-  container.classList.add("rating-scale");
+  container.classList.add("rating-scale", "pulse-rating-scale");
   container.setAttribute("role", "radiogroup");
   container.setAttribute("aria-label", "Bewertungsskala");
   for (let i = 1; i <= scale; i++) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "rating-btn";
+    btn.className = "rating-btn pulse-rating-btn";
     btn.dataset.value = String(i);
     btn.setAttribute("role", "radio");
     btn.setAttribute("aria-checked", selected === i ? "true" : "false");

@@ -60,7 +60,7 @@ function renderPickerDropdown(root, slide, opts = {}) {
 
   const trigger = document.createElement("button");
   trigger.type = "button";
-  trigger.className = "picker-dropdown-trigger";
+  trigger.className = "picker-dropdown-trigger pulse-input";
   trigger.setAttribute("aria-haspopup", "listbox");
   trigger.setAttribute("aria-expanded", "false");
   trigger.disabled = disabled;
@@ -73,7 +73,7 @@ function renderPickerDropdown(root, slide, opts = {}) {
 
   const searchIn = document.createElement("input");
   searchIn.type = "search";
-  searchIn.className = "picker-search picker-dropdown-search";
+  searchIn.className = "picker-search picker-dropdown-search pulse-input";
   searchIn.placeholder = t("picker.search") || "Suchen…";
   searchIn.hidden = !showSearch;
 
@@ -96,7 +96,7 @@ function renderPickerDropdown(root, slide, opts = {}) {
 
   const confirm = document.createElement("button");
   confirm.type = "button";
-  confirm.className = "btn primary picker-confirm";
+  confirm.className = "btn primary pulse-btn-primary picker-confirm";
   confirm.textContent = t("join.send") || "Bestätigen";
   confirm.hidden = true;
   confirm.disabled = disabled;
@@ -138,7 +138,7 @@ function renderPickerDropdown(root, slide, opts = {}) {
     items.forEach((opt, i) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "picker-dropdown-item";
+      btn.className = "picker-dropdown-item pulse-choice-btn";
       btn.setAttribute("role", "option");
       btn.dataset.pickerId = opt.id;
       btn.setAttribute("aria-selected", state.selectedId === opt.id ? "true" : "false");
@@ -256,7 +256,7 @@ function renderPickerList(root, slide, opts, layout) {
   if (showSearch) {
     const search = document.createElement("input");
     search.type = "search";
-    search.className = "picker-search";
+    search.className = "picker-search pulse-input";
     search.placeholder = t("picker.search") || "Suchen…";
     search.setAttribute("aria-describedby", "picker-search-hint");
     search.disabled = disabled;
@@ -324,7 +324,7 @@ function renderPickerList(root, slide, opts, layout) {
 
   const confirm = document.createElement("button");
   confirm.type = "button";
-  confirm.className = "btn primary picker-confirm";
+  confirm.className = "btn primary pulse-btn-primary picker-confirm";
   confirm.textContent = t("join.send") || "Bestätigen";
   confirm.hidden = layout !== "dropdown";
   confirm.disabled = disabled;
@@ -393,7 +393,7 @@ function renderPickerList(root, slide, opts, layout) {
   function renderOption(opt, index) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "picker-option";
+    btn.className = "picker-option pulse-choice-btn";
     btn.dataset.pickerId = opt.id;
     btn.setAttribute("role", allowMultiple ? "checkbox" : "option");
     btn.setAttribute("aria-selected", state.selected.has(opt.id) ? "true" : "false");

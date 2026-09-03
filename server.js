@@ -3032,7 +3032,10 @@ function serveStatic(pathname, req, res) {
 function applyAssetBase(htmlBuf) {
   const base = String(process.env.ASSET_BASE || "").trim().replace(/\/+$/, "");
   if (!base) return htmlBuf;
-  const html = htmlBuf.toString("utf8").replace(/(href|src)="\.\/(css|js|assets)\//g, `$1="${base}/$2/`);
+  const html = htmlBuf
+    .toString("utf8")
+    .replace(/(href|src)="\.\/(css|js|assets)\//g, `$1="${base}/$2/`)
+    .replace(/(href|src)="\/(css|js|assets)\//g, `$1="${base}/$2/`);
   return Buffer.from(html);
 }
 

@@ -33,12 +33,12 @@ export async function showUsersPage() {
   syncAdminNav("users", "/admin/users");
   applyAdminNavVisibility();
   root.innerHTML = `
-    <header class="admin-page-head">
+    <header class="admin-page-head pulse-admin-head">
       <div>
-        <p class="eyebrow">Administration</p>
+        <p class="eyebrow pulse-eyebrow">Administration</p>
         <h1>Benutzer</h1>
       </div>
-      <button type="button" class="btn primary" id="users-add">Benutzer anlegen</button>
+      <button type="button" class="btn primary pulse-btn-primary" id="users-add">Benutzer anlegen</button>
     </header>
     <div class="users-toolbar">
       <input type="search" id="users-search" placeholder="Suchen…" aria-label="Benutzer suchen" />
@@ -58,9 +58,9 @@ export async function showUsersPage() {
         <option value="pending">Einladung ausstehend</option>
       </select>
     </div>
-    <div id="users-table-wrap" class="users-table-wrap"></div>
-    <dialog id="users-dialog" class="modal">
-      <form method="dialog" id="users-form" class="panel">
+    <div id="users-table-wrap" class="users-table-wrap table-wrap table-wrap--responsive"></div>
+    <dialog id="users-dialog" class="modal admin-dialog">
+      <form method="dialog" id="users-form" class="panel pulse-card">
         <h2 id="users-form-title">Benutzer anlegen</h2>
         <label class="field"><span>Anzeigename</span><input id="uf-name" required maxlength="120" /></label>
         <label class="field"><span>E-Mail</span><input type="email" id="uf-email" required /></label>
@@ -84,7 +84,7 @@ export async function showUsersPage() {
         <label class="field" id="uf-password-wrap"><span>Initiales Kennwort</span><input type="password" id="uf-password" autocomplete="new-password" /></label>
         <menu class="modal-actions">
           <button type="button" class="btn ghost" id="uf-cancel">Abbrechen</button>
-          <button type="submit" class="btn primary">Speichern</button>
+          <button type="submit" class="btn primary pulse-btn-primary">Speichern</button>
         </menu>
       </form>
     </dialog>
@@ -129,16 +129,16 @@ async function refreshUsersTable() {
         ${users
           .map(
             (u) => `<tr data-user-id="${u.id}">
-              <td>${escapeHtml(u.displayName)}</td>
-              <td>${escapeHtml(u.email)}</td>
-              <td>${escapeHtml(u.roleLabel || roleLabel(u.role))}</td>
-              <td>${escapeHtml(u.status)}</td>
-              <td>${u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString("de-DE") : "—"}</td>
-              <td class="users-actions">
-                <button type="button" class="btn ghost btn-sm" data-act="edit">Bearbeiten</button>
-                <button type="button" class="btn ghost btn-sm" data-act="pin">PIN senden</button>
-                <button type="button" class="btn ghost btn-sm" data-act="revoke">Sitzungen beenden</button>
-                <button type="button" class="btn ghost btn-sm" data-act="delete">Löschen</button>
+              <td data-label="Name">${escapeHtml(u.displayName)}</td>
+              <td data-label="E-Mail">${escapeHtml(u.email)}</td>
+              <td data-label="Rolle">${escapeHtml(u.roleLabel || roleLabel(u.role))}</td>
+              <td data-label="Status">${escapeHtml(u.status)}</td>
+              <td data-label="Letzte Anmeldung">${u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString("de-DE") : "—"}</td>
+              <td class="users-actions" data-label="Aktionen">
+                <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-act="edit">Bearbeiten</button>
+                <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-act="pin">PIN senden</button>
+                <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-act="revoke">Sitzungen beenden</button>
+                <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-act="delete">Löschen</button>
               </td>
             </tr>`
           )
