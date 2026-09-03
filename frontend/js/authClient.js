@@ -99,6 +99,14 @@ export async function refreshAuthMe() {
   }
 }
 
+export function isUserAuthEnabled() {
+  return state.enabled;
+}
+
+export function getCurrentUser() {
+  return state.user;
+}
+
 export function canCreateEvents() {
   if (!state.enabled || !state.user) return true;
   return ["admin", "editor", "teamleader", "teammember"].includes(state.user.role);

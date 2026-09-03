@@ -6,7 +6,7 @@
 import { api } from "./websocket.js?v=nav20";
 import { t, applyDom, onLang, i18nReady } from "./i18n.js?v=nav13";
 import { syncAdminNav } from "./adminNav.js?v=nav42";
-import { canCreateEvents } from "./authClient.js?v=nav43";
+import { canCreateEvents, isAdminUser, isUserAuthEnabled } from "./authClient.js?v=nav43";
 import { typeIcon, typeLabel } from "./deck.js";
 import { scaleEventImageFile, mountCountdown, remainingMs } from "./eventCountdown.js?v=nav49";
 import {
@@ -16,13 +16,29 @@ import {
   refreshPickerPreview,
 } from "./pickerEditor.js";
 
-const ADMIN_KEY_PREFIX = "pulse:admin:";
+/** Teams für Teamauswahl (Create/Detail). */
+let teamPickerCache = [];
+/** Events ohne Team — nur für Admin-Migration. */
+let migrationOrphans = [];
 
 /** Deutsche Nottexte, falls das Wörterbuch noch die alte, gecachte Fassung hat. */
 const DE = {
   "admin.hubTitle": "Administration",
   "events.title": "Events",
-  "events.listIntro": "Veranstaltungen mit Join-Code. Das Deck (Folien) liegt in der zugehörigen Session. Archivierte Events erscheinen nicht auf der Startseite.",
+  "events.listIntro": "Veranstaltungen mit Join-Code. Jedes Event gehört genau einem Team — alle Teammitglieder können das Deck bearbeiten.",
+  "events.team.label": "Team",
+  "events.team.pick": "Team auswählen",
+  "events.team.pickPlaceholder": "— Team wählen —",
+  "events.team.hint": "Dieses Event gehört zum gewählten Team. Alle berechtigten Mitglieder dieses Teams können Deck und Folien bearbeiten und präsentieren.",
+  "events.team.none": "Sie gehören noch keinem Team an. Bitte wenden Sie sich an einen Administrator oder Teamleiter.",
+  "events.team.gotoTeams": "Teams verwalten",
+  "events.team.autoSelected": "Ihr Team wurde automatisch vorausgewählt.",
+  "events.team.required": "Bitte wählen Sie ein Team aus.",
+  "events.team.changeConfirm": "Das Team ändert den berechtigten Personenkreis. Fortfahren?",
+  "events.team.migrationRequired": "Dieses Event benötigt eine Team-Zuordnung durch einen Administrator.",
+  "events.team.migrationBanner": "Events ohne Team-Zuordnung",
+  "events.col.team": "Team",
+  "events.accessDenied": "Sie gehören nicht zum Team dieses Events. Bitte wenden Sie sich an den Teamleiter oder einen Administrator.",
   "events.new": "Neues Event anlegen",
   "events.create": "Event anlegen",
   "events.save": "Speichern",
@@ -645,27 +661,6 @@ function errorText(result) {
   return result?.data?.error || tx("events.error.generic");
 }
 
-function rememberAdminKey(code, key) {
-  if (!code || !key) return;
-  try {
-    sessionStorage.setItem(`${ADMIN_KEY_PREFIX}${code}`, key);
-  } catch {
-    /* sessionStorage kann fehlen */
-  }
-  api.setAdminKey(key);
-}
-
-/** Presenter-Schlüssel der Session wiederherstellen, falls beim Anlegen gespeichert. */
-function restoreAdminKey(code) {
-  if (!code || api.adminKey) return;
-  try {
-    const key = sessionStorage.getItem(`${ADMIN_KEY_PREFIX}${code}`);
-    if (key) api.setAdminKey(key);
-  } catch {
-    /* sessionStorage kann fehlen */
-  }
-}
-
 async function copyText(text, btn) {
   try {
     await navigator.clipboard.writeText(text);
@@ -700,6 +695,7 @@ async function fetchAdminEventRows() {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   if (!Array.isArray(data.events)) throw new Error(tx("events.error.generic"));
+  migrationOrphans = Array.isArray(data.migration?.needsTeamAssignment) ? data.migration.needsTeamAssignment : [];
   return data.events;
 }
 
@@ -728,6 +724,7 @@ async function renderList(root, seq = pageSeq) {
     date: tx("events.col.date"),
     time: tx("events.col.time"),
     session: tx("events.col.session"),
+    team: tx("events.col.team"),
     slides: tx("events.col.slides"),
     participants: tx("events.col.participants"),
     votes: tx("events.col.votes"),
@@ -742,6 +739,16 @@ async function renderList(root, seq = pageSeq) {
       ${newBtn}
     </header>
     <p class="muted">${esc(tx("events.listIntro"))}</p>
+    ${
+      migrationOrphans.length && isAdminUser()
+        ? `<section class="panel event-migration-banner" role="alert">
+            <h2>${esc(tx("events.team.migrationBanner"))} (${migrationOrphans.length})</h2>
+            <ul class="event-migration-list">
+              ${migrationOrphans.map((o) => `<li><a href="#/admin/events/${esc(o.id)}">${esc(o.title)}</a> · ${esc(hooks.formatCode(o.sessionCode))}</li>`).join("")}
+            </ul>
+          </section>`
+        : ""
+    }
     <div class="events-filters">
       <label class="field"><span>${esc(tx("events.filter.status"))}</span>
         <select id="events-filter-status">
@@ -762,6 +769,7 @@ async function renderList(root, seq = pageSeq) {
             <th>${esc(tx("events.col.status"))}</th>
             <th>${esc(tx("events.col.date"))}</th>
             <th>${esc(tx("events.col.time"))}</th>
+            <th>${esc(tx("events.col.team"))}</th>
             <th>${esc(tx("events.col.session"))}</th>
             <th>${esc(tx("events.col.slides"))}</th>
             <th>${esc(tx("events.col.participants"))}</th>
@@ -788,6 +796,7 @@ async function renderList(root, seq = pageSeq) {
                       <td data-label="${esc(col.status)}"><span class="event-status event-status-${esc(ev.status)}">${esc(statusLabel(ev.status))}</span></td>
                       <td data-label="${esc(col.date)}">${esc(formatDate(ev.startAt))}</td>
                       <td data-label="${esc(col.time)}">${timeLabel}</td>
+                      <td data-label="${esc(col.team)}">${ev.needsTeamAssignment ? `<span class="event-team-warn">${esc(tx("events.team.migrationRequired"))}</span>` : esc(ev.teamName || ev.teamId || "—")}</td>
                       <td data-label="${esc(col.session)}"><a href="#/admin/sessions/${esc(code)}">${esc(hooks.formatCode(code))}</a></td>
                       <td data-label="${esc(col.slides)}">${esc(ev.slideCount || 0)}</td>
                       <td data-label="${esc(col.participants)}">${esc(st.participants ?? 0)}</td>
@@ -796,7 +805,7 @@ async function renderList(root, seq = pageSeq) {
                     </tr>`;
                   })
                   .join("")
-              : `<tr><td colspan="10" class="muted">${esc(tx("events.empty"))}</td></tr>`
+              : `<tr><td colspan="11" class="muted">${esc(tx("events.empty"))}</td></tr>`
           }
         </tbody>
       </table>
@@ -813,9 +822,69 @@ async function renderList(root, seq = pageSeq) {
   }
 }
 
-function eventFieldsHtml(event = {}) {
-  const localStart = toDatetimeLocal(event.startTime);
+async function fetchTeamsForPicker() {
+  try {
+    const res = await fetch("/api/teams", { credentials: "include" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return [];
+    return Array.isArray(data.teams) ? data.teams : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Teamauswahl im Formular — Pflichtfeld bei Benutzer-Auth.
+ * @param {string} selectedId
+ * @param {{ readonly?: boolean, required?: boolean }} [opts]
+ */
+function teamFieldHtml(selectedId = "", opts = {}) {
+  const { readonly = false, required = false } = opts;
+  const teams = teamPickerCache;
+  const sel = String(selectedId || "");
+  if (readonly) {
+    const team = teams.find((t) => t.id === sel);
+    const label = team?.name || sel || "—";
+    return `
+      <section class="event-team-box panel-inset">
+        <h3 class="event-team-box__title">${esc(tx("events.team.label"))}</h3>
+        <p class="event-team-badge"><strong>${esc(label)}</strong></p>
+        <p class="muted">${esc(tx("events.team.hint"))}</p>
+      </section>`;
+  }
+  if (!teams.length && isUserAuthEnabled()) {
+    return `
+      <section class="event-team-box panel-inset event-team-box--warn">
+        <h3 class="event-team-box__title">${esc(tx("events.team.label"))}</h3>
+        <p class="muted">${esc(tx("events.team.none"))}</p>
+        <p><a class="btn ghost" href="#/admin/teams">${esc(tx("events.team.gotoTeams"))}</a></p>
+      </section>`;
+  }
+  const autoOne = teams.length === 1 ? teams[0].id : sel;
+  const value = sel || autoOne || "";
   return `
+    <section class="event-team-box panel-inset">
+      <h3 class="event-team-box__title">${esc(tx("events.team.label"))}${required ? " *" : ""}</h3>
+      ${teams.length === 1 ? `<p class="muted">${esc(tx("events.team.autoSelected"))}</p>` : ""}
+      <label class="field"><span>${esc(tx("events.team.pick"))}</span>
+        <select id="ev-team" ${required ? "required" : ""}>
+          ${teams.length > 1 ? `<option value="">${esc(tx("events.team.pickPlaceholder"))}</option>` : ""}
+          ${teams.map((t) => `<option value="${esc(t.id)}" ${t.id === value ? "selected" : ""}>${esc(t.name)}</option>`).join("")}
+        </select>
+      </label>
+      <p class="muted">${esc(tx("events.team.hint"))}</p>
+    </section>`;
+}
+
+function readTeamField() {
+  return document.getElementById("ev-team")?.value?.trim() || "";
+}
+
+function eventFieldsHtml(event = {}, opts = {}) {
+  const localStart = toDatetimeLocal(event.startTime);
+  const teamBlock = opts.includeTeam ? teamFieldHtml(event.teamId || "", opts.teamOpts || opts) : "";
+  return `
+    ${teamBlock}
     <label class="field"><span>${esc(tx("events.field.title"))}</span>
       <input id="ev-title" value="${esc(event.title || "")}" maxlength="120" required />
     </label>
@@ -944,7 +1013,7 @@ function bindEventImageUpload(existingUrl = "") {
 }
 
 function readEventFields() {
-  return {
+  const fields = {
     title: document.getElementById("ev-title")?.value,
     description: document.getElementById("ev-desc")?.value,
     startAt: document.getElementById("ev-start")?.value,
@@ -954,9 +1023,13 @@ function readEventFields() {
     category: document.getElementById("ev-cat")?.value,
     room: document.getElementById("ev-room")?.value,
   };
+  const teamId = readTeamField();
+  if (teamId) fields.teamId = teamId;
+  return fields;
 }
 
 async function renderCreate(root) {
+  teamPickerCache = await fetchTeamsForPicker();
   let others = adminCache.events;
   if (!others.length) {
     try {
@@ -965,6 +1038,8 @@ async function renderCreate(root) {
       others = [];
     }
   }
+  const requireTeam = isUserAuthEnabled();
+  const canSubmit = !requireTeam || teamPickerCache.length > 0;
   root.innerHTML = `
     <header class="admin-page-head">
       <div>
@@ -973,7 +1048,7 @@ async function renderCreate(root) {
       </div>
     </header>
     <form id="event-create-form" class="panel event-form">
-      ${eventFieldsHtml()}
+      ${eventFieldsHtml({}, { includeTeam: true, teamOpts: { required: requireTeam } })}
       <label class="check"><input type="checkbox" id="ev-activate" /> ${esc(tx("events.activateNow"))}</label>
       <label class="field"><span>${esc(tx("events.copyFrom"))}</span>
         <select id="ev-copy-from">
@@ -983,7 +1058,7 @@ async function renderCreate(root) {
       </label>
       <p id="event-create-msg" class="muted" role="status"></p>
       <div class="home-actions">
-        <button type="submit" class="btn primary">${esc(tx("events.create"))}</button>
+        <button type="submit" class="btn primary" ${canSubmit ? "" : "disabled"}>${esc(tx("events.create"))}</button>
         <a class="btn ghost" href="#/admin/events">${esc(tx("events.cancel"))}</a>
       </div>
     </form>
@@ -1000,6 +1075,10 @@ async function onCreateSubmit(e) {
     status: document.getElementById("ev-activate")?.checked ? "active" : "planned",
     copyFromId: document.getElementById("ev-copy-from")?.value || "",
   };
+  if (isUserAuthEnabled() && !body.teamId) {
+    if (msg) msg.textContent = tx("events.team.required");
+    return;
+  }
   const result = await api.createEvent(body);
   if (!result?.ok) {
     if (msg) msg.textContent = errorText(result);
@@ -1007,12 +1086,12 @@ async function onCreateSubmit(e) {
   }
   const ev = result.data.event;
   const code = ev.sessionCode || ev.joinCode;
-  rememberAdminKey(code, result.data.adminKey);
   location.hash = `#/admin/sessions/${code}`;
 }
 
 async function renderDetail(root, eventId) {
   root.innerHTML = `<p class="muted">${esc(tx("events.loading"))}</p>`;
+  teamPickerCache = await fetchTeamsForPicker();
   const result = await api.getEvent(eventId);
   if (!result?.ok || !result.data?.event) {
     root.innerHTML = `<p class="muted">${esc(errorText(result))}</p>`;
@@ -1038,6 +1117,7 @@ async function renderDetail(root, eventId) {
       <a class="btn ghost" href="#/stage/${esc(code)}">${esc(tx("events.openStage"))}</a>
     </p>
     <form id="event-edit-form" class="panel event-form">
+      ${teamFieldHtml(event.teamId || "", { readonly: !isAdminUser(), required: isAdminUser() })}
       ${eventFieldsHtml(event)}
       <label class="field"><span>${esc(tx("events.field.status"))}</span>
         <select id="ev-status">
@@ -1072,33 +1152,6 @@ async function renderDetail(root, eventId) {
       </ul>
       <button type="button" class="btn ghost" id="btn-stats-csv">${esc(tx("events.stats.csv"))}</button>
     </section>
-    <section class="panel" id="event-access-panel">
-      <h2>Zugriff &amp; Team</h2>
-      <p class="muted">Bearbeiter und Presenter für dieses Event zuweisen. Administratoren haben immer Vollzugriff.</p>
-      <p class="muted" id="event-owner-line"></p>
-      <label class="field"><span>Bearbeiter (Editor-IDs, kommagetrennt)</span>
-        <input id="ev-editors" placeholder="usr_…" />
-      </label>
-      <label class="field"><span>Presenter (IDs, kommagetrennt)</span>
-        <input id="ev-presenters" placeholder="usr_…" />
-      </label>
-      <label class="field"><span>Nur ansehen (Viewer-IDs, kommagetrennt)</span>
-        <input id="ev-viewers" placeholder="usr_…" />
-      </label>
-      <datalist id="ev-user-suggestions"></datalist>
-      <p class="muted" id="ev-user-picker-hint">Benutzer aus der <a href="#/admin/users">Benutzerverwaltung</a> — IDs oder per Auswahl unten.</p>
-      <label class="field"><span>Benutzer hinzufügen</span>
-        <select id="ev-add-user"><option value="">— wählen —</option></select>
-        <select id="ev-add-role">
-          <option value="editor">Bearbeiter</option>
-          <option value="presenter">Presenter</option>
-          <option value="viewer">Viewer</option>
-        </select>
-        <button type="button" class="btn ghost" id="ev-add-access">Hinzufügen</button>
-      </label>
-      <button type="button" class="btn primary" id="btn-save-access">Zugriff speichern</button>
-      <p class="muted" id="event-access-msg" role="status"></p>
-    </section>
     <section class="panel">
       <h2>${esc(tx("events.branding.title"))}</h2>
       <p class="muted">${esc(tx("events.branding.hint"))}</p>
@@ -1118,6 +1171,10 @@ async function renderDetail(root, eventId) {
   document.getElementById("event-edit-form")?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const msg = document.getElementById("event-edit-msg");
+    const nextTeam = readTeamField();
+    if (isAdminUser() && nextTeam && nextTeam !== String(event.teamId || "") && !confirm(tx("events.team.changeConfirm"))) {
+      return;
+    }
     const resultSave = await api.updateEvent(event.id, {
       ...readEventFields(),
       status: document.getElementById("ev-status")?.value,
@@ -1154,67 +1211,6 @@ async function renderDetail(root, eventId) {
     a.download = `event-${event.id}-stats.csv`;
     a.click();
   });
-  await bindEventAccessPanel(event);
-}
-
-/** Team-Zugriff auf Event-Detailseite */
-async function bindEventAccessPanel(event) {
-  const ownerLine = document.getElementById("event-owner-line");
-  if (ownerLine) {
-    ownerLine.textContent = event.ownerUserId
-      ? `Eigentümer: ${event.ownerUserId}`
-      : "Noch kein Eigentümer gesetzt (wird beim Anlegen gesetzt).";
-  }
-  const setIds = (id, arr) => {
-    const el = document.getElementById(id);
-    if (el) el.value = (arr || []).join(", ");
-  };
-  setIds("ev-editors", event.editorUserIds);
-  setIds("ev-presenters", event.presenterUserIds);
-  setIds("ev-viewers", event.viewerUserIds);
-
-  const usersRes = await api.listUsers({});
-  const users = usersRes?.ok ? usersRes.data?.users || [] : [];
-  const addSel = document.getElementById("ev-add-user");
-  const datalist = document.getElementById("ev-user-suggestions");
-  if (addSel) {
-    for (const u of users) {
-      const opt = document.createElement("option");
-      opt.value = u.id;
-      opt.textContent = `${u.displayName} (${u.email})`;
-      addSel.appendChild(opt);
-    }
-  }
-  if (datalist) {
-    datalist.innerHTML = users.map((u) => `<option value="${esc(u.id)}">${esc(u.displayName)}</option>`).join("");
-  }
-
-  document.getElementById("ev-add-access")?.addEventListener("click", () => {
-    const uid = document.getElementById("ev-add-user")?.value;
-    const role = document.getElementById("ev-add-role")?.value || "editor";
-    if (!uid) return;
-    const field = role === "presenter" ? "ev-presenters" : role === "viewer" ? "ev-viewers" : "ev-editors";
-    const input = document.getElementById(field);
-    if (!input) return;
-    const ids = input.value.split(",").map((s) => s.trim()).filter(Boolean);
-    if (!ids.includes(uid)) ids.push(uid);
-    input.value = ids.join(", ");
-  });
-
-  document.getElementById("btn-save-access")?.addEventListener("click", async () => {
-    const msg = document.getElementById("event-access-msg");
-    const parse = (id) =>
-      (document.getElementById(id)?.value || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    const result = await api.updateEventAccess(event.id, {
-      editorUserIds: parse("ev-editors"),
-      presenterUserIds: parse("ev-presenters"),
-      viewerUserIds: parse("ev-viewers"),
-    });
-    if (msg) msg.textContent = result?.ok ? "Zugriff gespeichert." : errorText(result);
-  });
 }
 
 /** Quell-Sessions für das Copy-Modal — erst beim Öffnen laden, nicht beim Deck-Render. */
@@ -1224,11 +1220,15 @@ async function copySourceOptions(code) {
     api.sessionsAdmin(),
   ]);
   if (events.length) adminCache.events = events;
+  const current = events.find((e) => (e.sessionCode || e.joinCode) === code);
+  const sameTeamOnly = isUserAuthEnabled() && !isAdminUser() && current?.teamId;
   const listed = sourcesRes?.ok && Array.isArray(sourcesRes.data?.sessions) ? sourcesRes.data.sessions : [];
-  const fromEvents = events.map((e) => ({
-    code: e?.sessionCode || e?.joinCode,
-    title: e?.title || e?.sessionCode || e?.joinCode || "",
-  }));
+  const fromEvents = events
+    .filter((e) => !sameTeamOnly || e.teamId === current.teamId)
+    .map((e) => ({
+      code: e?.sessionCode || e?.joinCode,
+      title: e?.title || e?.sessionCode || e?.joinCode || "",
+    }));
   const byCode = new Map();
   for (const s of [...listed, ...fromEvents]) {
     const c = s?.code;
@@ -1256,7 +1256,6 @@ async function fillDeckEyebrow(code, seq) {
 }
 
 async function renderSessionDeck(root, code, seq = pageSeq) {
-  restoreAdminKey(code);
   root.innerHTML = `<p class="muted">${esc(tx("events.slides.loading"))}</p>`;
   /* Nur die Session selbst blockiert die Ansicht — Copy-Quellen und Event-Liste laden danach. */
   const sessRes = await api.getSession(code);

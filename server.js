@@ -253,6 +253,7 @@ bus.onRemote((code, envelope) => {
     ssl.renewDue().catch((err) => console.error("[ssl-renew]", err));
   }, 60 * 60 * 1000);
   migrateEventDecks()
+    .then(() => migrateEventTeamsFromOwner())
     .then(() => ensureDemoEvent({ eventStore, createEventWithSession, userDb }))
     .catch((err) => console.error("[events-migrate/demo]", err));
   sweepExpiredSessions().catch((err) => console.error("[sweep]", err));
@@ -1886,7 +1887,16 @@ async function joinSession(client, payload = {}) {
     /* Leinwand: keine Auth, nicht als Teilnehmer zählen, keine Notizen. */
     client.role = "stage";
   } else if (wantPresenter && !byKey && !byPw && !byAuth) {
-    client.send({ type: "error", payload: { message: "Ungültiger Admin-Schlüssel", error: "admin_lock" } });
+    const eventSession = Boolean(session.eventId);
+    client.send({
+      type: "error",
+      payload: {
+        message: eventSession
+          ? "Keine Berechtigung — bitte mit Ihrem Team-Konto anmelden."
+          : "Ungültiger Admin-Schlüssel",
+        error: eventSession ? "auth_required" : "admin_lock",
+      },
+    });
     client.role = "participant";
   } else {
     client.role = wantPresenter ? "presenter" : "participant";
@@ -2471,18 +2481,17 @@ async function isEventAdmin(req, body = {}) {
 async function canViewEvent(req, ev, body = {}) {
   const auth = await getAuth(req, body);
   if (auth.viaSecret || permissions.isAdmin(auth.user)) return true;
-  const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
   const teamCtx = await buildTeamContextForUser(auth.user?.id, ev.id);
-  const access = permissions.eventAccess(auth.user, ev, dbAccess, teamCtx);
+  const access = permissions.eventAccess(auth.user, ev, [], teamCtx);
   return access.view || access.edit || access.present;
 }
 
 async function canEditEvent(req, ev, body = {}) {
   const auth = await getAuth(req, body);
   if (auth.viaSecret || permissions.isAdmin(auth.user)) return true;
-  const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
+  if (permissions.eventNeedsTeamAssignment(ev)) return false;
   const teamCtx = await buildTeamContextForUser(auth.user?.id, ev.id);
-  return permissions.eventAccess(auth.user, ev, dbAccess, teamCtx).edit;
+  return permissions.eventAccess(auth.user, ev, [], teamCtx).edit;
 }
 
 /** Team-IDs des Benutzers und Freigaben für ein Event laden. */
@@ -2508,36 +2517,35 @@ async function buildTeamAccessByEvent(eventIds) {
   return map;
 }
 
-/** Instanz-Admin, Event-Berechtigung oder Presenter-Schlüssel dürfen das Session-Deck ändern. */
+/** Instanz-Admin, Team-Berechtigung oder Presenter-Schlüssel (nur Ad-hoc-Sessions ohne Event). */
 async function canManageSession(req, body, session) {
   if (verifyAdminKey(readAdminKey(req, body), session.adminHash)) return true;
   if (await isSettingsAdmin(req, body)) return true;
-  const auth = await getAuth(req, body);
-  if (session.ownerUserId && auth.user?.id === session.ownerUserId && permissions.isEditor(auth.user)) return true;
   if (session.eventId) {
     const ev = eventStore.get(session.eventId);
     if (ev && (await canEditEvent(req, ev, body))) return true;
-    if (ev && auth.user) {
-      const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
-      const teamCtx = await buildTeamContextForUser(auth.user.id, ev.id);
-      if (permissions.eventAccess(auth.user, ev, dbAccess, teamCtx).edit) return true;
-    }
+    return false;
+  }
+  const auth = await getAuth(req, body);
+  if (session.ownerUserId && auth.user?.id === session.ownerUserId && permissions.isEditor(auth.user)) {
+    return true;
   }
   return false;
 }
 
-/** WebSocket-Presenter ohne Admin-Schlüssel — angemeldete Event-Presenter/Editoren. */
+/** WebSocket-Presenter — angemeldete Teammitglieder des Events oder Ad-hoc per Admin-Schlüssel. */
 async function canPresentSession(auth, session) {
   if (!auth?.user || !session) return false;
   if (permissions.isAdmin(auth.user)) return true;
-  if (session.ownerUserId && auth.user.id === session.ownerUserId) return true;
-  if (!session.eventId) return false;
+  if (!session.eventId) {
+    if (session.ownerUserId && auth.user.id === session.ownerUserId) return true;
+    return false;
+  }
   const ev = eventStore.get(session.eventId);
   if (!ev) return false;
-  if (ev.ownerUserId && auth.user.id === ev.ownerUserId) return true;
-  const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
+  if (permissions.eventNeedsTeamAssignment(ev)) return false;
   const teamCtx = await buildTeamContextForUser(auth.user.id, ev.id);
-  const access = permissions.eventAccess(auth.user, ev, dbAccess, teamCtx);
+  const access = permissions.eventAccess(auth.user, ev, [], teamCtx);
   return Boolean(access.present || access.edit);
 }
 
@@ -2605,8 +2613,9 @@ async function ensureEventSession(ev, slides) {
 
 async function createEventWithSession(body = {}) {
   let lastErr;
+  const requireTeam = Boolean(body.requireTeam);
   for (let attempt = 0; attempt < 6; attempt++) {
-    const ev = eventStore.create(body);
+    const ev = eventStore.create(body, { requireTeam });
     try {
       let slides = eventStore.DEFAULT_DECK;
       if (Array.isArray(body.slides) && body.slides.length) {
@@ -2632,6 +2641,26 @@ async function createEventWithSession(body = {}) {
     }
   }
   throw lastErr || new Error("Event konnte nicht angelegt werden");
+}
+
+async function migrateEventTeamsFromOwner() {
+  if (!userDb.supported) return { changed: 0 };
+  const orphans = eventStore.listNeedsTeamAssignment();
+  let changed = 0;
+  for (const ev of orphans) {
+    if (!ev.ownerUserId) continue;
+    const teams = await Promise.resolve(userDb.listUserTeamIds(ev.ownerUserId));
+    if (teams.length !== 1) continue;
+    eventStore.update(ev.id, { teamId: teams[0] });
+    audit.log("event_team_migrated", {
+      userId: ev.ownerUserId,
+      roomId: ev.id,
+      action: `auto:${teams[0]}`,
+    });
+    changed += 1;
+  }
+  if (changed) console.log(`[events-migrate] ${changed} Event(s) automatisch einem Team zugeordnet`);
+  return { changed };
 }
 
 /**
@@ -2762,26 +2791,31 @@ async function handleEventsApi(req, res, url, parts) {
       to: q.get("to") || "",
     });
     if (auth.user && !auth.viaSecret && auth.user.role !== "admin") {
-      const accessByEvent = {};
-      for (const ev of list) {
-        accessByEvent[ev.id] = userDb.supported ? await Promise.resolve(userDb.listEventAccess(ev.id)) : [];
-      }
       const userTeamIds = userDb.supported
         ? await Promise.resolve(userDb.listUserTeamIds(auth.user.id))
         : [];
-      const teamAccessByEvent = userDb.supported
-        ? await buildTeamAccessByEvent(list.map((ev) => ev.id))
-        : {};
-      list = permissions.filterEventsForUser(auth.user, list, accessByEvent, {
-        userTeamIds,
-        teamAccessByEvent,
-      });
+      list = permissions.filterEventsForUser(auth.user, list, {}, { userTeamIds });
     }
     const teamFilter = q.get("teamId") || "";
     if (teamFilter) {
       list = list.filter((ev) => ev.teamId === teamFilter);
     }
     const events = [];
+    const teamNameCache = new Map();
+    async function teamLabel(teamId) {
+      const tid = String(teamId || "").trim();
+      if (!tid) return "";
+      if (teamNameCache.has(tid)) return teamNameCache.get(tid);
+      let name = "";
+      if (userDb.supported) {
+        const team = await Promise.resolve(userDb.findTeamById(tid));
+        name = team?.name || tid;
+      } else {
+        name = tid;
+      }
+      teamNameCache.set(tid, name);
+      return name;
+    }
     for (const ev of list) {
       const session = sessions.get(eventStore.sessionRef(ev)) || (await getSession(eventStore.sessionRef(ev)));
       const stats = eventStore.computeStats(ev, session);
@@ -2802,7 +2836,10 @@ async function handleEventsApi(req, res, url, parts) {
         joinEnabled: card.joinEnabled,
         resultsOnly: card.resultsOnly,
         teamId: ev.teamId || "",
+        teamName: await teamLabel(ev.teamId),
+        needsTeamAssignment: permissions.eventNeedsTeamAssignment(ev),
         visibility: ev.visibility || "private",
+        updatedAt: ev.updatedAt || ev.createdAt || 0,
         slideCount: (session?.slides || []).length,
         stats: {
           participants: Number(stats.participants) || 0,
@@ -2811,7 +2848,14 @@ async function handleEventsApi(req, res, url, parts) {
         },
       });
     }
-    send(res, 200, { events });
+    const orphans = eventStore.listNeedsTeamAssignment();
+    send(res, 200, {
+      events,
+      migration:
+        permissions.isAdmin(auth.user) || auth.viaSecret
+          ? { needsTeamAssignment: orphans.map((e) => ({ id: e.id, title: e.title, sessionCode: e.sessionCode })) }
+          : undefined,
+    });
     return;
   }
 
@@ -2827,27 +2871,51 @@ async function handleEventsApi(req, res, url, parts) {
     }
     try {
       const body = await readJson(req);
-      if (auth.user && body?.teamId) {
-        const ok = await teamService.canAssignEventToTeam(userDb, auth.user, String(body.teamId));
-        if (!ok) {
-          send(res, 403, { error: "Kein Zugriff auf dieses Team" });
+      const requireTeam = userDb.supported && Boolean(auth.user);
+      const teamId = String(body?.teamId || "").trim();
+      if (requireTeam && !teamId) {
+        send(res, 400, { error: "Team ist erforderlich" });
+        return;
+      }
+      if (teamId) {
+        const team = userDb.supported ? await Promise.resolve(userDb.findTeamById(teamId)) : null;
+        if (userDb.supported && !team) {
+          send(res, 400, { error: "Team nicht gefunden" });
           return;
+        }
+        if (auth.user) {
+          const ok = await teamService.canAssignEventToTeam(userDb, auth.user, teamId);
+          if (!ok) {
+            send(res, 403, { error: "Kein Zugriff auf dieses Team" });
+            return;
+          }
         }
       }
       const created = await createEventWithSession({
         ...(body || {}),
         ownerUserId: auth.user?.id || body?.ownerUserId || "",
-        teamId: body?.teamId || "",
+        teamId,
         visibility: body?.visibility || "private",
+        requireTeam,
       });
       const session = created.session;
-      send(res, 201, {
+      if (auth.user?.id) {
+        audit.log("event_created", {
+          userId: auth.user.id,
+          roomId: created.event.id,
+          action: `team:${teamId}`,
+        });
+      }
+      const payload = {
         event: eventStore.adminEvent(created.event, eventStore.computeStats(created.event, session), {
           slideCount: session.slides.length,
           slides: deckSummary(session),
+          teamName: teamId && userDb.supported ? (await Promise.resolve(userDb.findTeamById(teamId)))?.name || "" : "",
         }),
-        adminKey: created.adminKey,
-      });
+      };
+      /* Kein Admin-Schlüssel für Event-Sessions — Zugriff über Team-Login. */
+      if (!auth.user) payload.adminKey = created.adminKey;
+      send(res, 201, payload);
     } catch (err) {
       send(res, err.statusCode || 500, { error: err.message || "Event fehlgeschlagen" });
     }
@@ -2895,73 +2963,102 @@ async function handleEventsApi(req, res, url, parts) {
     return;
   }
 
-  if (req.method === "POST" && id && sub === "share") {
+  if (req.method === "POST" && id === "admin" && sub === "assign-teams") {
+    const authAssign = await getAuth(req);
+    if (!permissions.isAdmin(authAssign.user) && !authAssign.viaSecret) {
+      send(res, 403, { error: "Nur Administratoren dürfen Teams zuordnen" });
+      return;
+    }
     const body = await readJson(req);
-    const evShare = eventStore.get(id);
-    if (!evShare) {
-      send(res, 404, { error: "Event nicht gefunden" });
-      return;
-    }
-    const authShare = await getAuth(req);
-    if (!authShare.user && !authShare.viaSecret) {
-      send(res, 401, { error: "Nicht angemeldet" });
-      return;
-    }
-    const isOwner = evShare.ownerUserId === authShare.user?.id;
-    if (!isOwner && !permissions.isAdmin(authShare.user) && !authShare.viaSecret) {
-      send(res, 403, { error: "Nur der Event-Besitzer darf teilen" });
-      return;
-    }
-    const teamIds = Array.isArray(body.teamIds) ? body.teamIds : [];
-    const accessLevel = ["view", "edit", "present"].includes(body.accessLevel) ? body.accessLevel : "view";
-    eventStore.update(id, { visibility: "shared" });
-    if (userDb.supported) {
-      await Promise.resolve(userDb.clearEventTeamAccess(id));
-      for (const tid of teamIds) {
-        const teamId = String(tid || "").slice(0, 40);
-        if (!teamId) continue;
+    const assignments = Array.isArray(body.assignments) ? body.assignments : [];
+    const results = [];
+    for (const row of assignments) {
+      const eventId = String(row.eventId || "").slice(0, 40);
+      const teamId = String(row.teamId || "").slice(0, 40);
+      if (!eventId || !teamId) continue;
+      const ev0 = eventStore.get(eventId);
+      if (!ev0) continue;
+      if (userDb.supported) {
         const team = await Promise.resolve(userDb.findTeamById(teamId));
         if (!team) continue;
-        await Promise.resolve(userDb.setEventTeamAccess(id, teamId, accessLevel));
+      }
+      const prevTeam = ev0.teamId || "";
+      const ev = eventStore.update(eventId, { teamId });
+      if (ev) {
+        audit.log("event_team_assigned", {
+          userId: authAssign.user?.id || "secret",
+          roomId: eventId,
+          action: `${prevTeam || "—"}→${teamId}`,
+        });
+        results.push({ eventId, teamId, ok: true });
       }
     }
-    send(res, 200, { success: true });
+    send(res, 200, { success: true, results });
+    return;
+  }
+
+  if (req.method === "POST" && id && sub === "share") {
+    send(res, 410, { error: "Team-Freigaben pro Event sind nicht mehr verfügbar — jedes Event gehört genau einem Team." });
     return;
   }
 
   if (req.method === "PATCH" && id && sub === "access") {
-    const body = await readJson(req);
-    if (!evCheck) {
-      send(res, 404, { error: "Event nicht gefunden" });
-      return;
-    }
-    const auth = await getAuth(req);
-    const dbAccess = userDb.supported ? await Promise.resolve(userDb.listEventAccess(id)) : [];
-    const teamCtx = await buildTeamContextForUser(auth.user?.id, id);
-    if (!permissions.eventAccess(auth.user, evCheck, dbAccess, teamCtx).manageAccess && !auth.viaSecret) {
-      send(res, 403, { error: "Keine Berechtigung" });
-      return;
-    }
-    const patch = {
-      editorUserIds: body.editorUserIds,
-      presenterUserIds: body.presenterUserIds,
-      viewerUserIds: body.viewerUserIds,
-    };
-    const ev = eventStore.update(id, patch);
-    send(res, 200, { event: ev, access: ev });
+    send(res, 410, { error: "Individuelle Event-Berechtigungen wurden entfernt — Zugriff über Teammitgliedschaft." });
     return;
   }
 
   if (req.method === "PATCH" && id && !sub) {
     const body = await readJson(req);
-    const ev = eventStore.update(id, body || {});
+    const prev = evCheck;
+    if (!prev) {
+      send(res, 404, { error: "Event nicht gefunden" });
+      return;
+    }
+    const authPatch = await getAuth(req);
+    const nextTeam = body?.teamId != null ? String(body.teamId || "").trim() : null;
+    if (nextTeam != null && nextTeam !== String(prev.teamId || "")) {
+      if (!permissions.canChangeEventTeam(authPatch.user) && !authPatch.viaSecret) {
+        send(res, 403, { error: "Nur Administratoren dürfen das Team ändern" });
+        return;
+      }
+      if (userDb.supported && nextTeam) {
+        const team = await Promise.resolve(userDb.findTeamById(nextTeam));
+        if (!team) {
+          send(res, 400, { error: "Team nicht gefunden" });
+          return;
+        }
+      }
+      audit.log("event_team_changed", {
+        userId: authPatch.user?.id || "secret",
+        roomId: id,
+        action: `${prev.teamId || "—"}→${nextTeam || "—"}`,
+      });
+    }
+    const patch = { ...(body || {}) };
+    if (!permissions.canChangeEventTeam(authPatch.user) && !authPatch.viaSecret) {
+      delete patch.teamId;
+    }
+    if (
+      (patch.status === "active" || patch.status === "ended") &&
+      !String(nextTeam != null ? nextTeam : prev.teamId || "").trim()
+    ) {
+      send(res, 409, { error: "Event benötigt eine Team-Zuordnung vor Aktivierung" });
+      return;
+    }
+    const ev = eventStore.update(id, patch);
     if (!ev) {
       send(res, 404, { error: "Event nicht gefunden" });
       return;
     }
     if (ev.status === "active" || ev.status === "ended") await ensureEventSession(ev);
     const session = await getSession(eventStore.sessionRef(ev));
-    send(res, 200, { event: eventStore.adminEvent(ev, null, { slideCount: (session?.slides || []).length }) });
+    let teamName = "";
+    if (ev.teamId && userDb.supported) {
+      teamName = (await Promise.resolve(userDb.findTeamById(ev.teamId)))?.name || "";
+    }
+    send(res, 200, {
+      event: eventStore.adminEvent(ev, null, { slideCount: (session?.slides || []).length, teamName }),
+    });
     return;
   }
 

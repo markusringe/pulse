@@ -14,7 +14,7 @@
   <p>Auf dem Server mit visualisiertem Fortschritt:</p>
   <pre><code>cd /opt/pulse
 sudo ./scripts/update-vps-ubuntu.sh</code></pre>
-  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.0</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
+  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.1</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
 
   <h3>Manuelles Update (Admin-UI)</h3>
   <ol>
@@ -39,9 +39,17 @@ sudo ./scripts/update-vps-ubuntu.sh</code></pre>
   <h3>Entwickler: Release erstellen</h3>
   <ul>
     <li>Semantische Version in <code>package.json</code> erhöhen</li>
-    <li>Git-Tag <code>v1.4.0</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
+    <li>Git-Tag <code>v1.4.1</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
     <li>Breaking Changes in den Release-Notes mit <strong>Breaking</strong> markieren</li>
     <li>SQL-Migrationen unter <code>migrations/*.sql</code> ablegen</li>
+  </ul>
+
+  <h3>Version 1.4.1 — Team-Events</h3>
+  <ul>
+    <li><strong>Neu:</strong> Jedes Event gehört verpflichtend genau einem Team; alle Teammitglieder bearbeiten Deck und Folien ohne Passwort.</li>
+    <li><strong>Entfernt:</strong> Individuelle Event-Berechtigungen (<code>editorUserIds</code> usw.) und Event-Entsperrpasswort.</li>
+    <li><strong>Neu:</strong> Teamauswahl beim Event-Anlegen, Team-Spalte in der Event-Liste, Admin-Migration für Events ohne Team.</li>
+    <li><strong>Geändert:</strong> Presenter-Zugang für Events über Team-Login; Admin-Schlüssel nur noch für Ad-hoc-Sessions.</li>
   </ul>
 
   <h3>Version 1.4.0 — Interaktionssteuerung</h3>

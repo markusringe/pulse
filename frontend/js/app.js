@@ -1460,7 +1460,11 @@ function connectRealtime(role) {
       else setJoinFeedback(explainError(msg).html, { html: true, state: "error" });
       if (ctx.pendingVoteSlideId) rollbackPendingVote();
     }
-    if (msg.toLowerCase().includes("admin")) els.adminDialog?.showModal?.();
+    if (payload?.error === "auth_required") {
+      setJoinFeedback(t("events.accessDenied"), { state: "error" });
+      return;
+    }
+    if (msg.toLowerCase().includes("admin") && payload?.error !== "auth_required") els.adminDialog?.showModal?.();
   });
 
   rt.on("open", () => {

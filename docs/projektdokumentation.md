@@ -2,7 +2,7 @@
 
 **Ist-Zustand / Spezifikation**
 
-**Stand:** Programmversion **v1.4.0** · Ist-Zustand aus dem Quellcode, 2026-09-03.
+**Stand:** Programmversion **v1.4.1** · Ist-Zustand aus dem Quellcode, 2026-09-03.
 **Kein Soll-Konzept:** Nur Funktionen und Technik, die im Repository tatsächlich vorhanden sind.  
 **Produktname:** Pulse. Technische Präfixe: `data/pulse.db`, `pulse:session:…`, Docker-Services `pulse` / `pulse-b`.
 
@@ -334,7 +334,7 @@ Serverseitige State-Machine in `lib/interactionState.js` für alle interaktiven 
 ### 3.23 Hilfe / Tour
 
 - Hash `#/help`, `#/help/<slug>`, `#/admin/help`. Katalog `frontend/help/articles.json`, HTML-Artikel unter `frontend/help/`.
-- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**26 Artikel**, Stand Katalog **Version 10**, Programm **v1.4.0**).
+- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**26 Artikel**, Stand Katalog **Version 10**, Programm **v1.4.1**).
 - Suche (UND-Tokens, Kategorie) in `frontend/js/help.js` / `lib/helpIndex.js`.
 - Erstnutzer-Tour (nach Consent), Tooltips (`frontend/js/tooltips.js`), Mini-Hilfe, Tastaturhilfe, Feedback ja/nein nur in **localStorage** (`pulse:help-feedback`) — **kein** Server-Upload.
 - In den Hilfe-HTML-Dateien stehen **Platzhalter „Video folgt“**, keine eingebetteten Videos.
@@ -371,7 +371,11 @@ Persistenz: `lib/events.js`, Pfad über `process.cwd()`. Cap: **80** Events. Fol
 | `joinCode`, `sessionCode` | Gleicher 6-stelliger Code |
 | `templateEventId` | Optional, für `copyFromId` beim Anlegen |
 | `branding` | Optionales Event-Branding (Logo, Farben, Footer) — überlagert Instanz-CI in Join/Presenter |
+| `teamId` | **Pflicht** (bei Benutzer-Auth): genau ein Organisations-Team; alle Mitglieder dürfen Deck bearbeiten und präsentieren |
+| `ownerUserId` | Ersteller (Audit/Migration); **nicht** für Rechteprüfung |
 | `createdAt`, `updatedAt` | Zeitstempel |
+
+**Entfernt/deprecated:** `editorUserIds`, `presenterUserIds`, `viewerUserIds`, Event-Entsperrpasswort, `POST …/share`, `PATCH …/access` (410). Ad-hoc-Sessions behalten optional den Session-Admin-Schlüssel.
 
 **Session-Payload** (`pulse.db`, Feld `eventId` im JSON-Payload): verknüpft Session mit Event. Öffentliche WS/REST-Payload enthält `eventId` und `eventBranding` (kein `eventSets`).
 
@@ -499,7 +503,7 @@ Aktivierung: `USER_AUTH_ENABLED=1` (`.env` oder `auth_settings` in SQLite/Postgr
 | SMTP | Produktion: `SMTP_*`; Entwicklung: `AUTH_DEV_MAILBOX=1` |
 | API | `/api/auth/*`, `/api/users/*` — siehe `lib/authApi.js`, `lib/userService.js` |
 | Frontend | `authClient.js`, `loginPage.js`, `usersAdmin.js`, `profilePage.js`, `stepUp.js` |
-| Events | `ownerUserId`, Team-Zugriff (`PATCH /api/events/:id/access`), Filter in `GET /api/events/admin` |
+| Events | Pflicht-`teamId`, Teammitgliedschaft für Deck/Presenter; `PATCH …/access` und `POST …/share` entfernt (410); Migration `POST /api/events/admin/assign-teams` |
 
 Tests: `npm run test:auth` (`scripts/test-auth.js`).
 
