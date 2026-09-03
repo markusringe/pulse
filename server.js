@@ -2111,6 +2111,10 @@ process.on("SIGINT", () => gracefulShutdown("sigint"));
 async function isSettingsAdmin(req, body = {}) {
   const auth = await getAuth(req, body);
   if (auth.viaSecret) return true;
+  /* Mit Benutzerverwaltung: nur angemeldete Admins — kein Demo-Bypass. */
+  if (userService.isUserManagementEnabled(userDb)) {
+    return permissions.canAccessSettings(auth.user);
+  }
   if (permissions.canAccessSettings(auth.user)) return true;
   if (!process.env.ADMIN_SECRET) return true;
   return false;
@@ -2119,6 +2123,9 @@ async function isSettingsAdmin(req, body = {}) {
 async function isEventAdmin(req, body = {}) {
   const auth = await getAuth(req, body);
   if (auth.viaSecret) return true;
+  if (userService.isUserManagementEnabled(userDb)) {
+    return permissions.isEditor(auth.user);
+  }
   if (permissions.isEditor(auth.user)) return true;
   if (!process.env.ADMIN_SECRET) return true;
   return false;

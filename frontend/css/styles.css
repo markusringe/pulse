@@ -1137,6 +1137,31 @@ body.admin-area .view:not([hidden]) {
   background: rgba(0, 0, 0, 0.45);
 }
 
+.admin-login-dialog {
+  border: none;
+  padding: 0;
+  max-width: min(480px, calc(100vw - 2rem));
+  width: 100%;
+  background: transparent;
+}
+
+.admin-login-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.admin-login-host .login-page {
+  margin: 0;
+}
+
+.admin-login-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0;
+  border: none;
+}
+
 .login-page {
   padding: 1.5rem;
 }

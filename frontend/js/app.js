@@ -34,8 +34,9 @@ import { bindHelp, showHelpPage, explainError } from "./help.js?v=nav12";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
 import { syncAdminNav } from "./adminNav.js?v=nav15";
-import { loadAuth, ensureAdminAccess, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav32";
-import { showLoginPage, initAuthOnBoot } from "./loginPage.js?v=nav36";
+import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav37";
+import { showLoginPage } from "./loginPage.js?v=nav37";
+import { showAdminLoginModal, isAdminLoginModalOpen } from "./adminLoginModal.js?v=nav37";
 import { showUsersPage } from "./usersAdmin.js?v=nav30";
 import { showProfilePage } from "./profilePage.js?v=nav30";
 import { ensureStepUp } from "./stepUp.js?v=nav35";
@@ -247,12 +248,22 @@ try {
 }
 
 /**
- * Auth vor dem ersten route() laden — sonst kurz falsche View oder leere Admin-Seite.
+ * Auth vor dem ersten route() laden — bei geschützter Admin-URL Login-Modal zeigen.
  */
 (async function pulseBoot() {
   try {
-    const needsLogin = await initAuthOnBoot();
-    route(needsLogin ? "/admin/login" : undefined);
+    await loadAuth();
+    const hash = location.hash.replace(/^#/, "") || "/";
+    const needsAuth =
+      isAuthEnabled() && hash.startsWith("/admin") && hash !== "/admin/login" && !hasAdminAccess();
+    if (needsAuth) {
+      const target = hash;
+      revertAdminHash();
+      route("/");
+      void showAdminLoginModal(target).then((r) => afterAdminLogin(r, target));
+    } else {
+      route();
+    }
   } catch (err) {
     console.error("[route]", err);
     document.documentElement.classList.remove("route-booting");
@@ -394,7 +405,8 @@ function bindGlobal() {
   els.adminCancel?.addEventListener("click", () => els.adminDialog?.close());
   document.getElementById("btn-auth-logout")?.addEventListener("click", async () => {
     await logout();
-    location.hash = "#/admin/login";
+    location.hash = "#/";
+    route("/");
   });
   document.addEventListener("keydown", onHotkeys);
   bindPanic(els.panicButton, {
@@ -421,15 +433,24 @@ function bindGlobal() {
   });
 }
 
-function goAdminLogin() {
-  teardownRealtime();
+/** Nach erfolgreichem Admin-Login zur gespeicherten Route navigieren. */
+function afterAdminLogin(result, fallbackPath) {
+  if (!result?.ok) return;
+  const path = String(result.redirectHash || fallbackPath || "/admin").replace(/^#/, "");
+  navigate(path.startsWith("/") ? path : `/${path}`);
+}
+
+/** Admin-Hash zurücksetzen ohne erneuten Guard (replaceState). */
+function revertAdminHash() {
   try {
-    if (location.hash !== "#/admin/login") location.hash = "#/admin/login";
+    history.replaceState(null, "", "#/");
   } catch {
-    /* Webview ohne Hash — View trotzdem wechseln. */
+    try {
+      location.replace("#/");
+    } catch {
+      /* Webview ohne Hash */
+    }
   }
-  showView("login");
-  showLoginPage();
 }
 
 function route(forcedHash) {
@@ -445,7 +466,11 @@ function route(forcedHash) {
   }
 
   if (isAuthEnabled() && hash.startsWith("/admin") && hash !== "/admin/login" && !hasAdminAccess()) {
-    goAdminLogin();
+    if (isAdminLoginModalOpen()) return;
+    const target = hash;
+    revertAdminHash();
+    showView("home");
+    void showAdminLoginModal(target).then((r) => afterAdminLogin(r, target));
     return;
   }
 
@@ -662,7 +687,13 @@ function onInAppHashClick(ev) {
   const href = (a.getAttribute("href") || "").trim();
   if (!href.startsWith("#/")) return;
   ev.preventDefault();
-  navigate(href.slice(1));
+  const path = href.slice(1);
+  /* Admin-Links ohne Session: Modal statt Navigation. */
+  if (isAuthEnabled() && path.startsWith("/admin") && path !== "/admin/login" && !hasAdminAccess()) {
+    void showAdminLoginModal(path).then((r) => afterAdminLogin(r, path));
+    return;
+  }
+  navigate(path);
 }
 
 /**

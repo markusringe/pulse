@@ -104,15 +104,18 @@ export function isPinLoginAvailable() {
 }
 
 /**
- * Ob Admin-Routen ohne Login-Redirect erreichbar sind (Cookie, ADMIN_SECRET oder Bootstrap).
+ * Ob eine gültige Admin-Session besteht (Cookie oder Legacy ADMIN_SECRET).
+ * Bootstrap-Status allein reicht nicht — Anmeldung ist immer erforderlich.
  * @returns {boolean}
  */
-export function hasAdminAccess() {
+export function isAuthenticated() {
   if (!state.enabled) return true;
-  if (state.user) return true;
-  if (state.viaSecret) return true;
-  if (state.needsBootstrap) return true;
-  return false;
+  return Boolean(state.user) || state.viaSecret;
+}
+
+/** Alias für Route-Guards und Navigation. */
+export function hasAdminAccess() {
+  return isAuthenticated();
 }
 
 export function authNav() {
@@ -278,23 +281,37 @@ export async function sendTestEmail(body = {}) {
 export async function ensureAdminAccess(hash) {
   if (!state.enabled) return true;
   if (hash.startsWith("/admin/login")) return true;
+  if (!isAuthenticated()) return false;
   if (hash === "/admin/profile") {
-    if (!state.user) {
-      location.hash = "#/admin/login";
-      return false;
-    }
+    if (!state.user) return false;
     return true;
   }
-  if (!state.user) {
-    location.hash = "#/admin/login";
-    return false;
-  }
+  if (!state.user) return false;
   const key = navKeyFromHash(hash);
-  if (key && !hasNav(key)) {
-    location.hash = "#/admin/events";
-    return false;
-  }
+  if (key && !hasNav(key)) return false;
   return true;
+}
+
+/**
+ * Authentifizierte API-Anfrage; bei 401 Session beenden und Login-Modal anstoßen.
+ * @param {string} path — Pfad unter /api
+ * @param {object} [opts]
+ */
+export async function fetchWithAuth(path, opts = {}) {
+  const r = await fetchJson(path, opts);
+  if (r.status === 401 && state.enabled) {
+    state.user = null;
+    state.nav = [];
+    state.stepUpUntil = null;
+    state.viaSecret = false;
+    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav37");
+    await showAdminLoginModal("/admin");
+    throw new Error("Session abgelaufen");
+  }
+  if (r.status === 403) {
+    throw new Error(r.data?.error || "Zugriff verweigert");
+  }
+  return r;
 }
 
 function navKeyFromHash(hash) {
