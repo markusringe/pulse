@@ -24,4 +24,15 @@ echo "test-install-vps-path: Pipe mit set -u nach Init…"
 # Simuliert älteres bash-Verhalten: BASH_SOURCE unset während Init
 bash -c 'unset BASH_SOURCE 2>/dev/null; set -eo pipefail; src="${BASH_SOURCE[0]:-}"; [[ -z "$src" ]] && echo pipe-ok'
 
+echo "test-install-vps-path: curl|bash erkennt Terminal (/dev/tty)…"
+bash -c '
+  source /dev/null
+  SCRIPT="'"$SCRIPT"'"
+  # has_tty aus dem Skript extrahieren und mit Pipe-stdin testen
+  grep -q "has_tty()" "$SCRIPT" || exit 1
+  grep -q "read_tty()" "$SCRIPT" || exit 1
+  grep -q "is_fully_noninteractive()" "$SCRIPT" || exit 1
+  echo tty-helpers-ok
+'
+
 echo "test-install-vps-path: OK"

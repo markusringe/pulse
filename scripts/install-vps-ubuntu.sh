@@ -44,7 +44,7 @@ readonly DEFAULT_INSTALL_DIR="/opt/pulse"
 readonly DEFAULT_GIT_URL="https://github.com/markusringe/pulse.git"
 readonly DEFAULT_GIT_BRANCH="main"
 readonly PULSE_REPO="markusringe/pulse"
-readonly PULSE_INSTALLER_VER="2.3"
+readonly PULSE_INSTALLER_VER="2.4"
 
 # --- Optionen (werden per getopts-Loop gesetzt) ---
 INSTALL_DIR=""
@@ -123,6 +123,31 @@ warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mFehler:\033[0m %s\n' "$*" >&2; exit 1; }
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "Befehl '$1' fehlt — bitte manuell installieren und erneut ausführen."
+}
+
+# Bei curl|bash kommt das Skript über stdin — Eingaben laufen über /dev/tty.
+has_tty() {
+  [ -t 0 ] || { [ -r /dev/tty ] 2>/dev/null && [ -w /dev/tty ] 2>/dev/null; }
+}
+
+is_fully_noninteractive() {
+  ! has_tty
+}
+
+read_tty() {
+  if [ -r /dev/tty ] 2>/dev/null; then
+    read -r "$@" < /dev/tty
+  else
+    read -r "$@"
+  fi
+}
+
+read_secret_tty() {
+  if [ -r /dev/tty ] 2>/dev/null; then
+    read -r -s "$@" < /dev/tty
+  else
+    read -r -s "$@"
+  fi
 }
 
 usage() {
@@ -242,7 +267,7 @@ check_ubuntu() {
   case "${ID:-}" in
     ubuntu)
       case "${VERSION_ID:-}" in
-        20.04|22.04|24.04) ;;
+        20.04|22.04|24.04|26.04) ;;
         *)
           warn "Getestet für Ubuntu 20.04/22.04/24.04 — Sie verwenden ${VERSION_ID:-unbekannt}."
           ;;
@@ -404,9 +429,9 @@ configure_interactive() {
     INSTALL_SSL=1
   fi
 
-  if [ ! -t 0 ]; then
+  if is_fully_noninteractive; then
     if [ -z "$INSTALL_DOMAIN" ]; then
-      die "PULSE_DOMAIN ist erforderlich (nicht-interaktive Installation)."
+      die "PULSE_DOMAIN ist erforderlich (kein Terminal — z. B. CI)."
     fi
     INSTALL_ADMIN_EMAIL="${INSTALL_ADMIN_EMAIL:-admin@${INSTALL_DOMAIN}}"
     if [ -z "$INSTALL_ADMIN_PASSWORD" ]; then
@@ -429,7 +454,7 @@ configure_interactive() {
 
   while [ -z "$INSTALL_DOMAIN" ]; do
     printf 'Domain unter der Pulse erreichbar sein soll (z.B. pulse.example.com): '
-    read -r INSTALL_DOMAIN
+    read_tty INSTALL_DOMAIN
     INSTALL_DOMAIN="$(echo "$INSTALL_DOMAIN" | tr '[:upper:]' '[:lower:]' | xargs)"
     if [ -z "$INSTALL_DOMAIN" ]; then
       warn "Eine Domain ist für die Server-Installation erforderlich (DNS muss auf diesen Server zeigen)."
@@ -441,7 +466,7 @@ configure_interactive() {
 
   if [ "$INSTALL_SSL" -eq 0 ]; then
     printf "Let's Encrypt SSL für %s einrichten? [J/n]: " "$INSTALL_DOMAIN"
-    read -r ssl_answer
+    read_tty ssl_answer
     if [ -z "$ssl_answer" ] || echo "$ssl_answer" | grep -qi '^j'; then
       INSTALL_SSL=1
     else
@@ -453,7 +478,7 @@ configure_interactive() {
   echo "Administrator-Konto (Erstlogin per Kennwort, kein E-Mail-Versand):"
   if [ -z "$INSTALL_ADMIN_EMAIL" ]; then
     printf 'Admin E-Mail-Adresse: '
-    read -r INSTALL_ADMIN_EMAIL
+    read_tty INSTALL_ADMIN_EMAIL
   fi
   INSTALL_ADMIN_EMAIL="$(echo "$INSTALL_ADMIN_EMAIL" | tr '[:upper:]' '[:lower:]' | xargs)"
   if [ -z "$INSTALL_ADMIN_EMAIL" ]; then
@@ -463,7 +488,7 @@ configure_interactive() {
   if [ -z "$INSTALL_ADMIN_PASSWORD" ]; then
     while true; do
       printf 'Initiales Admin-Kennwort (mind. 8 Zeichen): '
-      read -r -s INSTALL_ADMIN_PASSWORD
+      read_secret_tty INSTALL_ADMIN_PASSWORD
       echo ""
       if [ "${#INSTALL_ADMIN_PASSWORD}" -ge 8 ]; then
         break

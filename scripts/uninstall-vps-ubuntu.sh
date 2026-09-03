@@ -78,6 +78,22 @@ ok()   { printf '\033[1;32m✔\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mFehler:\033[0m %s\n' "$*" >&2; exit 1; }
 
+has_tty() {
+  [ -t 0 ] || { [ -r /dev/tty ] 2>/dev/null && [ -w /dev/tty ] 2>/dev/null; }
+}
+
+is_fully_noninteractive() {
+  ! has_tty
+}
+
+read_tty() {
+  if [ -r /dev/tty ] 2>/dev/null; then
+    read -r "$@" < /dev/tty
+  else
+    read -r "$@"
+  fi
+}
+
 usage() {
   cat <<'EOF'
 Pulse — VPS-Deinstallation
@@ -164,7 +180,7 @@ confirm_uninstall() {
   if [ "$ASSUME_YES" -eq 1 ]; then
     return 0
   fi
-  if [ ! -t 0 ]; then
+  if is_fully_noninteractive; then
     warn "Nicht-interaktiv — setzen Sie --yes oder PULSE_UNINSTALL_YES=1"
     [ "${PULSE_UNINSTALL_YES:-}" = "1" ] || die "Abbruch ohne --yes"
     return 0
@@ -179,7 +195,7 @@ confirm_uninstall() {
   echo "  Zertifikate:  $([ "$PURGE_CERTS" -eq 1 ] && echo löschen || echo behalten)"
   echo ""
   printf 'Fortfahren? Tippe „ja“ zum Bestätigen: '
-  read -r answer
+  read_tty answer
   [ "$answer" = "ja" ] || die "Abgebrochen."
 }
 
