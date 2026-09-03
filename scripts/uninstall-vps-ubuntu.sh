@@ -25,7 +25,7 @@
 set -eo pipefail
 
 readonly DEFAULT_INSTALL_DIR="/opt/pulse"
-readonly PULSE_UNINSTALLER_VER="1.1"
+readonly PULSE_UNINSTALLER_VER="1.2"
 
 INSTALL_DIR=""
 KEEP_DATA=0
@@ -36,7 +36,9 @@ OUTPUT_JSON=0
 IS_REMOTE=0
 
 STEP=0
-TOTAL_STEPS=6
+# Anzahl geplanter Fortschrittsschritte (wird in compute_progress_total gesetzt).
+PROGRESS_TOTAL=6
+readonly PROGRESS_BAR_WIDTH=28
 
 resolve_script_dir() {
   local src="${BASH_SOURCE[0]:-}"
@@ -69,7 +71,73 @@ fi
 
 set -u
 
-log()  { printf '\033[1;33m==> [%s/%s]\033[0m %s\n' "$STEP" "$TOTAL_STEPS" "$*"; }
+# --- Fortschrittsbalken (nur bei interaktivem Terminal, nicht bei --json) ---
+use_progress_bar() {
+  [ "$OUTPUT_JSON" -eq 1 ] && return 1
+  has_tty || return 1
+  return 0
+}
+
+# Gesamtanzahl Schritte je nach Optionen (Zertifikat-Löschung optional).
+compute_progress_total() {
+  # Ziel → Docker → npm → [optional SSL] → Dateien entfernen
+  PROGRESS_TOTAL=4
+  if [ "$PURGE_CERTS" -eq 1 ]; then
+    PROGRESS_TOTAL=5
+  fi
+}
+
+# Balken zeichnen: [████████░░░░] 42% (2/5)
+render_progress_bar() {
+  local current="$1"
+  local total="$2"
+  local label="${3:-}"
+
+  if ! use_progress_bar; then
+    return 0
+  fi
+
+  local width="$PROGRESS_BAR_WIDTH"
+  local filled=0
+  local empty="$width"
+  local pct=0
+
+  if [ "$total" -gt 0 ]; then
+    filled=$((current * width / total))
+    empty=$((width - filled))
+    pct=$((current * 100 / total))
+  fi
+
+  local bar=""
+  local i
+  for ((i = 0; i < filled; i++)); do bar+="█"; done
+  for ((i = 0; i < empty; i++)); do bar+="░"; done
+
+  printf '\033[1;36mFortschritt\033[0m [\033[1;32m%s\033[0m] \033[1m%3d%%\033[0m (\033[1m%d/%d\033[0m)\n' \
+    "$bar" "$pct" "$current" "$total"
+  if [ -n "$label" ]; then
+    printf '  \033[1;33m→\033[0m %s\n' "$label"
+  fi
+}
+
+# Schritt starten: Zähler erhöhen und Balken aktualisieren.
+progress_step() {
+  STEP=$((STEP + 1))
+  render_progress_bar "$STEP" "$PROGRESS_TOTAL" "$1"
+  if ! use_progress_bar; then
+    printf '\033[1;33m==> [%s/%s]\033[0m %s\n' "$STEP" "$PROGRESS_TOTAL" "$1"
+  fi
+}
+
+# Abschluss — Balken auf 100 %.
+progress_complete() {
+  if use_progress_bar; then
+    render_progress_bar "$PROGRESS_TOTAL" "$PROGRESS_TOTAL" "Abgeschlossen"
+    printf '\n'
+  fi
+}
+
+log()  { progress_step "$*"; }
 ok()   { printf '\033[1;32m✔\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mFehler:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -158,8 +226,6 @@ parse_args() {
     esac
   done
 }
-
-step() { STEP=$((STEP + 1)); }
 
 require_root() {
   if [ "$(id -u)" -ne 0 ]; then
@@ -257,6 +323,8 @@ has_compose() {
 
 stop_docker_stack() {
   local dir="$1"
+  progress_step "Docker-Stack stoppen…"
+
   if [ ! -f "$dir/docker-compose.yml" ]; then
     ok "Kein docker-compose.yml in $dir — Docker-Stop übersprungen"
     return 0
@@ -265,9 +333,6 @@ stop_docker_stack() {
     warn "Docker nicht installiert — Stack-Stop übersprungen"
     return 0
   fi
-
-  step
-  log "Docker-Stack in $dir stoppen…"
 
   if ! has_compose; then
     warn "Docker Compose nicht gefunden — versuche laufende Pulse-Container zu stoppen…"
@@ -292,8 +357,7 @@ stop_docker_stack() {
 
 stop_npm_process() {
   local dir="$1"
-  step
-  log "Node-Prozesse (Pulse) beenden…"
+  progress_step "Node-Prozesse beenden…"
   if command -v pkill >/dev/null 2>&1; then
     pkill -f "node.*${dir}" 2>/dev/null || true
     pkill -f "node.*/opt/pulse" 2>/dev/null || true
@@ -307,14 +371,18 @@ stop_npm_process() {
 
 purge_letsencrypt() {
   local domain="$1"
-  [ -n "$domain" ] || return 0
-  [ "$PURGE_CERTS" -eq 1 ] || return 0
-  step
+  if [ "$PURGE_CERTS" -ne 1 ]; then
+    return 0
+  fi
+  progress_step "Let's-Encrypt-Zertifikat entfernen…"
+  [ -n "$domain" ] || {
+    warn "Keine Domain in .env — Zertifikat-Löschung übersprungen"
+    return 0
+  }
   if ! command -v certbot >/dev/null 2>&1; then
     warn "certbot nicht installiert — Zertifikat manuell prüfen"
     return 0
   fi
-  log "Let's-Encrypt-Zertifikat für $domain entfernen…"
   certbot delete --cert-name "$domain" --non-interactive 2>/dev/null \
     || warn "Zertifikat $domain nicht gefunden oder bereits entfernt"
   ok "Zertifikat-Bereinigung abgeschlossen"
@@ -322,21 +390,23 @@ purge_letsencrypt() {
 
 remove_installation() {
   local dir="$1"
-  step
+  progress_step "Installationsdateien entfernen…"
+
+  # Zugangsdaten-Datei vor dem Verzeichnis-Löschen entfernen
+  [ -f "$dir/INSTALL-CREDENTIALS.txt" ] && rm -f "$dir/INSTALL-CREDENTIALS.txt" 2>/dev/null || true
+
   if [ ! -d "$dir" ]; then
     warn "Installationsverzeichnis $dir existiert nicht — nichts zu löschen"
     return 0
   fi
 
   if [ "$KEEP_DATA" -eq 1 ]; then
-    log "Installationsdateien entfernen (data/ und .env bleiben)…"
     cd "$dir" || return 0
     find . -mindepth 1 -maxdepth 1 ! -name 'data' ! -name '.env' ! -name 'INSTALL-CREDENTIALS.txt' -exec rm -rf {} + 2>/dev/null || true
     ok "Code entfernt — data/ und .env erhalten"
     return 0
   fi
 
-  log "Installationsverzeichnis entfernen: $dir"
   if rm -rf "$dir" 2>/dev/null; then
     ok "Verzeichnis gelöscht: $dir"
     return 0
@@ -353,11 +423,6 @@ remove_installation() {
   fi
 
   die "Konnte $dir nicht löschen. Bitte manuell: cd $dir && docker compose down -v && cd .. && rm -rf $dir"
-}
-
-remove_credentials_file() {
-  local dir="$1"
-  [ -f "$dir/INSTALL-CREDENTIALS.txt" ] && rm -f "$dir/INSTALL-CREDENTIALS.txt" 2>/dev/null || true
 }
 
 print_summary() {
@@ -384,6 +449,7 @@ EOF
 
 main() {
   parse_args "$@"
+  compute_progress_total
   require_root
 
   local dir
@@ -395,9 +461,9 @@ main() {
     ok "Remote-Deinstallation erkannt (curl|bash)"
   fi
 
+  echo ""
   ok "Pulse VPS-Deinstaller v${PULSE_UNINSTALLER_VER}"
-  step
-  log "Zielverzeichnis: $dir"
+  progress_step "Zielverzeichnis: $dir"
 
   if [ -f "$env_file" ]; then
     domain="$(read_env_value "$env_file" "DOMAIN")"
@@ -412,8 +478,8 @@ main() {
   stop_docker_stack "$dir"
   stop_npm_process "$dir"
   purge_letsencrypt "$domain"
-  remove_credentials_file "$dir"
   remove_installation "$dir"
+  progress_complete
   print_summary "$dir" "$domain"
 }
 
