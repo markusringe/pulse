@@ -4,8 +4,8 @@
  */
 
 import { api } from "./websocket.js?v=nav44";
-import { withStepUp } from "./stepUp.js?v=nav44";
-import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav44";
+import { withStepUp } from "./stepUp.js?v=nav47";
+import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav47";
 import { syncAdminNav } from "./adminNav.js?v=nav44";
 
 function $(id) {
@@ -106,7 +106,7 @@ async function loadBackups() {
   setMsg("");
 }
 
-/** Neues Backup erstellen und Download starten. */
+/** Neues Backup serverseitig erstellen (ohne automatischen Download). */
 async function onCreateBackup() {
   const btn = $("backup-create-btn");
   if (btn) {
@@ -120,9 +120,6 @@ async function onCreateBackup() {
       setMsg(r?.data?.error || "Backup fehlgeschlagen.", true);
       showToast("Backup fehlgeschlagen", "error");
       return;
-    }
-    if (r.data?.downloadUrl) {
-      window.location.href = r.data.downloadUrl;
     }
     await loadBackups();
     setMsg("Backup erfolgreich erstellt.");

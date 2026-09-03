@@ -34,13 +34,13 @@ import { bindHelp, showHelpPage, explainError } from "./help.js?v=help9";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
 import { syncAdminNav } from "./adminNav.js?v=nav43";
-import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, isAuthLoaded, logout } from "./authClient.js?v=nav46";
-import { showLoginPage } from "./loginPage.js?v=nav39";
-import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav46";
+import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, isAuthLoaded, logout } from "./authClient.js?v=nav47";
+import { showLoginPage } from "./loginPage.js?v=nav47";
+import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav47";
 import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
 import { showProfilePage } from "./profilePage.js?v=nav30";
-import { ensureStepUp } from "./stepUp.js?v=nav35";
+import { ensureStepUp } from "./stepUp.js?v=nav47";
 import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav32";
 import {
   initTheme,
@@ -572,7 +572,7 @@ function route(forcedHash) {
   if (hash === "/admin/backups") {
     teardownRealtime();
     showView("backups", hash);
-    import("./backupsPage.js?v=nav44")
+    import("./backupsPage.js?v=nav47")
       .then((m) => m.showBackupsPage())
       .catch((err) => {
         console.error("[backups-page]", err);

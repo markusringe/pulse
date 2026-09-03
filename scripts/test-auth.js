@@ -90,6 +90,19 @@ assert(userDb.supported, "SQLite userDb verfügbar");
   assert(pwLogin.token, "Bootstrap-Login erfolgreich");
   assert(!(await userService.isBootstrapPasswordLogin(userDb)), "Bootstrap-Flag nach Login gelöscht");
 
+  /* Admin-Kennwort-Login auch bei aktivem PIN-Modus (SMTP konfiguriert) */
+  assert(emailService.canSendPin(), "PIN-Modus nach Bootstrap aktiv");
+  const adminPw = await userService.verifyPasswordLogin(userDb, {
+    email: "admin@test.local",
+    password: "InitPass123!",
+    ipHash: "abc",
+    userAgent: "test",
+    persistent: true,
+    adminLogin: true,
+  });
+  assert(adminPw.token, "Admin-Kennwort-Login bei PIN-Modus");
+  await userService.logout(userDb, adminPw.token);
+
   /* Selbstregistrierung */
   await userDb.setSetting("selfRegistrationEnabled", "1");
   const settings = await userService.getSettings(userDb);
@@ -100,6 +113,18 @@ assert(userDb.supported, "SQLite userDb verfügbar");
     password: "ViewerPass123!",
   });
   assert(viewer.role === "viewer", "Selbstregistrierung → viewer");
+
+  let viewerPwBlocked = false;
+  try {
+    await userService.verifyPasswordLogin(userDb, {
+      email: "viewer@test.local",
+      password: "ViewerPass123!",
+      adminLogin: true,
+    });
+  } catch (err) {
+    viewerPwBlocked = err.statusCode === 401;
+  }
+  assert(viewerPwBlocked, "Nicht-Admin darf kein adminLogin-Kennwort");
 
   await userDb.setSetting("selfRegistrationEnabled", "0");
   const settingsOff = await userService.getSettings(userDb);

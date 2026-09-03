@@ -16,7 +16,7 @@ import {
   isPinLoginAvailable,
   needsAuthBootstrap,
   getDevMailbox,
-} from "./authClient.js?v=nav39";
+} from "./authClient.js?v=nav47";
 
 /** Laufender Formularzustand pro Container-Instanz. */
 const instances = new WeakMap();
@@ -28,11 +28,14 @@ const instances = new WeakMap();
  * @property {(redirect?: string) => void} [onSuccess] — Nach erfolgreicher Anmeldung
  * @property {() => void} [onCancel] — Abbrechen (nur Modal)
  * @property {boolean} [showCancel] — Abbrechen-Button anzeigen
+ * @property {boolean} [adminLogin] — Admin-Bereich: immer Kennwort, kein E-Mail-Code
  */
 
 /** Welcher Anmelde-Modus aktiv ist. */
-function resolveLoginMode() {
+function resolveLoginMode(options = {}) {
   if (isBootstrapPasswordLogin() || needsAuthBootstrap()) return "bootstrap";
+  /* Administratoren melden sich immer mit Kennwort an (auch wenn SMTP/PIN für andere aktiv ist). */
+  if (options.adminLogin) return "password";
   if (isPasswordLoginMode() && !isPinLoginAvailable()) return "password";
   return "pin";
 }
@@ -64,7 +67,7 @@ export async function initLoginForm(container, options = {}) {
   }
 
   const idPrefix = options.idPrefix || "login-";
-  const loginMode = resolveLoginMode();
+  const loginMode = resolveLoginMode(options);
   const showCancel = Boolean(options.showCancel);
 
   /** Instanz-Zustand für PIN-Schritte und Timer. */
@@ -94,7 +97,9 @@ function renderForm(container, state, options) {
       : "";
   const passwordOnlyHint =
     loginMode === "password"
-      ? `<p class="login-bootstrap-hint muted">E-Mail-Versand ist nicht konfiguriert — Anmeldung per Kennwort.</p>`
+      ? options.adminLogin
+        ? `<p class="login-bootstrap-hint muted">Administratoren melden sich mit E-Mail und Kennwort an (kein Anmeldecode per E-Mail).</p>`
+        : `<p class="login-bootstrap-hint muted">E-Mail-Versand ist nicht konfiguriert — Anmeldung per Kennwort.</p>`
       : "";
 
   container.innerHTML = `
@@ -319,11 +324,12 @@ async function onPasswordLogin(container, state) {
   const persistent = el(container, state.idPrefix, "persistent-pw")?.checked !== false;
 
   /** Bootstrap zuerst, bei Bedarf Fallback auf allgemeinen Kennwort-Login. */
+  const adminFlow = Boolean(state.options.adminLogin);
   let r = bootstrapFlow
     ? await bootstrapLogin(state.email, password, persistent)
-    : await loginPassword(state.email, password, persistent);
+    : await loginPassword(state.email, password, persistent, adminFlow);
   if (!r.ok && bootstrapFlow && (r.status === 403 || r.status === 401)) {
-    r = await loginPassword(state.email, password, persistent);
+    r = await loginPassword(state.email, password, persistent, adminFlow);
   }
   if (!r.ok && !bootstrapFlow && isPasswordLoginMode()) {
     r = await bootstrapLogin(state.email, password, persistent);

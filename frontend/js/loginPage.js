@@ -3,8 +3,8 @@
  */
 
 import { getAuthUser, isAuthEnabled, hasAdminAccess, loadAuth } from "./authClient.js?v=nav46";
-import { initLoginForm } from "./adminLoginForm.js?v=nav46";
-import { consumeAdminRedirect } from "./adminLoginModal.js?v=nav46";
+import { initLoginForm } from "./adminLoginForm.js?v=nav47";
+import { consumeAdminRedirect } from "./adminLoginModal.js?v=nav47";
 
 /** Login-UI auf der Vollseite initialisieren. */
 export async function showLoginPage() {
@@ -18,6 +18,7 @@ export async function showLoginPage() {
   await initLoginForm(root, {
     title: "Anmelden",
     idPrefix: "login-",
+    adminLogin: true,
     onSuccess: (redirectHash) => {
       location.hash = redirectHash || consumeAdminRedirect("#/admin/events");
     },

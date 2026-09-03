@@ -8,8 +8,7 @@ import {
   submitStepUpPin,
   hasValidStepUp,
   refreshAuthMe,
-  isPinLoginAvailable,
-} from "./authClient.js?v=nav40";
+} from "./authClient.js?v=nav47";
 
 let dialogEl = null;
 
@@ -45,9 +44,8 @@ export async function ensureStepUp() {
   const me = getAuthUser();
   if (!me || me.role !== "admin") return true;
   if (hasValidStepUp()) return true;
-  /* Kennwort-only (Installation ohne SMTP): PIN-Dialog wäre nutzlos. */
-  if (!isPinLoginAvailable()) return true;
-  return promptStepUp();
+  /* Administratoren nutzen Kennwort-Anmeldung — kein erneuter E-Mail-Code für Step-up. */
+  return true;
 }
 
 /**

@@ -236,11 +236,14 @@ export async function bootstrapLogin(email, password, persistent = true) {
   return r;
 }
 
-/** Anmeldung per Kennwort wenn E-Mail-Versand deaktiviert ist. */
-export async function loginPassword(email, password, persistent = true) {
+/**
+ * Anmeldung per Kennwort (ohne SMTP oder Admin-Bereich).
+ * @param {boolean} [adminLogin] — Kennwort-Login für Administratoren trotz aktivem PIN-Modus
+ */
+export async function loginPassword(email, password, persistent = true, adminLogin = false) {
   const r = await fetchJson("/auth/login-password", {
     method: "POST",
-    body: { email, password, persistent },
+    body: { email, password, persistent, adminLogin: Boolean(adminLogin) },
   });
   if (r.ok) {
     state.user = r.data.user;
@@ -386,7 +389,7 @@ export async function fetchWithAuth(path, opts = {}) {
     state.nav = [];
     state.stepUpUntil = null;
     state.viaSecret = false;
-    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav39");
+    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav47");
     await showAdminLoginModal("/admin");
     throw new Error("Session abgelaufen");
   }
