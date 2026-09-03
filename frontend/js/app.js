@@ -71,7 +71,7 @@ import {
 } from "./presenterStats.js";
 import { bindJoinGestures, hapticSuccess } from "./joinMobile.js";
 import { bindPresentMobileUi } from "./presentMobile.js?v=nav54";
-import { bindInteractionBar, joinInputsBlocked, joinStatusMessage, computeRemainingMs, formatCountdown } from "./interactionPresenter.js?v=nav55";
+import { bindInteractionBar, joinInputsBlocked, joinStatusMessage, computeRemainingMs, formatCountdown, resetJoinTimerAnnouncements, tickJoinTimerA11y, applyJoinTimerUrgency, joinTimerTypeHint } from "./interactionPresenter.js?v=nav55";
 import { bindAdminMobileNav, bindPublicMobileMenu } from "./mobileNav.js?v=nav54";
 import {
   renderRankingInput,
@@ -238,6 +238,8 @@ const ctx = {
   rt: null,
   sim: 0,
   votedSlide: new Set(),
+  /** Folien-ID mit ausstehender Stimme (Live-WS), bis poll:update oder Fehler. */
+  pendingVoteSlideId: null,
   /** Folien-IDs, für die der Q&A-Timer in dieser Presenter-Session schon auto-gestartet wurde. */
   qaAutoStarted: new Set(),
   instanceBranding: null,
@@ -1254,6 +1256,10 @@ function connectRealtime(role) {
   });
   rt.on("poll:update", (payload) => {
     patchSlideResults(payload);
+    if (ctx.role === "join" && ctx.pendingVoteSlideId && payload.slideId === ctx.pendingVoteSlideId) {
+      ctx.votedSlide.add(ctx.pendingVoteSlideId);
+      ctx.pendingVoteSlideId = null;
+    }
     if (ctx.role === "present") syncPresentResults();
   });
   rt.on("wordcloud:update", (payload) => {
@@ -1309,6 +1315,7 @@ function connectRealtime(role) {
     const slide = ctx.session.slides.find((s) => s.id === payload.slideId);
     if (slide && payload.interaction) {
       slide.interaction = { ...slide.interaction, ...payload.interaction };
+      if (payload.interaction.state === "running") resetJoinTimerAnnouncements(slide.id);
     }
     if (payload.serverNow) ctx.eventClockSkew = payload.serverNow - Date.now();
     persistLocal(ctx.session);
@@ -1435,10 +1442,23 @@ function connectRealtime(role) {
       else if (payload?.error === "qa_closed") setJoinFeedback(t("qa.closed"), { state: "error" });
       else if (payload?.error === "rate") setJoinFeedback(t("qa.rateWait", { n: payload.waitTime || 30 }), { state: "error" });
       else if (payload?.error === "interaction_not_started") setJoinFeedback(t("interaction.join.waiting"), { state: "info" });
-      else if (payload?.error === "interaction_paused") setJoinFeedback(t("interaction.join.paused"), { state: "info" });
-      else if (payload?.error === "interaction_ended") setJoinFeedback(t("interaction.join.ended"), { state: "info" });
-      else if (payload?.pendingReview) setJoinFeedback(t("qa.pendingHint"));
+      else if (payload?.error === "interaction_paused") {
+        setJoinFeedback(t("interaction.join.paused"), { state: "info" });
+        rollbackPendingVote();
+      }
+      else if (payload?.error === "interaction_ended") {
+        setJoinFeedback(t("interaction.join.ended"), { state: "info" });
+        rollbackPendingVote();
+      }
+      else if (payload?.error === "invalid") {
+        setJoinFeedback(t("interaction.join.rankIncomplete"), { state: "error" });
+        rollbackPendingVote();
+      } else if (payload?.error === "sum") {
+        setJoinFeedback(t("interaction.join.pointsIncomplete"), { state: "error" });
+        rollbackPendingVote();
+      } else if (payload?.pendingReview) setJoinFeedback(t("qa.pendingHint"));
       else setJoinFeedback(explainError(msg).html, { html: true, state: "error" });
+      if (ctx.pendingVoteSlideId) rollbackPendingVote();
     }
     if (msg.toLowerCase().includes("admin")) els.adminDialog?.showModal?.();
   });
@@ -1612,6 +1632,7 @@ function renderJoinSlide() {
   }
   els.joinQuestion.textContent = slide.question;
   setJoinFeedback("");
+  resetJoinTimerAnnouncements(slide.id);
   const inputBlocked = joinInputsBlocked(slide) || Boolean(s.paused);
   const ixMsg = joinStatusMessage(slide);
   if (ixMsg) setJoinFeedback(ixMsg, { state: "info" });
@@ -1703,9 +1724,13 @@ function renderJoinSlide() {
 
 function submitTypedVote(payload) {
   const slide = currentSlide();
-  if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused || joinInputsBlocked(slide)) return;
-  ctx.votedSlide.add(slide.id);
+  if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused) return;
+  if (joinInputsBlocked(slide)) {
+    setJoinFeedback(joinStatusMessage(slide) || t("interaction.join.timeout"), { state: "info" });
+    return;
+  }
   ctx.rt?.send("vote", { code: ctx.session.code, slideId: slide.id, ...payload });
+  ctx.pendingVoteSlideId = slide.id;
   hapticSuccess();
   playBrandSound();
   setJoinFeedback(t("join.voted"));
@@ -1780,6 +1805,19 @@ function onWordSubmit(ev) {
   hapticSuccess();
   playBrandSound();
   setJoinFeedback(t("join.wordSent"));
+}
+
+/**
+ * Stimmen-UI nach serverseitiger Ablehnung wieder freigeben.
+ */
+function rollbackPendingVote() {
+  ctx.pendingVoteSlideId = null;
+  const slide = currentSlide();
+  if (!slide || !els.joinExtra) return;
+  const blocked = joinInputsBlocked(slide) || ctx.session?.paused;
+  els.joinExtra.querySelectorAll("button, input, textarea").forEach((el) => {
+    el.disabled = blocked || ctx.votedSlide.has(slide.id);
+  });
 }
 
 /**
@@ -2030,16 +2068,32 @@ function clearInteractionTick() {
 /** Timer- und Statushinweis in der Teilnehmeransicht aktualisieren. */
 function updateJoinInteractionHint(slide) {
   const hint = document.getElementById("join-interaction-hint");
-  if (!hint || !slide) return;
+  const srLive = document.getElementById("join-interaction-sr");
+  const typeHint = document.getElementById("join-timer-type-hint");
+  if (!slide) return;
   const blocked = joinInputsBlocked(slide);
   const msg = joinStatusMessage(slide);
   let text = msg;
+  let remSec = 0;
   if (slide.interaction?.timerEnabled && slide.interaction.state === "running") {
     const rem = computeRemainingMs(slide, Date.now() + (ctx.eventClockSkew || 0));
-    text = `${t("interaction.join.running")} · ${formatCountdown(rem / 1000)}`;
+    remSec = Math.ceil(rem / 1000);
+    text = `${t("interaction.join.running")} · ${formatCountdown(remSec)}`;
+    if (remSec <= 30) text += ` — ${t("interaction.join.secondsLeft", { n: remSec <= 10 ? 10 : 30 })}`;
+    tickJoinTimerA11y(slide, rem, srLive);
+    applyJoinTimerUrgency(hint, remSec);
+  } else if (hint) {
+    hint.classList.remove("is-warn", "is-critical");
   }
-  hint.textContent = text || "";
-  hint.hidden = !text;
+  if (hint) {
+    hint.textContent = text || "";
+    hint.hidden = !text;
+  }
+  const typeMsg = joinTimerTypeHint(slide, remSec);
+  if (typeHint) {
+    typeHint.textContent = typeMsg;
+    typeHint.hidden = !typeMsg;
+  }
   if (blocked && msg) setJoinFeedback(msg, { state: "info" });
 }
 

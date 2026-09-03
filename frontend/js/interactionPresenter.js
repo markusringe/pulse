@@ -168,3 +168,59 @@ export function stageStatusMessage(slide) {
   }
   return "";
 }
+
+/** Schwellen für Screenreader — nicht jede Sekunde (WCAG). */
+const SR_TIMER_THRESHOLDS = [60, 30, 10, 0];
+/** Bereits angesagte Schwellen pro Folien-ID. */
+const joinTimerAnnounced = new Map();
+
+/** Ankündigungszähler zurücksetzen (Folienwechsel / Interaktionsstart). */
+export function resetJoinTimerAnnouncements(slideId) {
+  if (slideId) joinTimerAnnounced.delete(slideId);
+  else joinTimerAnnounced.clear();
+}
+
+/**
+ * Screenreader-Ankündigung bei 60/30/10/0 Sekunden.
+ * @param {object} slide
+ * @param {number} remMs
+ * @param {HTMLElement | null} liveEl
+ */
+export function tickJoinTimerA11y(slide, remMs, liveEl) {
+  if (!slide?.id || !liveEl || slide.interaction?.state !== "running") return;
+  const sec = Math.ceil(remMs / 1000);
+  const done = joinTimerAnnounced.get(slide.id) || new Set();
+  for (const threshold of SR_TIMER_THRESHOLDS) {
+    if (sec > threshold || done.has(threshold)) continue;
+    done.add(threshold);
+    joinTimerAnnounced.set(slide.id, done);
+    if (threshold === 0) {
+      liveEl.textContent = t("interaction.join.timeout");
+    } else {
+      liveEl.textContent = t("interaction.join.secondsLeft", { n: threshold });
+    }
+    break;
+  }
+}
+
+/**
+ * Visuelle Dringlichkeitsklasse für Join-Timer-Hinweis.
+ * @param {HTMLElement | null} hintEl
+ * @param {number} remSec
+ */
+export function applyJoinTimerUrgency(hintEl, remSec) {
+  if (!hintEl) return;
+  hintEl.classList.remove("is-warn", "is-critical");
+  if (remSec <= 0) return;
+  if (remSec <= 10) hintEl.classList.add("is-critical");
+  else if (remSec <= 30) hintEl.classList.add("is-warn");
+}
+
+/** Typ-spezifischer Hinweis bei laufendem Timer (Ranking / 100 Punkte). */
+export function joinTimerTypeHint(slide, remSec) {
+  if (remSec <= 0 || slide?.interaction?.state !== "running") return "";
+  if (slide.type === "ranking" && remSec <= 60) return t("interaction.join.rankIncomplete");
+  if (slide.type === "points100" && remSec <= 60) return t("interaction.join.pointsIncomplete");
+  if (slide.type === "picker" && remSec <= 30) return t("interaction.join.confirmSelection");
+  return "";
+}

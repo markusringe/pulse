@@ -98,6 +98,48 @@
   margin: 0 0 12px;
 }
 
+.join-interaction-hint.is-warn {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.join-interaction-hint.is-critical {
+  color: var(--ink);
+  font-weight: 750;
+  border: 2px solid color-mix(in srgb, #b45309 55%, var(--line));
+  border-radius: var(--radius-pulse-sm, 0.75rem);
+  padding: 8px 12px;
+}
+
+.join-timer-type-hint {
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .join-interaction-hint.is-critical {
+    animation: join-timer-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes join-timer-pulse {
+  0%,
+  100% {
+    border-color: color-mix(in srgb, #b45309 55%, var(--line));
+  }
+  50% {
+    border-color: color-mix(in srgb, #b45309 85%, var(--line));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .join-interaction-hint.is-critical {
+    animation: none;
+  }
+}
+
 .stage-interaction-hint {
   text-align: center;
   font-size: clamp(1rem, 2.5vw, 1.35rem);

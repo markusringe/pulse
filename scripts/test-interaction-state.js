@@ -71,4 +71,18 @@ ix.onSlideActivated(session, s2, fresh);
 assert(fresh.interaction.state === "ended", "Folienwechsel finalisiert vorherige");
 assert(s2.interaction.state === "active", "Neue Folie: active");
 
+const ranking = {
+  type: "ranking",
+  options: [{ id: "o1" }, { id: "o2" }],
+  ranks: {},
+  voteCount: 0,
+};
+ix.ensureInteraction(ranking, { legacy: false });
+session.slides = [ranking];
+session.activeSlideIndex = 0;
+ix.applyAction(session, ranking, "start", {}, 8000);
+ix.applyAction(session, ranking, "end", { reason: "manual" }, 9000);
+gate = ix.canAcceptInput(session, ranking, 9000);
+assert(!gate.ok && gate.error === "interaction_ended", "Ranking nach Ende blockiert");
+
 console.log("test-interaction-state: OK");
