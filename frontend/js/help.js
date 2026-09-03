@@ -317,6 +317,11 @@ function updateContextPanel() {
       ["#/help/admin", "Admin-Hilfe (Branding)"],
       ["#/admin/settings", "Einstellungen"],
     ];
+  } else if (hash.startsWith("/admin/updates")) {
+    items = [
+      ["#/help/updates", "Updates erklärt"],
+      ["#/admin/updates", "Updates verwalten"],
+    ];
   } else if (hash.startsWith("/admin/settings")) {
     items = [
       ["#/help/admin", "Admin-Hilfe (Sicherung)"],

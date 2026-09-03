@@ -1,5 +1,5 @@
 {
-  "version": 7,
+  "version": 8,
   "app": "Pulse",
   "categories": [
     { "id": "welcome", "label": "Einstieg" },
@@ -226,6 +226,18 @@
       "summary": "Let’s Encrypt, Domain, Status-Badges, Erneuerung, Settings-Backup.",
       "tags": ["ssl", "https", "letsencrypt", "zertifikat"],
       "bodyText": "SSL HTTPS Let’s Encrypt Domain Port 80 Staging Erneuern Ablauf Status aktiv pending error expired Wildcard PEM Schema 2 Settings-Export HTTP-01 acme-challenge"
+    },
+    {
+      "id": "updates",
+      "slug": "updates",
+      "category": "admin",
+      "roles": ["admin"],
+      "title": "Automatische Updates",
+      "titleEn": "Automatic updates",
+      "titleFr": "Mises à jour automatiques",
+      "summary": "GitHub Releases prüfen, Backup, Installation, Rollback, UPDATE_REPO.",
+      "tags": ["update", "github", "release", "semver", "backup", "rollback"],
+      "bodyText": "Updates GitHub Release SemVer UPDATE_REPO GITHUB_TOKEN Backup Rollback admin updates npm install Migration Health-Check systemd Docker restart"
     },
     {
       "id": "privacy",

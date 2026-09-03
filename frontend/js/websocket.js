@@ -558,6 +558,37 @@ export const api = {
       return { ok: false, status: 0 };
     }
   },
+
+  /** Update-Infos ohne neue GitHub-Prüfung. */
+  async updatesInfo() {
+    return requestResult("GET", "/updates/info");
+  },
+
+  /** Manuelle GitHub-Prüfung (force=1). */
+  async updatesCheck(force = false) {
+    const q = force ? "?force=1" : "";
+    return requestResult("GET", `/updates/check${q}`);
+  },
+
+  /** Installationsstatus und Historie. */
+  async updatesStatus() {
+    return requestResult("GET", "/updates/status");
+  },
+
+  /** Update installieren (Admin + Step-up). */
+  async updatesInstall(body = {}) {
+    return requestResult("POST", "/updates/install", body);
+  },
+
+  /** Update-Einstellungen speichern. */
+  async updatesSaveConfig(body) {
+    return requestResult("PATCH", "/updates/config", body);
+  },
+
+  /** Backup aus Historie wiederherstellen. */
+  async updatesRollback(body) {
+    return requestResult("POST", "/updates/rollback", body);
+  },
 };
 
 async function request(method, path, body) {

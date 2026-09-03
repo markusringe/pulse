@@ -1,0 +1,40 @@
+<article class="help-article-body" data-article="updates">
+  <h2>Automatische Updates</h2>
+  <p>Unter <a href="#/admin/updates">Updates</a> (<code>#/admin/updates</code>) prüft Pulse regelmäßig GitHub-Releases und kann neue Versionen mit Backup installieren. Nur Administratoren dürfen Updates auslösen.</p>
+
+  <h3>Voraussetzungen</h3>
+  <ul>
+    <li><code>UPDATE_REPO=owner/repo</code> in der <code>.env</code> (z. B. <code>markusringe/pulse</code>)</li>
+    <li><code>UPDATE_ENABLED=true</code> für automatische Hintergrund-Prüfung</li>
+    <li>Optional <code>GITHUB_TOKEN</code> für höhere API-Limits (60 Requests/Stunde ohne Token)</li>
+    <li>Prozess-Manager (systemd, Docker <code>restart: always</code>) startet den Server nach dem Update neu</li>
+  </ul>
+
+  <h3>Manuelles Update</h3>
+  <ol>
+    <li><code>#/admin/updates</code> öffnen</li>
+    <li><strong>Jetzt prüfen</strong> — lädt das neueste GitHub-Release</li>
+    <li>Release-Notes lesen (Breaking Changes rot markiert)</li>
+    <li><strong>Update jetzt installieren</strong> — Backup wird automatisch erstellt</li>
+    <li>Server startet neu; danach Health-Check unter <code>/api/health</code></li>
+  </ol>
+
+  <h3>Rollback</h3>
+  <p>In der Update-Historie kann für erfolgreiche Installationen der letzten 7 Tage ein Backup wiederhergestellt werden.</p>
+
+  <h3>Update fehlgeschlagen?</h3>
+  <ul>
+    <li>GitHub nicht erreichbar — später erneut prüfen</li>
+    <li><code>npm install</code> schlägt fehl — Node-Version prüfen (≥ 22), Logs im Server-Output</li>
+    <li>Bei Installationsfehler wird automatisch das Backup eingespielt</li>
+    <li>Manuelles Rollback über die Historie-Tabelle</li>
+  </ul>
+
+  <h3>Entwickler: Release erstellen</h3>
+  <ul>
+    <li>Semantische Version in <code>package.json</code> erhöhen</li>
+    <li>Git-Tag <code>v1.2.3</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
+    <li>Breaking Changes in den Release-Notes mit <strong>Breaking</strong> markieren</li>
+    <li>SQL-Migrationen unter <code>migrations/*.sql</code> ablegen</li>
+  </ul>
+</article>

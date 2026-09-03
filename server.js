@@ -36,6 +36,7 @@ const userService = require("./lib/userService");
 const emailService = require("./lib/emailService");
 const pinLimiter = require("./lib/pinLimiter");
 const { ensureBootstrapAdmin } = require("./lib/bootstrapAdmin");
+const updateService = require("./lib/updateService");
 
 const PORT = Number(process.env.PORT) || 3000;
 const BATCH_INTERVAL = Number(process.env.BATCH_INTERVAL_MS) || 100;
@@ -226,6 +227,8 @@ server.listen(PORT, "0.0.0.0", () => {
   sweepExpiredSessions().catch((err) => console.error("[sweep]", err));
   tickEventStatuses();
   ssl.renewDue().catch((err) => console.error("[ssl-renew]", err));
+  updateService.onServerBoot().catch((err) => console.error("[update-boot]", err));
+  updateService.startBackgroundChecks();
 });
 
 /* ----------------------------- REST -------------------------------- */
@@ -353,6 +356,10 @@ async function handleApi(req, res, url) {
   }
   if (parts[1] === "ssl") {
     await handleSslApi(req, res, parts);
+    return;
+  }
+  if (parts[1] === "updates") {
+    await handleUpdatesApi(req, res, parts, ipKey);
     return;
   }
   if (req.method === "GET" && parts[1] === "audit") {
@@ -1913,6 +1920,181 @@ async function getAuth(req, body = {}) {
 /**
  * Admin für Instanz-Einstellungen: Rolle admin, ADMIN_SECRET oder Demo.
  */
+async function isUpdateInstallAdmin(req, body = {}) {
+  const auth = await getAuth(req, body);
+  if (userService.isUserManagementEnabled(userDb)) {
+    return permissions.isAdmin(auth.user);
+  }
+  return isSettingsAdmin(req, body);
+}
+
+/**
+ * REST-API für GitHub-Release-Updates (nur Instanz-Admins).
+ */
+async function handleUpdatesApi(req, res, parts, ipKey) {
+  if (!(await isSettingsAdmin(req, {}))) {
+    send(res, 403, { error: "Admin-Authentifizierung erforderlich" });
+    return;
+  }
+
+  if (req.method === "GET" && parts[2] === "check") {
+    try {
+      const force = urlForceCheck(req);
+      const info = await updateService.checkForUpdates({ force });
+      send(res, 200, { info, config: updateService.getConfig() });
+    } catch (err) {
+      send(res, 502, { error: String(err.message || err) });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && parts[2] === "info") {
+    send(res, 200, updateService.getCachedInfo());
+    return;
+  }
+
+  if (req.method === "GET" && parts[2] === "status") {
+    send(res, 200, updateService.getStatus());
+    return;
+  }
+
+  if (req.method === "GET" && parts[2] === "config") {
+    send(res, 200, { config: updateService.getConfig() });
+    return;
+  }
+
+  if (req.method === "PATCH" && parts[2] === "config") {
+    const body = await readJson(req);
+    const auth = await getAuth(req, body);
+    if (!permissions.isAdmin(auth.user) && !auth.viaSecret) {
+      if (userService.isUserManagementEnabled(userDb)) {
+        send(res, 403, { error: "Nur Administratoren dürfen Update-Einstellungen ändern" });
+        return;
+      }
+    }
+    if (!authApi.adminStepUpOk(auth)) {
+      authApi.rejectStepUp(res, send);
+      return;
+    }
+    const config = updateService.saveConfig(body);
+    updateService.startBackgroundChecks();
+    audit.log("update_config_changed", { userId: auth.user?.id || "admin", action: JSON.stringify(config) });
+    send(res, 200, { config });
+    return;
+  }
+
+  if (req.method === "POST" && parts[2] === "install") {
+    if (!(await isUpdateInstallAdmin(req, {}))) {
+      send(res, 403, { error: "Nur Administratoren dürfen Updates installieren" });
+      return;
+    }
+    const body = await readJson(req);
+    const auth = await getAuth(req, body);
+    if (!authApi.adminStepUpOk(auth)) {
+      authApi.rejectStepUp(res, send);
+      return;
+    }
+    send(res, 202, { ok: true, message: "Installation gestartet" });
+    /* Antwort zuerst senden, dann asynchron installieren und neu starten. */
+    setImmediate(() => {
+      updateService
+        .installUpdate({
+          userId: auth.user?.id || "admin",
+          ip: ipKey,
+          tagName: body.tagName,
+        })
+        .then((result) => {
+          audit.log("update_installed", {
+            userId: auth.user?.id || "admin",
+            action: `${result.fromVersion}->${result.toVersion}`,
+          });
+          if (auth.user?.id && userDb.supported) {
+            Promise.resolve(userDb.revokeAllSessionsForUser(auth.user.id)).catch(() => {});
+          }
+          setTimeout(() => updateService.requestGracefulRestart("update"), 1500);
+        })
+        .catch((err) => {
+          audit.log("update_failed", { userId: auth.user?.id || "admin", action: String(err.message || err) });
+        });
+    });
+    return;
+  }
+
+  if (req.method === "POST" && parts[2] === "rollback") {
+    if (!(await isUpdateInstallAdmin(req, {}))) {
+      send(res, 403, { error: "Nur Administratoren dürfen Rollbacks ausführen" });
+      return;
+    }
+    const auth = await getAuth(req, {});
+    if (!authApi.adminStepUpOk(auth)) {
+      authApi.rejectStepUp(res, send);
+      return;
+    }
+    const body = await readJson(req);
+    try {
+      const entry = await updateService.rollbackById(body.historyId);
+      audit.log("update_rollback", { userId: auth.user?.id || "admin", action: entry.id });
+      send(res, 200, { ok: true, entry });
+    } catch (err) {
+      send(res, 400, { error: String(err.message || err) });
+    }
+    return;
+  }
+
+  send(res, 404, { error: "Unbekannter Update-Endpunkt" });
+}
+
+/** Query-Parameter force=1 für erzwungene GitHub-Prüfung. */
+function urlForceCheck(req) {
+  try {
+    const u = new URL(req.url, "http://localhost");
+    return u.searchParams.get("force") === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Systemweite WebSocket-Nachricht (z. B. Update-Fortschritt, Server-Neustart).
+ * @param {object} envelope
+ */
+function broadcastSystem(envelope) {
+  for (const client of clients) {
+    try {
+      client.send(envelope);
+      metrics.incWs("out", envelope.type || "system");
+    } catch {
+      /* Client bereits getrennt */
+    }
+  }
+}
+
+/** Graceful Shutdown: Sessions persistieren, Clients warnen, dann beenden. */
+async function gracefulShutdown(reason = "shutdown") {
+  broadcastSystem({
+    type: "server_shutdown",
+    payload: { reason, reconnectIn: 10, message: "Server startet neu — bitte kurz warten." },
+  });
+  for (const session of sessions.values()) {
+    try {
+      await Promise.resolve(db.save(session.code, sessionToPersistable(session)));
+    } catch (err) {
+      console.error("[shutdown-persist]", session.code, err);
+    }
+  }
+  await new Promise((r) => setTimeout(r, 2000));
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 30000).unref();
+}
+
+updateService.registerProgressSink((event, payload) => {
+  broadcastSystem({ type: event, payload });
+});
+updateService.registerShutdownHook(gracefulShutdown);
+
+process.on("SIGTERM", () => gracefulShutdown("sigterm"));
+process.on("SIGINT", () => gracefulShutdown("sigint"));
+
 async function isSettingsAdmin(req, body = {}) {
   const auth = await getAuth(req, body);
   if (auth.viaSecret) return true;

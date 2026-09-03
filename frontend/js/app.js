@@ -38,6 +38,7 @@ import { loadAuth, ensureAdminAccess, applyAdminNavVisibility, getAuthUser, isAu
 import { showLoginPage, initAuthOnBoot } from "./loginPage.js?v=nav32";
 import { showUsersPage } from "./usersAdmin.js?v=nav30";
 import { showProfilePage } from "./profilePage.js?v=nav30";
+import { showUpdatesPage, bindUpdateWsEvents } from "./updatesPage.js?v=nav33";
 import { ensureStepUp } from "./stepUp.js?v=nav30";
 import { bindEvents, showEventsPage, loadHomeEvents, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav30";
 import {
@@ -132,6 +133,7 @@ const els = {
     ssl: document.getElementById("view-ssl"),
     adminPrivacy: document.getElementById("view-admin-privacy"),
     adminSettings: document.getElementById("view-settings"),
+    updates: document.getElementById("view-updates"),
     help: document.getElementById("view-help"),
     stage: document.getElementById("view-stage"),
     events: document.getElementById("view-events"),
@@ -328,6 +330,7 @@ function expectedViewFromHash() {
   if (hash === "/admin/branding") return "branding";
   if (hash === "/admin/ssl") return "ssl";
   if (hash === "/admin/settings") return "adminSettings";
+  if (hash === "/admin/updates") return "updates";
   if (hash === "/admin/login") return "login";
   if (hash === "/admin/users") return "users";
   if (hash === "/admin/profile") return "profile";
@@ -491,6 +494,12 @@ function route(forcedHash) {
     refreshAuthSettingsPanel();
     return;
   }
+  if (hash === "/admin/updates") {
+    teardownRealtime();
+    showView("updates");
+    showUpdatesPage();
+    return;
+  }
   if (isLegacyEventJoinHash(hash)) {
     teardownRealtime();
     const id = hash.match(/^\/event\/([^/]+)/)?.[1];
@@ -577,6 +586,7 @@ function showView(name, routeHash) {
   if (!els.views.login) els.views.login = document.getElementById("view-login");
   if (!els.views.users) els.views.users = document.getElementById("view-users");
   if (!els.views.profile) els.views.profile = document.getElementById("view-profile");
+  if (!els.views.updates) els.views.updates = document.getElementById("view-updates");
   for (const [key, el] of Object.entries(els.views)) {
     if (!el) continue;
     const active = key === name;
@@ -1089,6 +1099,19 @@ function connectRealtime(role) {
   });
 
   rt.on("session", (payload) => applySession(payload.session || payload));
+  rt.on("server_shutdown", (payload) => {
+    const sec = payload?.reconnectIn ?? 10;
+    const msg = payload?.message || `Server startet neu — Reconnect in ${sec} Sekunden …`;
+    if (els.connectionStatus?.querySelector("span")) {
+      els.connectionStatus.querySelector("span").textContent = msg;
+      els.connectionStatus.dataset.state = "connecting";
+    }
+    if (els.joinConnectionStatus?.querySelector("span")) {
+      els.joinConnectionStatus.querySelector("span").textContent = msg;
+      els.joinConnectionStatus.dataset.state = "connecting";
+    }
+  });
+  bindUpdateWsEvents(rt);
   rt.on("pong", (payload) => {
     const now = payload?.serverNow ?? payload?.ts;
     if (now != null) ctx.eventClockSkew = Number(now) - Date.now();

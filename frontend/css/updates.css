@@ -1,0 +1,112 @@
+/* Admin-Updates (#/admin/updates) */
+
+.update-version-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.update-version-current {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.update-version-latest {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.update-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-primary, #007cc1);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.update-badge.is-critical {
+  background: #c0392b;
+}
+
+.update-release-notes {
+  max-height: 28rem;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  background: var(--surface, #fafafa);
+}
+
+.update-note-breaking {
+  color: #c0392b;
+  border-left: 3px solid #c0392b;
+  padding-left: 0.5rem;
+}
+
+.update-note-feature {
+  color: #1e7e34;
+  border-left: 3px solid #1e7e34;
+  padding-left: 0.5rem;
+}
+
+.update-note-fix {
+  opacity: 0.9;
+}
+
+.update-progress-panel {
+  margin: 1rem 0;
+}
+
+.update-progress-bar {
+  height: 8px;
+  background: var(--border, #ddd);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.update-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--color-primary, #007cc1);
+  transition: width 0.3s ease;
+}
+
+#admin-update-progress {
+  padding: 0 1rem 0.5rem;
+}
+
+#admin-update-progress .update-progress-bar {
+  height: 4px;
+}
+
+.update-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.update-history-table th,
+.update-history-table td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border, #eee);
+}
+
+.update-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  max-width: 22rem;
+  padding: 0.75rem 1rem;
+  background: #1a1a1a;
+  color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  font-size: 0.9rem;
+}

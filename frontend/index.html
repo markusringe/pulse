@@ -40,6 +40,7 @@
     <link rel="stylesheet" href="./css/stage.css" />
     <link rel="stylesheet" href="./css/events.css?v=nav24" />
     <link rel="stylesheet" href="./css/event-countdown.css?v=nav1" />
+    <link rel="stylesheet" href="./css/updates.css?v=nav1" />
   </head>
   <body>
     <a class="skip-link" href="#app" data-i18n="nav.skip">Zum Inhalt springen</a>
@@ -67,9 +68,14 @@
             <a href="#/admin/privacy" data-admin-nav="privacy" data-i18n="admin.nav.privacy">Datenschutz</a>
             <a href="#/admin/ssl" data-admin-nav="ssl" data-i18n="admin.nav.ssl">SSL</a>
             <a href="#/admin/settings" data-admin-nav="settings" data-i18n="admin.nav.settings">Einstellungen</a>
+            <a href="#/admin/updates" data-admin-nav="updates">Updates</a>
             <a href="#/admin/users" data-admin-nav="users" data-i18n="admin.nav.users">Benutzer</a>
             <a href="#/admin/help" data-admin-nav="help" data-i18n="admin.nav.help">Hilfe</a>
           </nav>
+          <div id="admin-update-progress" class="update-progress-panel" hidden>
+            <p id="admin-update-progress-text" class="muted update-progress-label"></p>
+            <div class="update-progress-bar" aria-hidden="true"><div class="update-progress-fill"></div></div>
+          </div>
           <div class="admin-chrome-tools">
             <span id="admin-user-label" class="admin-user-label muted" hidden></span>
             <button type="button" id="btn-auth-logout" class="btn ghost btn-sm" hidden>Abmelden</button>
@@ -702,6 +708,87 @@
         <div id="ssl-list" class="ssl-list"></div>
       </section>
 
+      <section id="view-updates" class="view branding-page" hidden>
+        <h1>Updates</h1>
+        <p class="muted">Automatische Prüfung auf neue GitHub-Releases und sichere Installation mit Backup.</p>
+        <p id="update-disabled-hint" class="muted" hidden></p>
+
+        <div class="update-version-row panel">
+          <div>
+            <p class="muted">Aktuelle Version</p>
+            <p id="update-current-version" class="update-version-current">v—</p>
+          </div>
+          <div>
+            <p class="muted">Neueste Version</p>
+            <p id="update-latest-version" class="update-version-latest">—</p>
+            <span id="update-badge" class="update-badge" hidden>Update verfügbar</span>
+          </div>
+          <div>
+            <p class="muted">Zuletzt geprüft</p>
+            <p id="update-last-check">—</p>
+          </div>
+          <div>
+            <p class="muted">Automatische Prüfung</p>
+            <p id="update-interval-label">Alle 24 Stunden</p>
+          </div>
+        </div>
+
+        <p>
+          <button type="button" id="btn-update-check" class="btn ghost">Jetzt prüfen</button>
+          <button type="button" id="btn-update-install" class="btn primary" hidden>Update jetzt installieren</button>
+        </p>
+        <p id="update-msg" class="muted" role="status"></p>
+
+        <div id="update-progress-panel" class="update-progress-panel panel" hidden>
+          <p id="update-progress-label" class="update-progress-label muted"></p>
+          <div class="update-progress-bar" aria-hidden="true"><div class="update-progress-fill"></div></div>
+        </div>
+
+        <h2>Release-Notes</h2>
+        <div id="update-release-notes" class="update-release-notes"></div>
+        <p><button type="button" id="btn-update-notes-toggle" class="btn ghost btn-sm">Vollständige Details anzeigen</button></p>
+
+        <h2>Update-Historie</h2>
+        <div id="update-history"></div>
+
+        <h2>Einstellungen</h2>
+        <form id="update-config-form" class="panel">
+          <label class="field">
+            <input type="checkbox" name="enabled" checked />
+            Automatisch auf Updates prüfen
+          </label>
+          <label class="field">
+            Prüfintervall
+            <select name="checkIntervalSec">
+              <option value="21600">6 Stunden</option>
+              <option value="43200">12 Stunden</option>
+              <option value="86400" selected>24 Stunden</option>
+              <option value="172800">48 Stunden</option>
+              <option value="604800">7 Tage</option>
+            </select>
+          </label>
+          <label class="field">
+            <input type="checkbox" name="allowPrerelease" />
+            Für Prereleases prüfen
+          </label>
+          <label class="field">
+            <input type="checkbox" name="autoInstall" />
+            Kritische Updates automatisch installieren (nur Security-Fixes)
+          </label>
+          <label class="field">
+            Repository (nur Anzeige — konfiguriert via UPDATE_REPO)
+            <input name="repo" readonly />
+          </label>
+          <p class="muted">Vor jeder Installation wird automatisch ein Backup erstellt (nicht deaktivierbar).</p>
+          <p id="update-config-msg" class="muted" role="status"></p>
+          <button type="submit" class="btn primary">Einstellungen speichern</button>
+        </form>
+
+        <dialog id="update-install-dialog" class="panel">
+          <p>Server wird während der Installation neu gestartet.</p>
+        </dialog>
+      </section>
+
       <section id="view-admin-privacy" class="view legal-page" hidden>
         <main class="legal-main">
           <h1 data-i18n="privacy.admin.title">Datenschutz &amp; Impressum</h1>
@@ -889,6 +976,6 @@
     </aside>
 
     <script type="module" src="./js/help.js?v=nav12"></script>
-    <script type="module" src="./js/app.js?v=nav32"></script>
+    <script type="module" src="./js/app.js?v=nav33"></script>
   </body>
 </html>

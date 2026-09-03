@@ -277,6 +277,16 @@ Admin-Branding: `stageShowLogo` / `stageShowFooter` (Default aus), `qaDefaultLim
 - Auto-Renew: stündlicher Check, Fenster ca. **30 Tage** vor Ablauf (Zertifikate 90 Tage).
 - HTTP-Redirect auf HTTPS, sobald ein aktives Zertifikat liegt (`SSL_REDIRECT`, Default an). ACME-Challenge wird **nicht** umgeleitet.
 
+### 3.21a Automatische Updates (GitHub Releases)
+
+- Admin `#/admin/updates`. REST: `GET /api/updates/check|info|status|config`, `PATCH /api/updates/config`, `POST /api/updates/install|rollback`.
+- Quelle: GitHub Releases API (`lib/updateService.js`), SemVer-Vergleich mit `package.json`.
+- Konfiguration: `UPDATE_REPO` (Pflicht), `UPDATE_ENABLED`, `UPDATE_CHECK_INTERVAL`, `UPDATE_ALLOW_PRERELEASE`, `UPDATE_AUTO_INSTALL`, optional `GITHUB_TOKEN`, `UPDATE_BACKUP_DIR`, `UPDATE_MAX_BACKUPS`.
+- State/Persistenz: `data/updates-state.json` (Cache 1 h, Historie, Fortschritt).
+- Installation: Backup (`backups/update-{timestamp}/`), Git-Checkout oder Tarball-Download, `npm install`, Migrations-Hook, Graceful Shutdown, Prozessneustart (systemd/Docker).
+- WebSocket: `update_started`, `update_progress`, `update_completed`, `update_failed`, `update_rollback`, `server_shutdown`.
+- Nur Rolle `admin` darf installieren; Audit-Log-Einträge `update_*`.
+
 ### 3.22 Einstellungen Export / Import
 
 - UI auf der Branding-Seite (`frontend/js/settings.js`, Panel `#settings-panel`). Privacy- und SSL-Seiten verlinken dorthin.
@@ -438,7 +448,7 @@ Tests: `scripts/test-events.js` (Store, Migration, Copy), `scripts/test-deck.js`
 - **Reset:** Präsentator setzt Folien-Zähler zurück (`reset`).
 - **Presenter-Passwort:** optional beim Anlegen, scrypt-Hash, 3 Fehlversuche → 5 Min. Sperre (`checkPresenterPassword`).
 - **IP-Sperre:** nach 100 WS-Verbindungen derselben IP-Hash 24 h; `IP_BLOCK=0` oder Branding `ipBlock: false`. Rate-Limits für HTTP/Fragen bleiben.
-- **Admin-Leiste:** Sessions (`#/admin`), Events (`#/admin/events`), Branding, Datenschutz, SSL, Einstellungen, **Benutzer** (nur admin), Hilfe (`frontend/index.html`, `frontend/js/adminNav.js`). Anmeldung: `#/admin/login`. Profil: `#/admin/profile`. Folien-Deck: `#/admin/sessions/:code`.
+- **Admin-Leiste:** Sessions (`#/admin`), Events (`#/admin/events`), Branding, Datenschutz, SSL, Einstellungen, **Updates**, **Benutzer** (nur admin), Hilfe (`frontend/index.html`, `frontend/js/adminNav.js`). Anmeldung: `#/admin/login`. Profil: `#/admin/profile`. Folien-Deck: `#/admin/sessions/:code`.
 
 ### 3.27 Benutzerverwaltung (optional)
 

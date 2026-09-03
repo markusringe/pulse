@@ -4,7 +4,7 @@
  * ohne die Leiste zu verlieren.
  */
 
-const ADMIN_VIEWS = new Set(["adminHub", "events", "branding", "ssl", "adminPrivacy", "adminSettings", "login", "users", "profile"]);
+const ADMIN_VIEWS = new Set(["adminHub", "events", "branding", "ssl", "adminPrivacy", "adminSettings", "updates", "login", "users", "profile"]);
 
 /**
  * Ob die aktuelle View zur Administration gehört (inkl. Admin-Hilfe).
@@ -36,6 +36,7 @@ function navKey(viewName, hashOverride) {
   if (hash === "/admin/privacy") return "privacy";
   if (hash === "/admin/ssl") return "ssl";
   if (hash === "/admin/settings") return "settings";
+  if (hash === "/admin/updates") return "updates";
   if (hash === "/admin/users") return "users";
   if (hash === "/admin/profile") return "profile";
   if (hash === "/admin/login") return "login";
@@ -46,6 +47,7 @@ function navKey(viewName, hashOverride) {
   if (viewName === "ssl") return "ssl";
   if (viewName === "adminPrivacy") return "privacy";
   if (viewName === "adminSettings") return "settings";
+  if (viewName === "updates") return "updates";
   if (viewName === "help") return "help";
   return "";
 }
