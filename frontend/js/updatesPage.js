@@ -1,18 +1,26 @@
 /**
  * Admin-UI für automatische Updates (#/admin/updates).
- * Zeigt Version, Release-Notes, Fortschritt und Update-Historie.
+ * Fortschritt inline auf der Seite — kein Voll-Reload, Toast verschwindet automatisch.
  */
 
 import { api } from "./websocket.js?v=nav20";
 import { simpleMarkdown } from "./export.js?v=nav1";
-import { ensureStepUp } from "./stepUp.js?v=nav35";
+import { ensureStepUp } from "./stepUp.js?v=nav43";
 
-/** Polling-Intervall während laufender Installation (ms). */
+/** Polling während Installation oder Neustart (ms). */
 const POLL_MS = 2000;
+/** Warten auf Server-Neustart (ms). */
+const RESTART_WAIT_MS = 120000;
+/** Toast-Anzeigedauer (ms). */
+const TOAST_MS = 6000;
 
 let pollTimer = 0;
+let restartWaitTimer = 0;
+let toastTimer = 0;
 let installActive = false;
 let notesExpanded = false;
+/** Verhindert doppelte Abschluss-Handler (Poll + WebSocket). */
+let completionHandled = false;
 
 function $(id) {
   return document.getElementById(id);
@@ -24,6 +32,10 @@ function esc(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function isUpdatesRoute() {
+  return location.hash.replace(/^#/, "") === "/admin/updates";
 }
 
 /**
@@ -91,35 +103,145 @@ function statusLabel(entry) {
   return entry.status || "—";
 }
 
+function stopPoll() {
+  window.clearInterval(pollTimer);
+  pollTimer = 0;
+}
+
+function stopRestartWait() {
+  window.clearInterval(restartWaitTimer);
+  restartWaitTimer = 0;
+}
+
 /** Fortschrittsbalken in der Admin-Leiste aktualisieren. */
 function syncChromeProgress(phase, progress, message) {
   const bar = $("admin-update-progress");
   const text = $("admin-update-progress-text");
   if (!bar) return;
-  const active = phase && phase !== "idle" && phase !== "completed" && phase !== "failed";
+  const active = ["pending", "downloading", "installing", "completed", "restarting"].includes(phase);
   bar.hidden = !active;
   if (text) text.textContent = message || "";
   const inner = bar.querySelector(".update-progress-fill");
   if (inner) inner.style.width = `${Math.max(0, Math.min(100, progress || 0))}%`;
 }
 
-/** Toast bei laufendem Update. */
-function showUpdateToast(message) {
+/** Fortschrittspanel auf der Updates-Seite ein-/ausblenden. */
+function setProgressPanelVisible(visible, message = "", progress = 0) {
+  const box = $("update-progress-panel");
+  if (!box) return;
+  box.hidden = !visible;
+  const fill = box.querySelector(".update-progress-fill");
+  const label = $("update-progress-label");
+  if (fill) fill.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+  if (label) label.textContent = message;
+}
+
+function hideProgressUi() {
+  setProgressPanelVisible(false);
+  syncChromeProgress("idle", 0, "");
+}
+
+/**
+ * Dezenter Status-Hinweis — blendet sich automatisch aus.
+ * @param {string} message
+ * @param {{ duration?: number, persistent?: boolean }} [opts]
+ */
+function showUpdateToast(message, opts = {}) {
+  const duration = opts.persistent ? 0 : opts.duration ?? TOAST_MS;
   let el = $("update-toast");
   if (!el) {
     el = document.createElement("div");
     el.id = "update-toast";
     el.className = "update-toast";
     el.setAttribute("role", "status");
+    el.innerHTML = `<span class="update-toast-text"></span><button type="button" class="update-toast-close" aria-label="Schließen">×</button>`;
+    el.querySelector(".update-toast-close")?.addEventListener("click", hideUpdateToast);
     document.body.appendChild(el);
   }
-  el.textContent = message;
+  const textEl = el.querySelector(".update-toast-text");
+  if (textEl) textEl.textContent = message;
+  el.classList.toggle("is-error", Boolean(opts.error));
   el.hidden = false;
+  el.classList.remove("is-hiding");
+  window.clearTimeout(toastTimer);
+  if (duration > 0) {
+    toastTimer = window.setTimeout(hideUpdateToast, duration);
+  }
 }
 
 function hideUpdateToast() {
   const el = $("update-toast");
-  if (el) el.hidden = true;
+  if (!el || el.hidden) return;
+  el.classList.add("is-hiding");
+  window.setTimeout(() => {
+    el.hidden = true;
+    el.classList.remove("is-hiding", "is-error");
+  }, 280);
+  window.clearTimeout(toastTimer);
+}
+
+/** Server nach Neustart per Health-Check abwarten — ohne Seiten-Reload. */
+function waitForServerRestart() {
+  if (restartWaitTimer) return;
+  const started = Date.now();
+  restartWaitTimer = window.setInterval(async () => {
+    if (Date.now() - started > RESTART_WAIT_MS) {
+      stopRestartWait();
+      const msg = $("update-msg");
+      if (msg) msg.textContent = "Server antwortet noch nicht — bitte Seite in Kürze manuell neu laden.";
+      hideProgressUi();
+      hideUpdateToast();
+      completionHandled = false;
+      installActive = false;
+      sessionStorage.removeItem("pulse:update-pending");
+      return;
+    }
+    try {
+      const res = await fetch("/api/health", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      if (!data?.ok) return;
+      stopRestartWait();
+      await finishUpdateFlow();
+    } catch {
+      /* Server noch offline — erwartet während Neustart */
+    }
+  }, 1500);
+}
+
+/** Nach erfolgreichem Neustart: UI zurücksetzen und Version aktualisieren. */
+async function finishUpdateFlow() {
+  completionHandled = false;
+  installActive = false;
+  sessionStorage.removeItem("pulse:update-pending");
+  stopPoll();
+  hideProgressUi();
+  hideUpdateToast();
+
+  const msg = $("update-msg");
+  if (msg) msg.textContent = "Update erfolgreich — neue Version ist aktiv.";
+  try {
+    if (isUpdatesRoute()) await refreshUpdatesPage();
+  } catch {
+    /* API kurz nach Neustart evtl. noch nicht bereit */
+  }
+  window.setTimeout(() => {
+    const m = $("update-msg");
+    if (m?.textContent === "Update erfolgreich — neue Version ist aktiv.") m.textContent = "";
+  }, 8000);
+}
+
+/** Abschluss/Neustart-Phase — nur einmal ausführen. */
+function handleRestartPhase(message) {
+  if (completionHandled) return;
+  completionHandled = true;
+  installActive = true;
+  sessionStorage.setItem("pulse:update-pending", "1");
+  const text = message || "Server startet neu — Verbindung wird wiederhergestellt…";
+  setProgressPanelVisible(true, text, 100);
+  syncChromeProgress("restarting", 100, text);
+  stopPoll();
+  waitForServerRestart();
 }
 
 /**
@@ -140,7 +262,7 @@ export function bindUpdatesPage() {
   $("update-history")?.addEventListener("click", onHistoryClick);
 
   window.addEventListener("beforeunload", (ev) => {
-    if (installActive) {
+    if (installActive && !completionHandled) {
       ev.preventDefault();
       ev.returnValue = "Update läuft — Seite wirklich verlassen?";
     }
@@ -152,7 +274,21 @@ export async function showUpdatesPage() {
   bindUpdatesPage();
   notesExpanded = false;
   await refreshUpdatesPage();
-  schedulePoll(false);
+
+  /* Nach Reload/Navigation: laufenden Neustart fortsetzen. */
+  if (sessionStorage.getItem("pulse:update-pending") === "1" && !completionHandled) {
+    handleRestartPhase("Server startet neu — Verbindung wird wiederhergestellt…");
+    return;
+  }
+
+  try {
+    const st = await api.updatesStatus();
+    const data = st?.data || st;
+    renderProgress(data);
+    if (installActive || completionHandled) schedulePoll(true);
+  } catch {
+    schedulePoll(false);
+  }
 }
 
 async function refreshUpdatesPage() {
@@ -207,10 +343,10 @@ function renderDashboard(cachedWrap, statusWrap) {
 
   if (installBtn) {
     installBtn.hidden = !info.hasUpdate;
-    installBtn.disabled = installActive || status.phase === "downloading" || status.phase === "installing";
+    installBtn.disabled = installActive || ["pending", "downloading", "installing", "restarting"].includes(status.phase);
   }
 
-  if (msgEl && status.error) msgEl.textContent = status.error;
+  if (msgEl && status.error && status.phase === "failed") msgEl.textContent = status.error;
 
   renderConfigForm(config);
   renderHistory(statusWrap?.history || []);
@@ -263,39 +399,55 @@ function renderHistory(history) {
 }
 
 function renderProgress(status) {
-  const box = $("update-progress-panel");
-  if (!box) return;
   const phase = status?.phase || "idle";
-  installActive = ["pending", "downloading", "installing"].includes(phase);
-  const show = installActive || phase === "completed" || phase === "failed";
-  box.hidden = !show;
 
-  const fill = box.querySelector(".update-progress-fill");
-  const label = $("update-progress-label");
-  if (fill) fill.style.width = `${status.progress || 0}%`;
-  if (label) label.textContent = status.message || "";
-
-  syncChromeProgress(phase, status.progress, status.message);
-
-  if (phase === "completed") {
-    showUpdateToast("Update abgeschlossen — Seite wird neu geladen …");
-    window.setTimeout(() => window.location.reload(), 4000);
-  }
-  if (phase === "failed") {
-    showUpdateToast(`Update fehlgeschlagen: ${status.error || status.message || ""}`);
+  if (phase === "idle") {
+    if (completionHandled) return;
     installActive = false;
+    hideProgressUi();
+    return;
   }
+
+  if (phase === "failed") {
+    installActive = false;
+    completionHandled = false;
+    sessionStorage.removeItem("pulse:update-pending");
+    stopPoll();
+    stopRestartWait();
+    setProgressPanelVisible(true, status.message || status.error || "Installation fehlgeschlagen", 0);
+    syncChromeProgress("failed", 0, status.message || status.error || "");
+    showUpdateToast(status.error || status.message || "Update fehlgeschlagen", { error: true, duration: 10000 });
+    return;
+  }
+
+  if (phase === "completed" || phase === "restarting") {
+    handleRestartPhase(status.message);
+    return;
+  }
+
+  installActive = true;
+  sessionStorage.setItem("pulse:update-pending", "1");
+  setProgressPanelVisible(true, status.message || "", status.progress || 0);
+  syncChromeProgress(phase, status.progress, status.message);
 }
 
-function schedulePoll(force) {
-  window.clearInterval(pollTimer);
+function schedulePoll(whileInstall) {
+  stopPoll();
+  if (!whileInstall && !installActive && !completionHandled) return;
   pollTimer = window.setInterval(async () => {
-    if (location.hash.replace(/^#/, "") !== "/admin/updates") return;
-    const st = await api.updatesStatus();
-    const data = st?.data || st;
-    renderProgress(data);
-    if (!["pending", "downloading", "installing"].includes(data?.phase)) {
-      if (force) await refreshUpdatesPage();
+    try {
+      const st = await api.updatesStatus();
+      const data = st?.data || st;
+      renderProgress(data);
+      if (data?.phase === "idle" && completionHandled) {
+        await finishUpdateFlow();
+      }
+      if (!["pending", "downloading", "installing", "completed", "restarting"].includes(data?.phase)) {
+        stopPoll();
+        if (isUpdatesRoute() && !completionHandled) await refreshUpdatesPage();
+      }
+    } catch {
+      /* Während Neustart normal */
     }
   }, POLL_MS);
 }
@@ -325,12 +477,17 @@ async function onInstallClick() {
 
   if (!(await ensureStepUp())) return;
 
+  completionHandled = false;
   installActive = true;
-  showUpdateToast("Update wird installiert …");
+  sessionStorage.setItem("pulse:update-pending", "1");
+  setProgressPanelVisible(true, "Update wird vorbereitet…", 5);
+  syncChromeProgress("pending", 5, "Update wird vorbereitet…");
+
   const res = await api.updatesInstall({ tagName: info.tagName });
   if (!res.ok) {
     installActive = false;
-    hideUpdateToast();
+    sessionStorage.removeItem("pulse:update-pending");
+    hideProgressUi();
     const msg = $("update-msg");
     if (msg) msg.textContent = res.data?.error || "Installation konnte nicht gestartet werden.";
     return;
@@ -374,19 +531,25 @@ async function onHistoryClick(ev) {
   await refreshUpdatesPage();
 }
 
-/** WebSocket-Ereignisse für Live-Fortschritt (optional, wenn WS verbunden). */
+/** WebSocket-Fortschritt — bleibt auf der aktuellen Seite, kein Toast-Spam. */
 export function bindUpdateWsEvents(client) {
   if (!client) return;
+
   const onProgress = (payload) => {
     renderProgress(payload || {});
-    if (location.hash.replace(/^#/, "") === "/admin/updates") schedulePoll(true);
+    if (["pending", "downloading", "installing", "completed", "restarting"].includes(payload?.phase)) {
+      schedulePoll(true);
+    }
   };
+
   client.on("update_started", onProgress);
   client.on("update_progress", onProgress);
   client.on("update_completed", onProgress);
   client.on("update_failed", onProgress);
   client.on("update_rollback", () => refreshUpdatesPage());
+
   client.on("server_shutdown", (payload) => {
-    showUpdateToast(payload?.message || "Server startet neu …");
+    if (!installActive && !sessionStorage.getItem("pulse:update-pending")) return;
+    handleRestartPhase(payload?.message || "Server startet neu — Verbindung wird wiederhergestellt…");
   });
 }
