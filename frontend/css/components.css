@@ -835,12 +835,14 @@ html:not([data-theme="dark"]) .icon-sun,
 }
 
 .qr {
-  width: 88px;
-  height: 88px;
-  border-radius: 12px;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  border-radius: 8px;
   background: #fff;
-  padding: 6px;
+  padding: 0;
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
   border: 1px solid var(--line);
 }
 

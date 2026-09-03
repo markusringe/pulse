@@ -2275,7 +2275,8 @@ function originFromRequest(req) {
 
 function joinUrlFor(origin, code) {
   const base = String(origin || "").replace(/\/$/, "") || "http://localhost:3000";
-  return `${base}/#/join/${code}`;
+  const digits = String(code || "").replace(/\D/g, "").slice(0, 6);
+  return `${base}/j/${digits}`;
 }
 
 /** Öffentliche Event-Karte inkl. Join-URL und Copy-Paste-Text. */
@@ -2996,7 +2997,8 @@ function serveStatic(pathname, req, res) {
     pathname === "/impressum" ||
     pathname === "/help" ||
     pathname === "/admin" ||
-    (pathname.startsWith("/admin/") && !path.extname(pathname));
+    (pathname.startsWith("/admin/") && !path.extname(pathname)) ||
+    /^\/j\/\d{6}$/.test(pathname);
   if (spaShell) {
     rel = "/index.html";
   }

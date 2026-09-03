@@ -54,7 +54,7 @@ const past = events.create({ title: "Vergangen", startAt: "2020-01-01", endAt: "
 events.tickStatuses(Date.parse("2026-09-02T12:00:00Z"));
 assert(events.get(past.id).status === "ended", "tick past to ended");
 
-const invite = events.inviteText(events.get(past.id), "https://example.de/#/join/123456");
+const invite = events.inviteText(events.get(past.id), "https://example.de/j/123456");
 assert(invite.includes("Nimm an") && invite.includes("Code:"), "invite text");
 
 /* Migration: altes sets[]-JSON wird zu sessionCode, Folien zusammengeführt. */
