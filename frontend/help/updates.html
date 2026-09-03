@@ -14,7 +14,7 @@
   <p>Auf dem Server mit visualisiertem Fortschritt:</p>
   <pre><code>cd /opt/pulse
 sudo ./scripts/update-vps-ubuntu.sh</code></pre>
-  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.1</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
+  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.2</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
 
   <h3>Manuelles Update (Admin-UI)</h3>
   <ol>
@@ -39,9 +39,17 @@ sudo ./scripts/update-vps-ubuntu.sh</code></pre>
   <h3>Entwickler: Release erstellen</h3>
   <ul>
     <li>Semantische Version in <code>package.json</code> erhöhen</li>
-    <li>Git-Tag <code>v1.4.1</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
+    <li>Git-Tag <code>v1.4.2</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
     <li>Breaking Changes in den Release-Notes mit <strong>Breaking</strong> markieren</li>
     <li>SQL-Migrationen unter <code>migrations/*.sql</code> ablegen</li>
+  </ul>
+
+  <h3>Version 1.4.2 — Presenter-Login &amp; Team-Zuordnung</h3>
+  <ul>
+    <li><strong>Fix:</strong> Event-Präsentation ohne Admin-Schlüssel-Dialog — angemeldete Teammitglieder starten Presenter direkt per Team-Login.</li>
+    <li><strong>Fix:</strong> Team-Zuordnung auf Event-Maske und im Folien-Editor (Erstzuordnung für Editoren, Wechsel weiterhin nur Admin).</li>
+    <li><strong>Fix:</strong> Login-Redirect zurück zur Presenter-Ansicht (<code>#/present/…</code>) nach Anmeldung.</li>
+    <li><strong>Geändert:</strong> Klare Hinweise statt „Presenter-Passwort“ bei Event-Sessions; Legacy-Sessions unverändert.</li>
   </ul>
 
   <h3>Version 1.4.1 — Team-Events</h3>
