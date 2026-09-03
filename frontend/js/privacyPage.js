@@ -9,7 +9,7 @@
 import { api } from "./websocket.js?v=nav8";
 import { t, applyDom, currentLang, onLang } from "./i18n.js?v=nav13";
 import { downloadText, simpleMarkdown } from "./export.js";
-import { ensureStepUp } from "./stepUp.js?v=nav30";
+import { ensureStepUp } from "./stepUp.js?v=nav35";
 
 /**
  * Fallback, wenn /api/privacy nicht erreichbar ist (reiner Datei-Modus).

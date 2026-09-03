@@ -5,7 +5,7 @@
 
 import { api } from "./websocket.js?v=nav20";
 import { simpleMarkdown } from "./export.js?v=nav1";
-import { ensureStepUp } from "./stepUp.js?v=nav30";
+import { ensureStepUp } from "./stepUp.js?v=nav35";
 
 /** Polling-Intervall während laufender Installation (ms). */
 const POLL_MS = 2000;

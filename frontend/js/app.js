@@ -38,7 +38,7 @@ import { loadAuth, ensureAdminAccess, applyAdminNavVisibility, getAuthUser, isAu
 import { showLoginPage, initAuthOnBoot } from "./loginPage.js?v=nav32";
 import { showUsersPage } from "./usersAdmin.js?v=nav30";
 import { showProfilePage } from "./profilePage.js?v=nav30";
-import { ensureStepUp } from "./stepUp.js?v=nav30";
+import { ensureStepUp } from "./stepUp.js?v=nav35";
 import { bindEvents, showEventsPage, loadHomeEvents, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav30";
 import {
   initTheme,
@@ -505,7 +505,7 @@ function route(forcedHash) {
   if (hash === "/admin/updates") {
     teardownRealtime();
     showView("updates");
-    import("./updatesPage.js?v=nav34")
+    import("./updatesPage.js?v=nav35")
       .then((m) => m.showUpdatesPage())
       .catch((err) => {
         console.error("[updates-page]", err);
@@ -1126,7 +1126,7 @@ function connectRealtime(role) {
     }
   });
   /* Update-Fortschritt optional anbinden (Modul darf Admin-Start nicht blockieren). */
-  import("./updatesPage.js?v=nav34")
+  import("./updatesPage.js?v=nav35")
     .then((m) => m.bindUpdateWsEvents(rt))
     .catch(() => {});
   rt.on("pong", (payload) => {

@@ -3,7 +3,7 @@
  * Administratoren müssen ihren E-Mail-Anmeldecode erneut eingeben.
  */
 
-import { getAuthUser, submitStepUpPin, hasValidStepUp, refreshAuthMe } from "./authClient.js";
+import { getAuthUser, submitStepUpPin, hasValidStepUp, refreshAuthMe } from "./authClient.js?v=nav32";
 
 let dialogEl = null;
 

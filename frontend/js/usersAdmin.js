@@ -13,7 +13,7 @@ import {
   roleLabel,
   getAuthUser,
 } from "./authClient.js?v=nav30";
-import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav30";
+import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav35";
 
 /** Benutzerliste rendern. */
 export async function showUsersPage() {
