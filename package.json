@@ -30,7 +30,7 @@
     "bootstrap:admin": "node scripts/bootstrap-admin.js",
     "migrate:events": "node scripts/migrate-events.js",
     "docs:sync-version": "node scripts/sync-doc-version.js",
-    "css:build": "bash scripts/build-css.sh",
+    "css:build": "sh scripts/build-css.sh",
     "css:watch": "npx @tailwindcss/cli -i ./frontend/css/tailwind.input.css -o ./frontend/css/pulse.css --watch",
     "build": "npm run css:build",
     "setup": "bash scripts/install.sh",

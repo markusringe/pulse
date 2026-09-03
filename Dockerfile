@@ -6,6 +6,7 @@ COPY frontend/css/tailwind.input.css ./frontend/css/tailwind.input.css
 COPY frontend/index.html ./frontend/index.html
 COPY frontend/js ./frontend/js
 COPY frontend/help ./frontend/help
+COPY scripts/build-css.sh ./scripts/build-css.sh
 RUN npm run css:build
 
 FROM node:22-alpine

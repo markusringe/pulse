@@ -1,7 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Pulse — Tailwind CSS v4 Produktions-Build (minified pulse.css)
-set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# POSIX-sh für Alpine (node:22-alpine hat kein bash).
+set -eu
+
+ROOT="$(CDPATH= cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 if ! command -v npx >/dev/null 2>&1; then
