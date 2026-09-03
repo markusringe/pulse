@@ -1,5 +1,5 @@
 {
-  "version": 9,
+  "version": 10,
   "app": "Pulse",
   "categories": [
     {
@@ -618,6 +618,28 @@
       "bodyText": "Session Event Deck sessionCode Join-Code Folienfolge Raum Moderation Upvote Rate-Limit Admin-Schl\u00fcssel Presenter-Passwort Lobby Folie Probe Notizen Reveal Power-Up White-Label Settings-Export Schema Daumenzone copy-from kein Set ADMIN_SECRET data pulse.db Folien bearbeiten PATCH slide_updated Picker Kategorien dynamisches Formular"
     },
     {
+      "id": "interaction-control",
+      "slug": "interaction-control",
+      "category": "features",
+      "roles": [
+        "presenter"
+      ],
+      "title": "Interaktionssteuerung",
+      "titleEn": "Interaction control",
+      "titleFr": "Contr\u00f4le des interactions",
+      "summary": "Folie anzeigen, Interaktion starten, Timer, Pause, Event-Countdown Los geht\u2019s.",
+      "tags": [
+        "interaktion",
+        "timer",
+        "presenter",
+        "countdown",
+        "manual-start",
+        "ablauf",
+        "los-gehts"
+      ],
+      "bodyText": "Interaktionssteuerung Folie anzeigen Interaktion starten Pause Verl\u00e4ngern Beenden Timer 30-300 Sekunden manueller Start Ablauf Zeitlimit event_meta dismissCountdown Los geht's Event-Countdown Join-Sperre Reveal Ergebnisse zeigen Presenter-Leiste A11y Ranking 100 Punkte legacy interaction state running paused ended"
+    },
+    {
       "id": "related-docs",
       "slug": "related-docs",
       "category": "welcome",
@@ -637,5 +659,5 @@
       "bodyText": "docs hilfe.md installation.md projektdokumentation.md verfahrensverzeichnis README INSTALL-CREDENTIALS"
     }
   ],
-  "appVersion": "1.3.0"
+  "appVersion": "1.4.0"
 }

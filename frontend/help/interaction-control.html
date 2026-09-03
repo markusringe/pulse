@@ -1,0 +1,34 @@
+<article class="help-article-body" data-article="interaction-control">
+  <h2>Interaktionssteuerung</h2>
+  <p>Ab Version 1.4.0 trennt Pulse klar zwischen <strong>Folie anzeigen</strong>, <strong>Interaktion starten</strong>, <strong>Countdown/Timer</strong>, <strong>Pause/Verlängern/Ende</strong> und <strong>Ergebnisse zeigen</strong>. Der Server ist autoritativ — alle Clients (Presenter, Join, Stage) synchronisieren über WebSocket.</p>
+
+  <h3>Ablauf im Presenter</h3>
+  <ol>
+    <li><strong>Folie anzeigen</strong> — Teilnehmende sehen die Frage, können aber noch nicht antworten (wenn „Manueller Start“ aktiv ist).</li>
+    <li><strong>Interaktion starten</strong> — Eingaben werden angenommen; optional startet ein Countdown (30–300&nbsp;s).</li>
+    <li><strong>Pause / Fortsetzen / Verlängern / Beenden</strong> — Timer pausieren, Restzeit verlängern oder Interaktion vorzeitig schließen.</li>
+    <li><strong>Ergebnisse zeigen</strong> — wie bisher über den Reveal-Schalter (<kbd>R</kbd>) für ausblendbare Folientypen.</li>
+  </ol>
+  <p>Die Steuerleiste sitzt unter der Folienfläche; auf schmalen Viewports bleiben die wichtigsten Aktionen sichtbar.</p>
+
+  <h3>Im Folieneditor (Ablauf und Zeitlimit)</h3>
+  <p>Unter <code>#/admin/sessions/:code</code> pro interaktiver Folie:</p>
+  <ul>
+    <li><strong>Manueller Start</strong> — Interaktion beginnt erst nach Klick des Präsentators (Standard: an).</li>
+    <li><strong>Zeitlimit</strong> — optional; Presets 30, 60, 90, 120, 180, 300&nbsp;s. Nach Ablauf keine neuen Eingaben mehr.</li>
+  </ul>
+  <p>Legacy-Folien ohne <code>interaction</code>-Feld verhalten sich wie bisher: Eingaben sofort möglich.</p>
+
+  <h3>Event-Countdown „Los geht’s“</h3>
+  <p>Bei Events mit Startuhrzeit zeigen Presenter und Stage einen Countdown bis zum Beginn. <strong>Los geht’s</strong> beendet den Countdown serverseitig (<code>dismissCountdown</code>) und wechselt zur ersten Folie. Bei mehr als fünf Minuten Restzeit erscheint eine Bestätigung. Alle Clients erhalten den Status über <code>event_meta</code>.</p>
+
+  <h3>Barrierefreiheit und Hinweise</h3>
+  <ul>
+    <li>Timer-Warnungen bei 60, 30, 10 und 0&nbsp;s (Screenreader + visuelle Dringlichkeit).</li>
+    <li>Ranking und 100-Punkte-Folien: Hinweise auf der Join-Seite, wenn die Interaktion noch nicht läuft oder beendet ist.</li>
+    <li>Q&amp;A-Countdown bleibt separat (<a href="#/help/qa">Q&amp;A-Hilfe</a>); Folien-Timer und Q&amp;A-Timer schließen sich nicht aus.</li>
+  </ul>
+
+  <h3>Presenter-Zugang</h3>
+  <p>Neue Sessions werden ohne separates Presenter-Passwort angelegt. Zugang über Admin-Schlüssel bzw. Event-Login mit Instanz-Benutzer. Bestehende Sessions mit gespeichertem Passwort-Hash funktionieren serverseitig weiter.</p>
+</article>

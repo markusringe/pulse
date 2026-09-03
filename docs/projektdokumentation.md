@@ -2,7 +2,7 @@
 
 **Ist-Zustand / Spezifikation**
 
-**Stand:** Programmversion **v1.3.0** · Ist-Zustand aus dem Quellcode, 2026-09-03.
+**Stand:** Programmversion **v1.4.0** · Ist-Zustand aus dem Quellcode, 2026-09-03.
 **Kein Soll-Konzept:** Nur Funktionen und Technik, die im Repository tatsächlich vorhanden sind.  
 **Produktname:** Pulse. Technische Präfixe: `data/pulse.db`, `pulse:session:…`, Docker-Services `pulse` / `pulse-b`.
 
@@ -181,6 +181,7 @@ Logik in `lib/slideTypes.js` (`normalizePickerOptions`, `validatePickerSlide`), 
 
 - Neue Sessions starten mit `lobby: true`, außer `skipLobby` oder Typ `demo`.
 - Overlay mit großem QR und Teilnehmerzahl; **Los geht’s** setzt Lobby aus (`WS lobby` / `POST …/lobby`).
+- Bei Events mit Start-Countdown: **Los geht’s** beendet den Event-Countdown serverseitig (`dismissCountdown` in `lib/events.js`, WS `event_meta`); bei &gt; 5 Min. Restzeit Bestätigungsdialog im Presenter.
 - In der Lobby keine Stimmen, Wörter, Q&A-Einreichungen.
 
 ### 3.10 Ergebnis-Reveal
@@ -213,6 +214,29 @@ Reine Leseansicht für Screen-Sharing (Webex/Zoom/Teams): Hash `#/stage/<code>` 
 Optional 10–300 s (10er-Schritte, Default 60) in `lib/qaTimer.js`. Server speichert `endsAt`; Clients ticken lokal. Nach Ende keine neuen Fragen (`qa_closed`), Upvotes bleiben. Presenter: Start/Pause/Fortsetzen/Verlängern/Beenden. REST `POST /api/qa/timer`, WS `qa_timer`. Tests: `scripts/test-qa-timer.js`.
 
 Admin-Branding: `stageShowLogo` / `stageShowFooter` (Default aus), `qaDefaultLimitSec` (Default 60, 0 = kein vorgewähltes Limit).
+
+### 3.13a Interaktionssteuerung (Folien)
+
+Serverseitige State-Machine in `lib/interactionState.js` für alle interaktiven Folientypen (Poll, Wortwolke, Q&A, Quiz, Rating, Ranking, 100 Punkte, Freitext, Bildwahl, Termin, Picker).
+
+| Zustand | Bedeutung |
+|---|---|
+| `active` | Folie sichtbar; bei `manualStart` noch keine Teilnehmer-Eingaben |
+| `running` | Eingaben erlaubt; optional Timer läuft (`endsAt`) |
+| `paused` | Timer pausiert (`pausedRemainingMs`) |
+| `ended` | Keine neuen Eingaben; Ergebnisse/Reveal unverändert |
+
+**Editor** (`#/admin/sessions/:code`, Feldgruppe „Ablauf und Zeitlimit“ in `frontend/js/events.js`): `manualStart` (Default an), `timerEnabled`, `timerSec` (30–300 s, Presets). Legacy-Folien ohne `interaction`-Feld → sofort `running` (Abwärtskompatibilität).
+
+**Presenter** (`frontend/js/interactionPresenter.js`, `frontend/css/present-interaction.css`): Aktionen Folie anzeigen / Interaktion starten / Pause / Fortsetzen / Verlängern (+30 s) / Beenden; getrennt vom Reveal-Schalter. Layout: Folienfläche ~2/3, Steuerleiste priorisiert.
+
+**Protokoll:** WS `interaction` (Presenter-Auth); Server-Guards in `applyVote`, `applyWord`, Q&A-Einreichung. Fanout an Presenter, Join und Stage. Tests: `scripts/test-interaction-state.js`.
+
+**Join:** Blockiert Eingaben solange `manualStart` und Zustand `active`. Ranking/100-Punkte: clientseitige Hinweise + serverseitige Validierung; kein Auto-Submit bei Timer-Ende.
+
+**A11y:** akustische/visuelle Timer-Hinweise bei 60, 30, 10 und 0 s (`tickJoinTimerA11y`, `applyJoinTimerUrgency`).
+
+**Event-Countdown:** bei gesetztem `startTime` Countdown auf Stage und Presenter (`frontend/js/eventCountdown.js`); **Los geht’s** via `applyEventCountdownStart` / `dismissCountdown`, Audit-Eintrag, Sync über `event_meta` (nicht nur clientseitig).
 
 ### 3.14 Join: Mobil, Offline
 
@@ -310,7 +334,7 @@ Admin-Branding: `stageShowLogo` / `stageShowFooter` (Default aus), `qaDefaultLim
 ### 3.23 Hilfe / Tour
 
 - Hash `#/help`, `#/help/<slug>`, `#/admin/help`. Katalog `frontend/help/articles.json`, HTML-Artikel unter `frontend/help/`.
-- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**25 Artikel**, Stand Katalog **Version 9**, Programm **v1.3.0**).
+- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**26 Artikel**, Stand Katalog **Version 10**, Programm **v1.4.0**).
 - Suche (UND-Tokens, Kategorie) in `frontend/js/help.js` / `lib/helpIndex.js`.
 - Erstnutzer-Tour (nach Consent), Tooltips (`frontend/js/tooltips.js`), Mini-Hilfe, Tastaturhilfe, Feedback ja/nein nur in **localStorage** (`pulse:help-feedback`) — **kein** Server-Upload.
 - In den Hilfe-HTML-Dateien stehen **Platzhalter „Video folgt“**, keine eingebetteten Videos.
@@ -392,7 +416,7 @@ Statistik wird **nicht** in `events.json` gespeichert, sondern zur Laufzeit aus 
 - **Event anlegen:** Metadaten, optional sofort aktivieren, optional `copyFromId` (Folien aus Quell-Session).
 - **Deck `#/admin/sessions/:code`:** Folienliste mit Drag & Drop, **Inhaltsbearbeitung** (Inline für einfache Typen, Modal für komplexe; Auto-Save; Undo nach Löschen), Mehrfachauswahl/Bulk-Eigenschaften, Pfeile hoch/runter, duplizieren, löschen, neue Folie, Modal **Folien kopieren**. Presenter-Schlüssel unter `pulse:admin:<code>` in `sessionStorage`.
 - **Event-Detail:** QR, Join-Link, Einladungstext, CSV-Statistik, Event-Branding, optional Startuhrzeit und Event-Grafik.
-- **Countdown:** Bei gesetztem `startTime` zeigen Stage (`#/stage/:code`) und Presenter einen Live-Countdown (`frontend/js/eventCountdown.js`); bei 0 Wechsel zur ersten Folie; Presenter kann überspringen.
+- **Countdown:** Bei gesetztem `startTime` zeigen Stage (`#/stage/:code`) und Presenter einen Live-Countdown (`frontend/js/eventCountdown.js`); **Los geht’s** beendet ihn serverseitig und wechselt zur ersten Folie (siehe 3.13a).
 
 Folien-Mutationen laufen über **`POST /api/sessions/:code/slides`** bzw. **`PATCH/DELETE …/slides/:slideId`** (nicht über Event-Endpoints). Auth: Instanz-Admin (`ADMIN_SECRET` / `X-Admin-Key`) **oder** Presenter-Schlüssel (`canManageSession` in `server.js`).
 
@@ -457,7 +481,7 @@ Tests: `scripts/test-events.js` (Store, Migration, Copy), `scripts/test-deck.js`
 - **Audit:** `data/audit.json`, IPs nur als Hash, 90-Tage-Sweep, Export `GET /api/audit` mit Admin-Secret.
 - **Metriken:** `GET /metrics` Prometheus-Textformat (`lib/metrics.js`). In Docker: Prometheus + Grafana (Port 3001).
 - **Reset:** Präsentator setzt Folien-Zähler zurück (`reset`).
-- **Presenter-Passwort:** optional beim Anlegen, scrypt-Hash, 3 Fehlversuche → 5 Min. Sperre (`checkPresenterPassword`).
+- **Presenter-Passwort:** UI beim Anlegen entfernt; **neue** Sessions ohne `passwordHash`. Legacy-Sessions mit scrypt-Hash funktionieren weiter (`checkPresenterPassword`, 3 Fehlversuche → 5 Min. Sperre).
 - **IP-Sperre:** nach 100 WS-Verbindungen derselben IP-Hash 24 h; `IP_BLOCK=0` oder Branding `ipBlock: false`. Rate-Limits für HTTP/Fragen bleiben.
 - **Admin-Leiste:** Sessions (`#/admin`), Events (`#/admin/events`), Branding, Datenschutz, SSL, Einstellungen, **Updates**, **Benutzer** (nur admin), Hilfe (`frontend/index.html`, `frontend/js/adminNav.js`). Anmeldung: `#/admin/login`. Profil: `#/admin/profile`. Folien-Deck: `#/admin/sessions/:code`.
 
@@ -551,9 +575,9 @@ Die Datenschutzerklärung/Impressum-Vorlage verweist ausdrücklich auf BITV 2.0.
 
 **WebSocket** Pfad `/ws`. Client sendet über `emitLive` in `frontend/js/app.js` **nur** `RealtimeClient.send` — bewusst kein zweites REST für dieselbe Live-Aktion.
 
-Eingehende Typen (Auszug): `ping`, `batch`, `join`, `vote`, `word`, `reaction`, `lobby`, `results`, `submit_question`, `upvote_question`, `moderate_question`, `quiz_start`, `quiz_answer`, `quiz_powerup`, `quiz_end`, `emergency`, `deck`, `slide`, `reset`.
+Eingehende Typen (Auszug): `ping`, `batch`, `join`, `vote`, `word`, `reaction`, `lobby`, `results`, `interaction`, `event_countdown`, `submit_question`, `upvote_question`, `moderate_question`, `qa_timer`, `quiz_start`, `quiz_answer`, `quiz_powerup`, `quiz_end`, `emergency`, `deck`, `slide`, `reset`.
 
-Ausgehende Typen (Auszug): `pong`, `session`, `error`, `poll:update`, `wordcloud:update`, `participants`, `results`, `lobby`, `deck`, `slide`, `slide_updated`, `new_question`, `question_upvoted`, `question_moderated`, `quiz_started`, `quiz_timer`, `quiz_results`, `quiz_powerup`, `leaderboard_update`, `emergency_activated` / `emergency_resumed`, `reaction`, `batch`.
+Ausgehende Typen (Auszug): `pong`, `session`, `error`, `poll:update`, `wordcloud:update`, `participants`, `results`, `lobby`, `deck`, `slide`, `slide_updated`, `interaction`, `event_meta`, `new_question`, `question_upvoted`, `question_moderated`, `qa_timer`, `quiz_started`, `quiz_timer`, `quiz_results`, `quiz_powerup`, `leaderboard_update`, `emergency_activated` / `emergency_resumed`, `reaction`, `batch`.
 
 Ohne erreichbares Backend kann der Client auf **BroadcastChannel-Mock** umschalten (`websocket.js`) — zwei Tabs lokal, nicht der Produktivpfad.
 
@@ -564,7 +588,7 @@ Ohne erreichbares Backend kann der Client auf **BroadcastChannel-Mock** umschalt
 | Instanz-Admin (Branding, Privacy, SSL, Settings, Audit, Events, Benutzer) | **`ADMIN_SECRET`** (Header `X-Admin-Key` / Bearer, Notfall/Bootstrap) **oder** Cookie-Session mit Rolle `admin` bei `USER_AUTH_ENABLED=1`. Lokal ohne Secret: Demo-Modus. Kritische Schreibzugriffe für Cookie-Admins: **Step-up-PIN** (`POST /api/auth/step-up`). |
 | Instanz-Editor / Viewer | Cookie-Session (`admin` / `editor` / `viewer`); Navigation und API nach `lib/permissions.js`. Viewer: keine Event-Neuanlage. |
 | Session-Präsentator / Deck-Admin | **HMAC-SHA-256** des Admin-Schlüssels mit Pepper `ADMIN_SECRET`. `canManageSession` erlaubt Folien-Mutationen und `copy-from` auch mit Presenter-Schlüssel oder Event-Berechtigung. |
-| Presenter-Passwort | **scrypt** (`scryptSync`, N=16384, r=8, p=1), Format `salt:hash`. Nicht der Instanz-Admin-Secret. |
+| Presenter-Passwort | **scrypt** für Legacy-Sessions mit `passwordHash`. Neue Sessions ohne Passwort; Zugang über Admin-Schlüssel / Event-Login (`canPresentSession`, Cookie-Auth für WS). |
 | Instanz-Benutzer (optional) | E-Mail-PIN-Login; Session-Token gehasht in DB; Cookie `pulse_auth` HttpOnly. Kennwort-Hash (scrypt) nur für Profil. |
 
 Teilnehmer haben keine Server-Identität außer einer vom Browser gesetzten `clientId` (`sessionStorage` `pulse:client-id`).
@@ -671,6 +695,7 @@ führt nacheinander aus (`package.json` `scripts.test`):
 | `npm run test:settings` | `scripts/test-settings.js` | Export/Import Schema 1 und 2, Logo + PEM im Bundle, verbotene Key-Felder |
 | `npm run test:slides` | `scripts/test-slides.js` | Ranking/Borda, points100-Summe, hideable Typen, private Q&A, Multi-Correct, Stoppwörter |
 | `npm run test:qa-timer` | `scripts/test-qa-timer.js` | Q&A-Countdown Start/Pause/Ende, `endsAt`, keine neuen Fragen nach Ablauf |
+| `npm run test:interaction-state` | `scripts/test-interaction-state.js` | Folien-Interaktion: Zustände, Timer, Guards, Legacy-Folien |
 | `npm run test:events` | `scripts/test-events.js` | Event-Metadaten inkl. `startTime`/`eventImage`, Status/Tick, Migration von sets[] nach sessionCode, Folien-Copy zwischen Decks |
 | `npm run test:auth` | `scripts/test-auth.js` | Benutzerverwaltung, PIN-Login, Rollen, Step-up, Profil |
 
@@ -681,7 +706,7 @@ führt nacheinander aus (`package.json` `scripts.test`):
 | `npm run setup` | `scripts/install.sh` | Abhängigkeiten, `.env`, optional Docker/tests |
 | `npm run migrate:events` | `scripts/migrate-events.js` | Legacy-Feld `sets[]` aus `data/events.json` entfernen; Session-Decks beim nächsten Serverstart via `migrateEventDecks()` |
 
-Manuell (nicht in `npm test`): Session im Browser anlegen, Join-Code, Lobby, Reveal, Q&A-Moderation (Kategorie/Gruppe/privat), Quiz-Power-Ups, Notfall, SSL-UI, Settings-Datei rundtripen, Join-Daumenzone/Offline-Banner, Event anlegen, Deck unter `#/admin/sessions/:code` inkl. Folien-Inhalt bearbeiten (Inline/Modal, Bulk), Event-Countdown/Grafik, Join von der Startseite.
+Manuell (nicht in `npm test`): Session im Browser anlegen, Join-Code, Lobby, Reveal, **Interaktionssteuerung** (manueller Start, Timer, Pause/Ende), **Event-Countdown Los geht’s**, Q&A-Moderation (Kategorie/Gruppe/privat), Quiz-Power-Ups, Notfall, SSL-UI, Settings-Datei rundtripen, Join-Daumenzone/Offline-Banner, Event anlegen, Deck unter `#/admin/sessions/:code` inkl. Folien-Inhalt bearbeiten (Inline/Modal, Bulk), Event-Grafik, Join von der Startseite.
 
 ---
 
