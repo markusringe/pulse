@@ -56,7 +56,11 @@ const accessAdminOrphan = permissions.eventAccess(admin, eventNoTeam, [], {});
 assert(accessAdminOrphan.edit, "Admin darf Event ohne Team verwalten");
 
 assert(permissions.canChangeEventTeam(admin), "Admin darf Team ändern");
-assert(!permissions.canChangeEventTeam(leaderA), "Teamleiter darf Team nicht ändern");
+assert(!permissions.canChangeEventTeam(leaderA), "Teamleiter darf Team nicht wechseln");
+assert(permissions.canAssignInitialEventTeam(leaderA, eventNoTeam), "Teamleiter darf Erstzuordnung");
+assert(permissions.canAssignInitialEventTeam(memberA, eventNoTeam), "Teammitglied darf Erstzuordnung");
+assert(!permissions.canAssignInitialEventTeam(leaderA, eventWithTeam), "Keine Erstzuordnung wenn Team schon gesetzt");
+assert(!permissions.canAssignInitialEventTeam(viewer, eventNoTeam), "Viewer darf nicht zuordnen");
 
 const viewerPublic = permissions.eventAccess(viewer, eventPublic, [], ctxB);
 assert(viewerPublic.view && !viewerPublic.present, "Viewer sieht nur public, nicht präsentieren");

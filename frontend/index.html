@@ -439,6 +439,10 @@
       <section id="view-present" class="view view-present pulse-present-shell" data-view="present" hidden>
         <div class="present-head">
         <div id="present-offline-banner" class="offline-banner" hidden role="status"></div>
+        <div id="present-auth-banner" class="offline-banner present-auth-banner" hidden role="alert">
+          <span id="present-auth-banner-text"></span>
+          <button type="button" id="btn-present-login" class="btn primary btn--sm" data-i18n="events.presentLoginBtn">Anmelden</button>
+        </div>
         <div id="rehearsal-banner" class="rehearsal-banner" hidden role="status"></div>
         <header class="present-top">
           <div class="brand-mini">
@@ -575,14 +579,15 @@
         <dialog id="admin-dialog" class="admin-dialog" aria-labelledby="admin-dialog-title">
           <form id="admin-form" method="dialog">
             <h2 id="admin-dialog-title" data-i18n="present.unlock">Präsentation entsperren</h2>
-            <p data-i18n="present.unlockHint">Bitte den Admin-Schlüssel eingeben. Bei Events mit Benutzerkonto: zuerst anmelden, dann erneut verbinden.</p>
-            <label class="field">
+            <p id="admin-unlock-hint" data-i18n="present.unlockHint">Bitte den Admin-Schlüssel eingeben. Bei Events mit Benutzerkonto: zuerst anmelden, dann erneut verbinden.</p>
+            <label class="field" id="admin-key-wrap">
               <span data-i18n="present.adminKey">Admin-Schlüssel</span>
               <input id="admin-key-input" name="adminKey" autocomplete="off" />
             </label>
             <p id="admin-lock-msg" class="muted" role="status"></p>
             <div class="home-actions">
-              <button type="submit" class="btn primary" data-i18n="present.unlockBtn">Entsperren</button>
+              <button type="submit" class="btn primary" id="admin-unlock-submit" data-i18n="present.unlockBtn">Entsperren</button>
+              <button type="button" id="admin-event-login" class="btn primary" hidden data-i18n="events.presentLoginBtn">Anmelden</button>
               <button type="button" id="admin-cancel" class="btn ghost" data-i18n="present.cancel">Abbrechen</button>
             </div>
           </form>
@@ -1238,6 +1243,6 @@
       <button type="button" id="consent-ok" class="btn primary" data-i18n="consent.ok">Verstanden</button>
     </aside>
 
-    <script type="module" src="/js/app.js?v=nav55"></script>
+    <script type="module" src="/js/app.js?v=nav56"></script>
   </body>
 </html>

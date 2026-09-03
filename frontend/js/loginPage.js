@@ -12,7 +12,7 @@ export async function showLoginPage() {
   if (!root) return;
   await loadAuth();
   if (getAuthUser()) {
-    location.hash = "#/admin/events";
+    location.hash = consumeAdminRedirect("#/admin/events");
     return;
   }
   await initLoginForm(root, {

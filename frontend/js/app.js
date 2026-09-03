@@ -42,7 +42,7 @@ import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
 import { showProfilePage } from "./profilePage.js?v=nav30";
 import { ensureStepUp } from "./stepUp.js?v=nav47";
-import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav54";
+import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav55";
 import { drawQrCode, joinUrlFromLocation, absorbPathJoinRoute } from "./qrRender.js?v=nav48";
 import {
   initTheme,
@@ -194,6 +194,7 @@ const els = {
   adminForm: document.getElementById("admin-form"),
   adminKeyInput: document.getElementById("admin-key-input"),
   adminCancel: document.getElementById("admin-cancel"),
+  adminEventLogin: document.getElementById("admin-event-login"),
   panicButton: document.getElementById("panic-button"),
   moderationPanel: document.getElementById("moderation-panel"),
   btnModeration: document.getElementById("btn-moderation"),
@@ -216,6 +217,9 @@ const els = {
   presentInteractionBar: document.getElementById("present-interaction-bar"),
   presenterStats: document.getElementById("presenter-stats"),
   presentOfflineBanner: document.getElementById("present-offline-banner"),
+  presentAuthBanner: document.getElementById("present-auth-banner"),
+  presentAuthBannerText: document.getElementById("present-auth-banner-text"),
+  btnPresentLogin: document.getElementById("btn-present-login"),
   joinOfflineBanner: document.getElementById("join-offline-banner"),
   rehearsalBanner: document.getElementById("rehearsal-banner"),
   joinRehearsalHint: document.getElementById("join-rehearsal-hint"),
@@ -246,6 +250,8 @@ const ctx = {
   /** Event-Countdown (Presenter): übersprungen bis Session-Wechsel. */
   eventCountdownSkipped: false,
   eventClockSkew: 0,
+  /** WebSocket-Rolle nach Join (presenter | participant | stage). */
+  wsClientRole: "",
 };
 
 /** @type {{ stop: () => void, refresh?: () => void } | null} */
@@ -429,6 +435,13 @@ function bindGlobal() {
   document.getElementById("create-picker-search")?.addEventListener("change", scheduleCreatePickerPreview);
   els.adminForm?.addEventListener("submit", onAdminUnlock);
   els.adminCancel?.addEventListener("click", () => els.adminDialog?.close());
+  els.adminEventLogin?.addEventListener("click", () => {
+    if (ctx.session?.code) showPresentLoginGate(ctx.session.code);
+    els.adminDialog?.close();
+  });
+  els.btnPresentLogin?.addEventListener("click", () => {
+    if (ctx.session?.code) showPresentLoginGate(ctx.session.code);
+  });
   document.getElementById("btn-auth-logout")?.addEventListener("click", async () => {
     await logout();
     location.hash = "#/";
@@ -1149,16 +1162,71 @@ async function startSession(payload) {
   location.hash = `#/present/${session.code}`;
 }
 
+/** Event-Session anhand eventId oder eventMeta erkennen. */
+function isEventLinkedSession(session) {
+  return Boolean(session?.eventId || session?.eventMeta?.id);
+}
+
+/** Login-Ziel merken und zur Anmeldeseite wechseln (Presenter-Ansicht). */
+function showPresentLoginGate(code) {
+  rememberAdminRedirect(`#/present/${code}`);
+  location.hash = "#/admin/login";
+}
+
+/** Hinweis-Banner in der Presenter-Ansicht (Events ohne Admin-Schlüssel-Dialog). */
+function showPresentAuthNotice(message) {
+  const text = message || t("events.presentLoginRequired");
+  if (els.presentAuthBannerText) els.presentAuthBannerText.textContent = text;
+  els.presentAuthBanner?.removeAttribute("hidden");
+  if (els.btnPresentLogin) {
+    els.btnPresentLogin.hidden = Boolean(getAuthUser()) || !isAuthEnabled();
+  }
+}
+
+/** Presenter-Auth-Banner ausblenden (nach erfolgreichem Join). */
+function clearPresentAuthNotice() {
+  els.presentAuthBanner?.setAttribute("hidden", "");
+  if (els.presentAuthBannerText) els.presentAuthBannerText.textContent = "";
+}
+
+/**
+ * Admin-Entsperr-Dialog: bei Event-Sessions Login statt Admin-Schlüssel anbieten.
+ * @param {object|null} session
+ */
+function syncPresentUnlockUi(session) {
+  const eventSession = isEventLinkedSession(session);
+  const useLogin = eventSession && isAuthEnabled();
+  const hint = document.getElementById("admin-unlock-hint");
+  const keyWrap = document.getElementById("admin-key-wrap");
+  const unlockBtn = document.getElementById("admin-unlock-submit");
+  if (hint) hint.textContent = useLogin ? t("events.presentLoginHint") : t("present.unlockHint");
+  if (keyWrap) keyWrap.hidden = useLogin;
+  if (unlockBtn) unlockBtn.hidden = useLogin;
+  if (els.adminEventLogin) els.adminEventLogin.hidden = !useLogin || Boolean(getAuthUser());
+}
+
 async function enterPresent(code) {
+  await loadAuth();
   const session = await loadSession(code);
   if (!session) {
     location.hash = "#/";
     return;
   }
+  if (isEventLinkedSession(session) && isAuthEnabled() && !getAuthUser()) {
+    showPresentLoginGate(code);
+    return;
+  }
   ctx.eventCountdownSkipped = false;
   if (session.serverNow) ctx.eventClockSkew = session.serverNow - Date.now();
   ctx.session = session;
-  api.setAdminKey(readAdminKey(session.code));
+  ctx.wsClientRole = "";
+  clearPresentAuthNotice();
+  syncPresentUnlockUi(session);
+  if (isEventLinkedSession(session)) {
+    api.setAdminKey("");
+  } else {
+    api.setAdminKey(readAdminKey(session.code));
+  }
   applyStartType(session);
   mountPresenterStats(els.presenterStats, {
     t,
@@ -1233,7 +1301,7 @@ function connectRealtime(role) {
     }
   });
 
-  rt.on("session", (payload) => applySession(payload.session || payload));
+  rt.on("session", (payload) => applySession(payload));
   rt.on("server_shutdown", (payload) => {
     const sec = payload?.reconnectIn ?? 10;
     const msg = payload?.message || `Server startet neu — Reconnect in ${sec} Sekunden …`;
@@ -1460,15 +1528,46 @@ function connectRealtime(role) {
       else setJoinFeedback(explainError(msg).html, { html: true, state: "error" });
       if (ctx.pendingVoteSlideId) rollbackPendingVote();
     }
+    if (ctx.role === "present") {
+      const eventSession = isEventLinkedSession(ctx.session);
+      const authErr =
+        payload?.error === "auth_required" ||
+        payload?.error === "admin_lock" ||
+        payload?.error === "forbidden" ||
+        /berechtigung|team-konto/i.test(msg);
+      if (eventSession && authErr) {
+        const notice = !getAuthUser()
+          ? t("events.presentLoginRequired")
+          : t("events.accessDenied");
+        showPresentAuthNotice(notice);
+        if (!getAuthUser() && isAuthEnabled()) {
+          rememberAdminRedirect(`#/present/${ctx.session?.code || ""}`);
+        }
+        return;
+      }
+    }
     if (payload?.error === "auth_required") {
-      setJoinFeedback(t("events.accessDenied"), { state: "error" });
+      if (ctx.role === "join") setJoinFeedback(t("events.accessDenied"), { state: "error" });
       return;
     }
-    if (msg.toLowerCase().includes("admin") && payload?.error !== "auth_required") els.adminDialog?.showModal?.();
+    if (isEventLinkedSession(ctx.session) && ctx.role === "present") return;
+    if (msg.toLowerCase().includes("admin") && payload?.error !== "auth_required") {
+      syncPresentUnlockUi(ctx.session);
+      els.adminDialog?.showModal?.();
+    }
   });
 
   rt.on("open", () => {
-    rt.send("join", { code: ctx.session?.code, role, adminKey: api.adminKey, clientId: api.clientId, teamName: readTeamName() });
+    void loadAuth().then(() => {
+      if (isEventLinkedSession(ctx.session)) api.setAdminKey("");
+      rt.send("join", {
+        code: ctx.session?.code,
+        role,
+        adminKey: api.adminKey,
+        clientId: api.clientId,
+        teamName: readTeamName(),
+      });
+    });
   });
 
   rt.connect();
@@ -1489,10 +1588,23 @@ function teardownRealtime() {
   destroySlideInput(els.pollRoot);
 }
 
-function applySession(session) {
+function applySession(payload) {
+  const session = payload?.session || payload;
+  const clientRole = payload?.clientRole;
   if (!session) return;
   if (session.serverNow) ctx.eventClockSkew = session.serverNow - Date.now();
   if (session.eventMeta?.countdownDismissed) ctx.eventCountdownSkipped = true;
+  if (clientRole) {
+    ctx.wsClientRole = clientRole;
+    if (ctx.role === "present") {
+      if (clientRole === "presenter") clearPresentAuthNotice();
+      else if (isEventLinkedSession(ctx.session || session)) {
+        showPresentAuthNotice(
+          getAuthUser() ? t("events.accessDenied") : t("events.presentLoginRequired")
+        );
+      }
+    }
+  }
   if (ctx.role === "join") {
     stripPresenterSecrets(session);
     ctx.session = session;
@@ -1788,6 +1900,11 @@ function focusChoice(buttons, index) {
 
 function onAdminUnlock(ev) {
   ev.preventDefault();
+  if (isEventLinkedSession(ctx.session) && isAuthEnabled()) {
+    if (ctx.session?.code) showPresentLoginGate(ctx.session.code);
+    els.adminDialog?.close();
+    return;
+  }
   const key = (els.adminKeyInput?.value || "").trim();
   if (!ctx.session) return;
   if (key) {

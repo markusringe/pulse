@@ -24,8 +24,8 @@ export const ERRORS = {
   },
   "HTTP 403": {
     title: "Zugriff verweigert",
-    cause: "Der Admin-Schlüssel fehlt, ist falsch, oder diese Aktion ist nur für den Präsentator erlaubt.",
-    next: "Präsentation entsperren: Admin-Schlüssel aus diesem Browser oder das Presenter-Passwort eingeben.",
+    cause: "Die Aktion ist nur für berechtigte Presenter erlaubt.",
+    next: "Bei Events: mit Ihrem Team-Konto anmelden. Bei Ad-hoc-Sessions ohne Event: Admin-Schlüssel eingeben.",
     help: "#/help/troubleshooting",
   },
   "HTTP 404": {
@@ -66,8 +66,14 @@ export const ERRORS = {
   },
   admin_lock: {
     title: "Präsentation ist gesperrt",
-    cause: "Folienwechsel und Moderation brauchen den Admin-Schlüssel oder das Presenter-Passwort.",
-    next: "Schlüssel aus dem Browser, in dem die Session gestartet wurde — oder das optionale Passwort.",
+    cause: "Folienwechsel und Moderation erfordern Presenter-Berechtigung.",
+    next: "Bei Events mit Benutzerkonto anmelden. Bei Ad-hoc-Sessions den Admin-Schlüssel aus dem Start-Browser eingeben.",
+    help: "#/help/admin",
+  },
+  auth_required: {
+    title: "Anmeldung erforderlich",
+    cause: "Diese Event-Präsentation ist nur für angemeldete Teammitglieder freigegeben.",
+    next: "Melden Sie sich mit Ihrem Instanz-Konto an und öffnen Sie die Presenter-Ansicht erneut.",
     help: "#/help/admin",
   },
   rate: {
@@ -118,6 +124,7 @@ export function resolveErrorKey(raw) {
   }
   if (lower.includes("reconnect")) return "reconnecting";
   if (lower.includes("session nicht gefunden") || lower.includes("not found")) return "session_not_found";
+  if (lower.includes("team-konto") || lower.includes("auth_required")) return "auth_required";
   if (lower.includes("admin") || lower.includes("forbidden") || lower.includes("gesperrt")) return "admin_lock";
   if (lower.includes("rate")) return "rate";
   if (lower.includes("blocked") || lower.includes("blockiert")) return "blocked";

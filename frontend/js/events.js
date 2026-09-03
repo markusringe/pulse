@@ -35,7 +35,8 @@ const DE = {
   "events.team.autoSelected": "Ihr Team wurde automatisch vorausgewählt.",
   "events.team.required": "Bitte wählen Sie ein Team aus.",
   "events.team.changeConfirm": "Das Team ändert den berechtigten Personenkreis. Fortfahren?",
-  "events.team.migrationRequired": "Dieses Event benötigt eine Team-Zuordnung durch einen Administrator.",
+  "events.team.migrationRequired": "Bitte ordnen Sie dieses Event einem Team zu.",
+  "events.team.assignBanner": "Dieses Event hat noch kein Team — ohne Zuordnung können Teammitglieder nicht präsentieren.",
   "events.team.migrationBanner": "Events ohne Team-Zuordnung",
   "events.col.team": "Team",
   "events.accessDenied": "Sie gehören nicht zum Team dieses Events. Bitte wenden Sie sich an den Teamleiter oder einen Administrator.",
@@ -740,7 +741,7 @@ async function renderList(root, seq = pageSeq) {
     </header>
     <p class="muted">${esc(tx("events.listIntro"))}</p>
     ${
-      migrationOrphans.length && isAdminUser()
+      migrationOrphans.length && (isAdminUser() || canCreateEvents())
         ? `<section class="panel event-migration-banner" role="alert">
             <h2>${esc(tx("events.team.migrationBanner"))} (${migrationOrphans.length})</h2>
             <ul class="event-migration-list">
@@ -834,20 +835,36 @@ async function fetchTeamsForPicker() {
 }
 
 /**
+ * Darf das Team auf der Event-Maske gewählt/geändert werden?
+ * Admin: immer. Sonst: nur Erstzuordnung (Event ohne teamId) mit mindestens einem Team.
+ * @param {{ teamId?: string }} event
+ */
+function canEditTeamOnEvent(event) {
+  if (!event) return false;
+  if (!isUserAuthEnabled()) return isAdminUser();
+  if (isAdminUser()) return true;
+  const unassigned = !String(event.teamId || "").trim();
+  return unassigned && canCreateEvents() && teamPickerCache.length > 0;
+}
+
+/**
  * Teamauswahl im Formular — Pflichtfeld bei Benutzer-Auth.
  * @param {string} selectedId
- * @param {{ readonly?: boolean, required?: boolean }} [opts]
+ * @param {{ readonly?: boolean, required?: boolean, warn?: boolean }} [opts]
  */
 function teamFieldHtml(selectedId = "", opts = {}) {
-  const { readonly = false, required = false } = opts;
+  const { readonly = false, required = false, warn = false } = opts;
   const teams = teamPickerCache;
   const sel = String(selectedId || "");
+  const needsAssign = warn || (!sel && isUserAuthEnabled());
+  const boxMod = needsAssign && !readonly ? " event-team-box--warn" : "";
   if (readonly) {
     const team = teams.find((t) => t.id === sel);
     const label = team?.name || sel || "—";
     return `
-      <section class="event-team-box panel-inset">
+      <section class="event-team-box panel-inset${needsAssign ? " event-team-box--warn" : ""}">
         <h3 class="event-team-box__title">${esc(tx("events.team.label"))}</h3>
+        ${needsAssign ? `<p class="event-team-warn">${esc(tx("events.team.assignBanner"))}</p>` : ""}
         <p class="event-team-badge"><strong>${esc(label)}</strong></p>
         <p class="muted">${esc(tx("events.team.hint"))}</p>
       </section>`;
@@ -863,8 +880,9 @@ function teamFieldHtml(selectedId = "", opts = {}) {
   const autoOne = teams.length === 1 ? teams[0].id : sel;
   const value = sel || autoOne || "";
   return `
-    <section class="event-team-box panel-inset">
+    <section class="event-team-box panel-inset${boxMod}">
       <h3 class="event-team-box__title">${esc(tx("events.team.label"))}${required ? " *" : ""}</h3>
+      ${needsAssign ? `<p class="event-team-warn">${esc(tx("events.team.assignBanner"))}</p>` : ""}
       ${teams.length === 1 ? `<p class="muted">${esc(tx("events.team.autoSelected"))}</p>` : ""}
       <label class="field"><span>${esc(tx("events.team.pick"))}</span>
         <select id="ev-team" ${required ? "required" : ""}>
@@ -877,7 +895,9 @@ function teamFieldHtml(selectedId = "", opts = {}) {
 }
 
 function readTeamField() {
-  return document.getElementById("ev-team")?.value?.trim() || "";
+  const el = document.getElementById("ev-team");
+  if (!el) return "";
+  return String(el.value || "").trim();
 }
 
 function eventFieldsHtml(event = {}, opts = {}) {
@@ -1024,7 +1044,8 @@ function readEventFields() {
     room: document.getElementById("ev-room")?.value,
   };
   const teamId = readTeamField();
-  if (teamId) fields.teamId = teamId;
+  if (document.getElementById("ev-team")) fields.teamId = teamId;
+  else if (teamId) fields.teamId = teamId;
   return fields;
 }
 
@@ -1103,6 +1124,8 @@ async function renderDetail(root, eventId) {
   const code = event.sessionCode || event.joinCode;
   const joinUrl = event.joinUrl || hooks.joinUrl(code);
   const copyTextInvite = event.copyText || "";
+  const teamEditable = canEditTeamOnEvent(event);
+  const teamRequired = teamEditable && (isUserAuthEnabled() || isAdminUser());
   root.innerHTML = `
     <header class="admin-page-head events-head">
       <div>
@@ -1117,7 +1140,11 @@ async function renderDetail(root, eventId) {
       <a class="btn ghost" href="#/stage/${esc(code)}">${esc(tx("events.openStage"))}</a>
     </p>
     <form id="event-edit-form" class="panel event-form">
-      ${teamFieldHtml(event.teamId || "", { readonly: !isAdminUser(), required: isAdminUser() })}
+      ${teamFieldHtml(event.teamId || "", {
+        readonly: !teamEditable,
+        required: teamRequired,
+        warn: !String(event.teamId || "").trim(),
+      })}
       ${eventFieldsHtml(event)}
       <label class="field"><span>${esc(tx("events.field.status"))}</span>
         <select id="ev-status">
@@ -1172,10 +1199,15 @@ async function renderDetail(root, eventId) {
     ev.preventDefault();
     const msg = document.getElementById("event-edit-msg");
     const nextTeam = readTeamField();
-    if (isAdminUser() && nextTeam && nextTeam !== String(event.teamId || "") && !confirm(tx("events.team.changeConfirm"))) {
+    const hadTeam = Boolean(String(event.teamId || "").trim());
+    if (isAdminUser() && hadTeam && nextTeam && nextTeam !== String(event.teamId || "") && !confirm(tx("events.team.changeConfirm"))) {
       return;
     }
-    const resultSave = await api.updateEvent(event.id, {
+    if (teamEditable && isUserAuthEnabled() && !nextTeam) {
+      if (msg) msg.textContent = tx("events.team.required");
+      return;
+    }
+    const patch = {
       ...readEventFields(),
       status: document.getElementById("ev-status")?.value,
       branding: {
@@ -1184,7 +1216,9 @@ async function renderDetail(root, eventId) {
         secondary: document.getElementById("ev-secondary")?.value,
         footerText: document.getElementById("ev-footer")?.value,
       },
-    });
+    };
+    if (teamEditable && document.getElementById("ev-team")) patch.teamId = nextTeam;
+    const resultSave = await api.updateEvent(event.id, patch);
     if (!resultSave?.ok) {
       if (msg) msg.textContent = errorText(resultSave);
       return;
@@ -1267,12 +1301,37 @@ async function renderSessionDeck(root, code, seq = pageSeq) {
     return;
   }
   const event = adminCache.events.find((e) => (e.sessionCode || e.joinCode) === code);
+  let eventMeta = event;
+  if (!eventMeta?.teamId && session.eventId) {
+    const evRes = await api.getEvent(session.eventId);
+    if (evRes?.ok && evRes.data?.event) eventMeta = evRes.data.event;
+  }
+  teamPickerCache = await fetchTeamsForPicker();
+  const teamAssignHtml =
+    eventMeta && canEditTeamOnEvent(eventMeta)
+      ? `<section class="panel event-team-assign-strip" id="deck-team-assign">
+          <form id="deck-team-assign-form">
+            ${teamFieldHtml(eventMeta.teamId || "", { required: true, warn: true })}
+            <div class="home-actions">
+              <button type="submit" class="btn primary btn--sm">${esc(tx("events.save"))}</button>
+              <a class="btn ghost btn--sm" href="#/admin/events/${esc(eventMeta.id)}">${esc(tx("events.title"))}</a>
+            </div>
+            <p id="deck-team-msg" class="muted" role="status"></p>
+          </form>
+        </section>`
+      : eventMeta && !String(eventMeta.teamId || "").trim()
+        ? `<section class="panel event-team-box--warn">
+            <p class="event-team-warn">${esc(tx("events.team.migrationRequired"))}</p>
+            <p><a class="btn ghost btn--sm" href="#/admin/events/${esc(eventMeta.id)}">${esc(tx("events.title"))}</a></p>
+          </section>`
+        : "";
   const slides = (session.slides || []).filter(Boolean);
   const slideCountLabel = tx("events.slides.count", { count: slides.length });
   root.innerHTML = `
+    ${teamAssignHtml}
     <header class="session-deck-head">
       <div class="session-deck-head__main">
-        <p class="eyebrow" id="deck-event-link">${event ? `<a href="#/admin/events/${esc(event.id)}">${esc(event.title || event.id)}</a>` : `<a href="#/admin/events">${esc(tx("events.title"))}</a>`}</p>
+        <p class="eyebrow" id="deck-event-link">${eventMeta ? `<a href="#/admin/events/${esc(eventMeta.id)}">${esc(eventMeta.title || eventMeta.id)}</a>` : `<a href="#/admin/events">${esc(tx("events.title"))}</a>`}</p>
         <div class="session-deck-title-row">
           <h1>${esc(tx("events.slides.title"))}</h1>
           <span class="session-code-badge" title="${esc(tx("events.col.session"))}">${esc(hooks.formatCode(code))}</span>
@@ -1405,6 +1464,22 @@ async function renderSessionDeck(root, code, seq = pageSeq) {
       </form>
     </dialog>
   `;
+  document.getElementById("deck-team-assign-form")?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!eventMeta?.id) return;
+    const msg = document.getElementById("deck-team-msg");
+    const teamId = readTeamField();
+    if (!teamId) {
+      if (msg) msg.textContent = tx("events.team.required");
+      return;
+    }
+    const resultSave = await api.updateEvent(eventMeta.id, { teamId });
+    if (!resultSave?.ok) {
+      if (msg) msg.textContent = errorText(resultSave);
+      return;
+    }
+    await renderSessionDeck(root, code, seq);
+  });
   bindDeckActions(root, code, slides);
   fillDeckEyebrow(code, seq);
 }

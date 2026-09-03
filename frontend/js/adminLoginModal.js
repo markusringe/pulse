@@ -152,11 +152,13 @@ export async function showAdminLoginModal(targetHash = "/admin") {
   return openPromise;
 }
 
-/** Admin-Ziel-Hash normalisieren. */
+/** Admin-Ziel-Hash normalisieren (Admin, Presenter, Stage). */
 function normalizeAdminHash(hash) {
   const clean = String(hash || "/admin").replace(/^#/, "") || "/admin";
-  if (!clean.startsWith("/admin")) return "/admin";
-  return clean;
+  if (clean.startsWith("/admin") || /^\/present\/\d{6}$/.test(clean) || /^\/(?:stage|present-view)\/\d{6}$/.test(clean)) {
+    return clean;
+  }
+  return "/admin";
 }
 
 /** Ob das Admin-Login-Modal gerade offen ist. */

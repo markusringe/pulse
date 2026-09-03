@@ -362,8 +362,18 @@
 
 /* Presenter offline/rehearsal — unverändert nutzbar */
 .view-present .offline-banner,
-.view-present .rehearsal-banner {
+.view-present .rehearsal-banner,
+.view-present .present-auth-banner {
   grid-column: 1 / -1;
+}
+
+/* Event-Login-Hinweis: Text + Anmelden-Button nebeneinander */
+.present-auth-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  justify-content: space-between;
 }
 
 .present-head {

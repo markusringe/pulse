@@ -1877,17 +1877,28 @@ async function joinSession(client, payload = {}) {
     client.send({ type: "error", payload: { message: "Session nicht gefunden" } });
     return;
   }
+  /* Event-Sessions: eventId aus Event-Katalog nachziehen (Legacy-Sessions). */
+  if (ev && session.eventId !== ev.id) {
+    session.eventId = ev.id;
+    schedulePersist(session);
+  }
   if (client.sessionCode && client.sessionCode !== code) leaveSession(client);
   const wantPresenter = role === "presenter";
   const wantStage = role === "stage";
+  const auth = await getAuth(client.req || {}, payload);
   const byKey = verifyAdminKey(adminKey, session.adminHash);
   const byPw = Boolean(session.passwordHash && verifyPassword(payload.password, session.passwordHash));
-  const byAuth = wantPresenter ? await canPresentSession(await getAuth(client.req || {}, payload), session) : false;
+  let byAuth = wantPresenter ? await canPresentSession(auth, session) : false;
+  /* Fallback: Event per Join-Code, falls eventId in der Session noch fehlte. */
+  if (wantPresenter && !byKey && !byPw && !byAuth && ev) {
+    byAuth = await canPresentSession(auth, { ...session, eventId: ev.id });
+  }
+  const linkedEvent = ev || (session.eventId ? eventStore.get(session.eventId) : null);
+  const eventSession = Boolean(linkedEvent || session.eventId);
   if (wantStage) {
     /* Leinwand: keine Auth, nicht als Teilnehmer zählen, keine Notizen. */
     client.role = "stage";
   } else if (wantPresenter && !byKey && !byPw && !byAuth) {
-    const eventSession = Boolean(session.eventId);
     client.send({
       type: "error",
       payload: {
@@ -1907,7 +1918,13 @@ async function joinSession(client, payload = {}) {
   }
   if (payload.teamName) interactive.rememberTeam(session, client, payload.teamName);
   if (client.role === "participant") session.participants.add(client.id);
-  client.send({ type: "session", payload: { session: publicSession(session, publicOptsForClient(client)) } });
+  client.send({
+    type: "session",
+    payload: {
+      session: publicSession(session, publicOptsForClient(client)),
+      clientRole: client.role,
+    },
+  });
   announce(code, { type: "participants", payload: { count: session.participants.size } });
 }
 
@@ -2489,7 +2506,10 @@ async function canViewEvent(req, ev, body = {}) {
 async function canEditEvent(req, ev, body = {}) {
   const auth = await getAuth(req, body);
   if (auth.viaSecret || permissions.isAdmin(auth.user)) return true;
-  if (permissions.eventNeedsTeamAssignment(ev)) return false;
+  /* Events ohne Team: Editoren dürfen Metadaten pflegen und Team zuordnen. */
+  if (permissions.eventNeedsTeamAssignment(ev)) {
+    return permissions.canAssignInitialEventTeam(auth.user, ev);
+  }
   const teamCtx = await buildTeamContextForUser(auth.user?.id, ev.id);
   return permissions.eventAccess(auth.user, ev, [], teamCtx).edit;
 }
@@ -2521,9 +2541,13 @@ async function buildTeamAccessByEvent(eventIds) {
 async function canManageSession(req, body, session) {
   if (verifyAdminKey(readAdminKey(req, body), session.adminHash)) return true;
   if (await isSettingsAdmin(req, body)) return true;
-  if (session.eventId) {
-    const ev = eventStore.get(session.eventId);
-    if (ev && (await canEditEvent(req, ev, body))) return true;
+  const linkedEv = session.eventId
+    ? eventStore.get(session.eventId)
+    : eventStore.bySessionCode(session.code);
+  if (linkedEv) {
+    const auth = await getAuth(req, body);
+    if (await canEditEvent(req, linkedEv, body)) return true;
+    if (await canPresentSession(auth, { ...session, eventId: linkedEv.id })) return true;
     return false;
   }
   const auth = await getAuth(req, body);
@@ -2689,6 +2713,12 @@ async function migrateEventDecks() {
   }
   for (const ev of eventStore.list()) {
     await ensureEventSession(ev);
+    const code = eventStore.sessionRef(ev);
+    const session = sessions.get(code) || (await getSession(code));
+    if (session && session.eventId !== ev.id) {
+      session.eventId = ev.id;
+      schedulePersist(session);
+    }
   }
   if (changed) console.log(`[events] Migration: ${pending.length} Event(s) von Sets auf Session-Deck`);
 }
@@ -3016,9 +3046,24 @@ async function handleEventsApi(req, res, url, parts) {
     }
     const authPatch = await getAuth(req);
     const nextTeam = body?.teamId != null ? String(body.teamId || "").trim() : null;
-    if (nextTeam != null && nextTeam !== String(prev.teamId || "")) {
-      if (!permissions.canChangeEventTeam(authPatch.user) && !authPatch.viaSecret) {
-        send(res, 403, { error: "Nur Administratoren dürfen das Team ändern" });
+    const prevTeam = String(prev.teamId || "").trim();
+    const isInitialTeam = !prevTeam && Boolean(nextTeam);
+    const isTeamChange = nextTeam != null && nextTeam !== prevTeam;
+    if (isTeamChange) {
+      if (isInitialTeam) {
+        if (!authPatch.viaSecret && authPatch.user) {
+          if (!permissions.canAssignInitialEventTeam(authPatch.user, prev)) {
+            send(res, 403, { error: "Keine Berechtigung für Team-Zuordnung" });
+            return;
+          }
+          const ok = await teamService.canAssignEventToTeam(userDb, authPatch.user, nextTeam);
+          if (!ok) {
+            send(res, 403, { error: "Kein Zugriff auf dieses Team" });
+            return;
+          }
+        }
+      } else if (!permissions.canChangeEventTeam(authPatch.user) && !authPatch.viaSecret) {
+        send(res, 403, { error: "Nur Administratoren dürfen das Team wechseln" });
         return;
       }
       if (userDb.supported && nextTeam) {
@@ -3028,15 +3073,21 @@ async function handleEventsApi(req, res, url, parts) {
           return;
         }
       }
-      audit.log("event_team_changed", {
+      audit.log(isInitialTeam ? "event_team_assigned" : "event_team_changed", {
         userId: authPatch.user?.id || "secret",
         roomId: id,
-        action: `${prev.teamId || "—"}→${nextTeam || "—"}`,
+        action: `${prevTeam || "—"}→${nextTeam || "—"}`,
       });
     }
     const patch = { ...(body || {}) };
     if (!permissions.canChangeEventTeam(authPatch.user) && !authPatch.viaSecret) {
-      delete patch.teamId;
+      /* Erstzuordnung für Editoren erlauben, Team-Wechsel entfernen. */
+      if (patch.teamId != null) {
+        const proposed = String(patch.teamId || "").trim();
+        if (!isInitialTeam || !proposed || proposed === prevTeam) {
+          delete patch.teamId;
+        }
+      }
     }
     if (
       (patch.status === "active" || patch.status === "ended") &&
