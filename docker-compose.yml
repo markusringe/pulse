@@ -1,6 +1,9 @@
 x-pulse: &pulse
   build: .
   restart: unless-stopped
+  # Installations-Kennwort und Auth-Flags liegen in .env — ohne env_file kennt der Container sie nicht.
+  env_file:
+    - .env
   environment:
     PORT: "3000"
     ADMIN_SECRET: ${ADMIN_SECRET:-bitte-in-produktion-setzen}
@@ -9,6 +12,12 @@ x-pulse: &pulse
     BATCH_INTERVAL_MS: "100"
     SSL_DIR: /app/data/ssl
     HTTPS_PORT: ${HTTPS_PORT:-3443}
+    USER_AUTH_ENABLED: ${USER_AUTH_ENABLED:-1}
+    BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-admin}
+    BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@localhost}
+    BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+    AUTH_DEV_MAILBOX: ${AUTH_DEV_MAILBOX:-0}
+    AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-}
     # Optional: Prefix für /css /js /assets in index.html (eigenes CDN).
     # ASSET_BASE: ${ASSET_BASE:-}
   volumes:

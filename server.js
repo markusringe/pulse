@@ -35,7 +35,7 @@ const permissions = require("./lib/permissions");
 const userService = require("./lib/userService");
 const emailService = require("./lib/emailService");
 const pinLimiter = require("./lib/pinLimiter");
-const { ensureBootstrapAdmin } = require("./lib/bootstrapAdmin");
+const { ensureBootstrapAdmin, bootstrapCredentials } = require("./lib/bootstrapAdmin");
 const updateService = require("./lib/updateService");
 const emailApi = require("./lib/emailApi");
 const backupService = require("./lib/backupService");
@@ -215,6 +215,8 @@ bus.onRemote((code, envelope) => {
         console.log(`[bootstrap] Bereit: ${bootstrap.email}`);
       } else if (bootstrap.reason === "password_synced") {
         console.log(`[bootstrap] Installations-Kennwort synchronisiert: ${bootstrap.email}`);
+      } else if (bootstrap.reason === "exists" && !bootstrapCredentials().envPasswordSet) {
+        console.warn("[bootstrap] Admin existiert, aber BOOTSTRAP_ADMIN_PASSWORD fehlt — Login mit INSTALL-CREDENTIALS schlägt fehl bis .env im Container ist");
       }
     } catch (err) {
       console.error("[bootstrap]", err);
