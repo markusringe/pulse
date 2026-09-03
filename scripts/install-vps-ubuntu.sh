@@ -742,6 +742,18 @@ install_letsencrypt() {
   fi
 }
 
+# .env-Schlüssel sicher setzen (Sonderzeichen im Kennwort werden nicht von sed zerstört).
+set_env_var() {
+  local env_file="$1"
+  local key="$2"
+  local value="$3"
+  local tmp
+  tmp="$(mktemp)"
+  grep -v "^${key}=" "$env_file" > "$tmp" 2>/dev/null || true
+  printf '%s=%s\n' "$key" "$value" >> "$tmp"
+  mv "$tmp" "$env_file"
+}
+
 # Optionale Benutzerverwaltung in .env eintragen — ohne SMTP (später in #/admin/email).
 AUTH_CREDS_EXTRA=""
 ADMIN_SECRET_VALUE=""
@@ -749,11 +761,9 @@ configure_user_auth() {
   local env_file="$1"
   printf 'USER_AUTH_ENABLED=1\n' >> "$env_file"
   printf 'AUTH_DEV_MAILBOX=0\n' >> "$env_file"
-  cat >> "$env_file" <<EOF
-BOOTSTRAP_ADMIN_NAME=${INSTALL_ADMIN_NAME}
-BOOTSTRAP_ADMIN_EMAIL=${INSTALL_ADMIN_EMAIL}
-BOOTSTRAP_ADMIN_PASSWORD=${INSTALL_ADMIN_PASSWORD}
-EOF
+  printf 'BOOTSTRAP_ADMIN_NAME=%s\n' "$INSTALL_ADMIN_NAME" >> "$env_file"
+  printf 'BOOTSTRAP_ADMIN_EMAIL=%s\n' "$INSTALL_ADMIN_EMAIL" >> "$env_file"
+  printf 'BOOTSTRAP_ADMIN_PASSWORD=%s\n' "$INSTALL_ADMIN_PASSWORD" >> "$env_file"
   AUTH_CREDS_EXTRA="
 Benutzerverwaltung: aktiv (USER_AUTH_ENABLED=1)
 Bootstrap-Admin E-Mail: ${INSTALL_ADMIN_EMAIL}
@@ -824,17 +834,9 @@ write_env_file() {
     configure_user_auth "$env_file"
   elif [ -n "$INSTALL_ADMIN_EMAIL" ] && [ -n "$INSTALL_ADMIN_PASSWORD" ]; then
     grep -q '^AUTH_DEV_MAILBOX=' "$env_file" && sed -i 's/^AUTH_DEV_MAILBOX=.*/AUTH_DEV_MAILBOX=0/' "$env_file" || printf 'AUTH_DEV_MAILBOX=0\n' >> "$env_file"
-    for key_val in \
-      "BOOTSTRAP_ADMIN_NAME=${INSTALL_ADMIN_NAME}" \
-      "BOOTSTRAP_ADMIN_EMAIL=${INSTALL_ADMIN_EMAIL}" \
-      "BOOTSTRAP_ADMIN_PASSWORD=${INSTALL_ADMIN_PASSWORD}"; do
-      key="${key_val%%=*}"
-      if grep -q "^${key}=" "$env_file" 2>/dev/null; then
-        sed -i "s|^${key}=.*|${key_val}|" "$env_file"
-      else
-        printf '%s\n' "$key_val" >> "$env_file"
-      fi
-    done
+    set_env_var "$env_file" "BOOTSTRAP_ADMIN_NAME" "$INSTALL_ADMIN_NAME"
+    set_env_var "$env_file" "BOOTSTRAP_ADMIN_EMAIL" "$INSTALL_ADMIN_EMAIL"
+    set_env_var "$env_file" "BOOTSTRAP_ADMIN_PASSWORD" "$INSTALL_ADMIN_PASSWORD"
     AUTH_CREDS_EXTRA="
 Benutzerverwaltung: aktiv
 Bootstrap-Admin E-Mail: ${INSTALL_ADMIN_EMAIL}

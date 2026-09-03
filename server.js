@@ -206,7 +206,22 @@ bus.onRemote((code, envelope) => {
   enqueueBroadcast(code, envelope, { skipBus: true });
 });
 
-server.listen(PORT, "0.0.0.0", () => {
+/** Server erst starten, wenn Bootstrap-Admin bereit ist (Erstlogin sonst zu früh). */
+(async function startPulseServer() {
+  if (userDb.supported) {
+    try {
+      const bootstrap = await ensureBootstrapAdmin(userDb);
+      if (bootstrap.created) {
+        console.log(`[bootstrap] Bereit: ${bootstrap.email}`);
+      } else if (bootstrap.reason === "password_synced") {
+        console.log(`[bootstrap] Installations-Kennwort synchronisiert: ${bootstrap.email}`);
+      }
+    } catch (err) {
+      console.error("[bootstrap]", err);
+    }
+  }
+
+  server.listen(PORT, "0.0.0.0", () => {
   console.log(`Pulse läuft auf http://localhost:${PORT}`);
   console.log(
     `Persistenz: ${db.kind} · Bus: ${bus.redisEnabled ? "redis" : "in-process"} · Batch ${BATCH_INTERVAL}ms · IP-Sperre ${
@@ -227,13 +242,13 @@ server.listen(PORT, "0.0.0.0", () => {
     ssl.renewDue().catch((err) => console.error("[ssl-renew]", err));
   }, 60 * 60 * 1000);
   migrateEventDecks().catch((err) => console.error("[events-migrate]", err));
-  ensureBootstrapAdmin(userDb).catch((err) => console.error("[bootstrap]", err));
   sweepExpiredSessions().catch((err) => console.error("[sweep]", err));
   tickEventStatuses();
   ssl.renewDue().catch((err) => console.error("[ssl-renew]", err));
   updateService.onServerBoot().catch((err) => console.error("[update-boot]", err));
   updateService.startBackgroundChecks();
-});
+  });
+})();
 
 /* ----------------------------- REST -------------------------------- */
 

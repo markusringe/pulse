@@ -304,7 +304,7 @@ export async function fetchWithAuth(path, opts = {}) {
     state.nav = [];
     state.stepUpUntil = null;
     state.viaSecret = false;
-    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav37");
+    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav39");
     await showAdminLoginModal("/admin");
     throw new Error("Session abgelaufen");
   }

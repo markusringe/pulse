@@ -2,8 +2,8 @@
  * Admin-Login-Modal: erscheint beim Klick auf „Administration“ ohne gültige Session.
  */
 
-import { loadAuth, getAuthUser, isAuthEnabled } from "./authClient.js?v=nav37";
-import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav37";
+import { loadAuth, getAuthUser, isAuthEnabled } from "./authClient.js?v=nav39";
+import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav39";
 
 let dialogEl = null;
 /** Verhindert parallele Modals. */

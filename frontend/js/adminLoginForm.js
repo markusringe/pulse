@@ -14,8 +14,9 @@ import {
   isBootstrapPasswordLogin,
   isPasswordLoginMode,
   isPinLoginAvailable,
+  needsAuthBootstrap,
   getDevMailbox,
-} from "./authClient.js?v=nav37";
+} from "./authClient.js?v=nav39";
 
 /** Laufender Formularzustand pro Container-Instanz. */
 const instances = new WeakMap();
@@ -31,7 +32,7 @@ const instances = new WeakMap();
 
 /** Welcher Anmelde-Modus aktiv ist. */
 function resolveLoginMode() {
-  if (isBootstrapPasswordLogin()) return "bootstrap";
+  if (isBootstrapPasswordLogin() || needsAuthBootstrap()) return "bootstrap";
   if (isPasswordLoginMode() && !isPinLoginAvailable()) return "password";
   return "pin";
 }
@@ -89,7 +90,7 @@ function renderForm(container, state, options) {
   const title = options.title || "Anmelden";
   const bootstrapHint =
     loginMode === "bootstrap"
-      ? `<p class="login-bootstrap-hint muted">Erstmaliger Login — verwenden Sie das bei der Installation festgelegte Kennwort.</p>`
+      ? `<p class="login-bootstrap-hint muted">Erstmaliger Login — verwenden Sie die bei der Installation festgelegte E-Mail und das Kennwort (siehe INSTALL-CREDENTIALS.txt).</p>`
       : "";
   const passwordOnlyHint =
     loginMode === "password"
@@ -297,20 +298,36 @@ async function onPasswordLogin(container, state) {
   const pwInput = el(container, state.idPrefix, "password");
   state.email = (emailInput?.value || "").trim().toLowerCase();
   const password = pwInput?.value || "";
+  const bootstrapFlow =
+    state.loginMode === "bootstrap" || isBootstrapPasswordLogin() || needsAuthBootstrap();
+  const minLen = bootstrapFlow ? 4 : 8;
   if (!state.email.includes("@")) {
     setError(container, state, "Bitte geben Sie eine gültige E-Mail-Adresse ein.");
     return;
   }
-  if (!password || password.length < 8) {
-    setError(container, state, "Kennwort muss mindestens 8 Zeichen lang sein.");
+  if (!password || password.length < minLen) {
+    setError(
+      container,
+      state,
+      bootstrapFlow
+        ? `Kennwort muss mindestens ${minLen} Zeichen lang sein.`
+        : "Kennwort muss mindestens 8 Zeichen lang sein."
+    );
     return;
   }
   setError(container, state, "");
   const persistent = el(container, state.idPrefix, "persistent-pw")?.checked !== false;
-  const r =
-    state.loginMode === "bootstrap"
-      ? await bootstrapLogin(state.email, password, persistent)
-      : await loginPassword(state.email, password, persistent);
+
+  /** Bootstrap zuerst, bei Bedarf Fallback auf allgemeinen Kennwort-Login. */
+  let r = bootstrapFlow
+    ? await bootstrapLogin(state.email, password, persistent)
+    : await loginPassword(state.email, password, persistent);
+  if (!r.ok && bootstrapFlow && (r.status === 403 || r.status === 401)) {
+    r = await loginPassword(state.email, password, persistent);
+  }
+  if (!r.ok && !bootstrapFlow && isPasswordLoginMode()) {
+    r = await bootstrapLogin(state.email, password, persistent);
+  }
   if (!r.ok) {
     setError(container, state, r.data?.error || "Anmeldung fehlgeschlagen.");
     return;
