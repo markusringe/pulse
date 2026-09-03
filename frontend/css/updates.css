@@ -77,10 +77,10 @@
 }
 
 #admin-update-progress {
-  padding: 0 1rem 0.5rem;
+  padding: 0 var(--pad) 6px;
 }
 
-#admin-update-progress .update-progress-bar {
+.admin-chrome-progress .update-progress-bar {
   height: 4px;
 }
 

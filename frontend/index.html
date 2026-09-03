@@ -18,6 +18,10 @@
         var h = location.hash || "";
         if (/^#\/(present|join|stage|present-view|privacy|impressum|admin|help)\b/.test(h)) {
           document.documentElement.classList.add("route-booting");
+          /* Fallback: nie dauerhaft leer lassen, falls ein Modul nicht lädt. */
+          window.setTimeout(function () {
+            document.documentElement.classList.remove("route-booting");
+          }, 4000);
         }
       })();
     </script>
@@ -40,7 +44,7 @@
     <link rel="stylesheet" href="./css/stage.css" />
     <link rel="stylesheet" href="./css/events.css?v=nav24" />
     <link rel="stylesheet" href="./css/event-countdown.css?v=nav1" />
-    <link rel="stylesheet" href="./css/updates.css?v=nav1" />
+    <link rel="stylesheet" href="./css/updates.css?v=nav2" />
   </head>
   <body>
     <a class="skip-link" href="#app" data-i18n="nav.skip">Zum Inhalt springen</a>
@@ -72,10 +76,6 @@
             <a href="#/admin/users" data-admin-nav="users" data-i18n="admin.nav.users">Benutzer</a>
             <a href="#/admin/help" data-admin-nav="help" data-i18n="admin.nav.help">Hilfe</a>
           </nav>
-          <div id="admin-update-progress" class="update-progress-panel" hidden>
-            <p id="admin-update-progress-text" class="muted update-progress-label"></p>
-            <div class="update-progress-bar" aria-hidden="true"><div class="update-progress-fill"></div></div>
-          </div>
           <div class="admin-chrome-tools">
             <span id="admin-user-label" class="admin-user-label muted" hidden></span>
             <button type="button" id="btn-auth-logout" class="btn ghost btn-sm" hidden>Abmelden</button>
@@ -86,6 +86,10 @@
             </button>
             <a class="admin-back" href="#/" data-i18n="admin.back">← Mitmachen</a>
           </div>
+        </div>
+        <div id="admin-update-progress" class="update-progress-panel admin-chrome-progress" hidden>
+          <p id="admin-update-progress-text" class="muted update-progress-label"></p>
+          <div class="update-progress-bar" aria-hidden="true"><div class="update-progress-fill"></div></div>
         </div>
       </header>
       <!-- Anmeldung mit E-Mail-PIN (#/admin/login) -->
@@ -976,6 +980,6 @@
     </aside>
 
     <script type="module" src="./js/help.js?v=nav12"></script>
-    <script type="module" src="./js/app.js?v=nav33"></script>
+    <script type="module" src="./js/app.js?v=nav34"></script>
   </body>
 </html>

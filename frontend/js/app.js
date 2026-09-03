@@ -38,7 +38,6 @@ import { loadAuth, ensureAdminAccess, applyAdminNavVisibility, getAuthUser, isAu
 import { showLoginPage, initAuthOnBoot } from "./loginPage.js?v=nav32";
 import { showUsersPage } from "./usersAdmin.js?v=nav30";
 import { showProfilePage } from "./profilePage.js?v=nav30";
-import { showUpdatesPage, bindUpdateWsEvents } from "./updatesPage.js?v=nav33";
 import { ensureStepUp } from "./stepUp.js?v=nav30";
 import { bindEvents, showEventsPage, loadHomeEvents, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav30";
 import {
@@ -246,14 +245,23 @@ try {
 } catch (err) {
   console.error("[boot]", err);
 }
-bootUi();
-route();
+
+/**
+ * Auth vor dem ersten route() laden — sonst kurz falsche View oder leere Admin-Seite.
+ */
+(async function pulseBoot() {
+  try {
+    const needsLogin = await initAuthOnBoot();
+    route(needsLogin ? "/admin/login" : undefined);
+  } catch (err) {
+    console.error("[route]", err);
+    document.documentElement.classList.remove("route-booting");
+    showView("home");
+  }
+  bootUi();
+})();
 
 async function bootUi() {
-  const needsLoginRedirect = await initAuthOnBoot();
-  if (needsLoginRedirect) {
-    route("/admin/login");
-  }
   let branding;
   try {
     branding = (await api.getBranding())?.branding;
@@ -497,7 +505,13 @@ function route(forcedHash) {
   if (hash === "/admin/updates") {
     teardownRealtime();
     showView("updates");
-    showUpdatesPage();
+    import("./updatesPage.js?v=nav34")
+      .then((m) => m.showUpdatesPage())
+      .catch((err) => {
+        console.error("[updates-page]", err);
+        const msg = document.getElementById("update-msg");
+        if (msg) msg.textContent = "Updates-Modul konnte nicht geladen werden — bitte Seite neu laden (Strg+F5).";
+      });
     return;
   }
   if (isLegacyEventJoinHash(hash)) {
@@ -1111,7 +1125,10 @@ function connectRealtime(role) {
       els.joinConnectionStatus.dataset.state = "connecting";
     }
   });
-  bindUpdateWsEvents(rt);
+  /* Update-Fortschritt optional anbinden (Modul darf Admin-Start nicht blockieren). */
+  import("./updatesPage.js?v=nav34")
+    .then((m) => m.bindUpdateWsEvents(rt))
+    .catch(() => {});
   rt.on("pong", (payload) => {
     const now = payload?.serverNow ?? payload?.ts;
     if (now != null) ctx.eventClockSkew = Number(now) - Date.now();
