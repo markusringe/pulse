@@ -1,9 +1,11 @@
 # Pulse — Benutzerhilfe
 
 Zusammenfassung der In-App-Hilfe (`#/help`, `#/admin/help`) als druckbares Markdown-Dokument.  
-**Stand:** Katalog **Version 6** · App **Pulse** · **22 Artikel** · September 2026.
+**Stand:** Programmversion **v1.2.1** · Hilfe-Katalog **Version 9** · **25 Artikel** · 2026-09-03.
 
 Die interaktive Hilfe mit Rollenfilter, Suche, Tour und Feedback liegt im Frontend unter `frontend/help/`. Dieses Dokument spiegelt die gleiche Struktur für Admins, Redaktion und Schulungsunterlagen.
+
+**Versionspflege:** Nach Änderung der Version in `package.json` bitte `npm run docs:sync-version` ausführen — dann stimmen In-App-Hilfe, HTML-Artikel und diese Markdown-Datei mit der Programmversion überein. Live-Stand auch unter `#/admin/updates` und `GET /api/health`.
 
 ---
 
@@ -244,7 +246,7 @@ Timer 5–60 s; mehrere richtige Antworten; Teams; Power-Ups (50:50, Doppelpunkt
 
 ## 11. Administration
 
-Menü: **Sessions** · **Events** · **Branding** · **Datenschutz** · **SSL** · **Einstellungen** · **Hilfe**
+Menü: **Sessions** · **Events** · **Teams** · **Branding** · **Datenschutz** · **SSL** · **E-Mail** · **Einstellungen** · **Updates** · **Backups** · **Benutzer** · **Hilfe**
 
 | Schlüssel | Zweck |
 |---|---|
@@ -253,6 +255,13 @@ Menü: **Sessions** · **Events** · **Branding** · **Datenschutz** · **SSL** 
 | ADMIN_SECRET | Server-API (`.env`) |
 
 Deck eines Events: `#/admin/sessions/<code>`. Settings-Export `pulse-settings.json` Schema 2 — **ohne** Sessions, Events, Audit.
+
+### Instanz-Backups (`#/admin/backups`)
+
+- **Backup erstellen** — ZIP mit Datenbank, JSON, SSL, Uploads; Download startet automatisch.
+- **Gruppenweise Wiederherstellung** — Bereiche wie in der Admin-Navigation wählen. **Versionshinweis:** Abweichende Backup-Version → automatische Migration (`dataMigration.js`).
+- **Erstlogin:** Nach Bootstrap-Anmeldung optional `#/admin/onboarding` — Backup hochladen statt Shell-Installer.
+- **Automatische Backups** — täglich/wöchentlich, Aufbewahrung konfigurierbar.
 
 ---
 
@@ -267,6 +276,10 @@ sudo ./scripts/install-vps-ubuntu.sh   # VPS
 ```
 
 Daten in `./data/` (`pulse.db`, JSON, `ssl/`). Zugangsdaten VPS: `INSTALL-CREDENTIALS.txt`.
+
+**Backup bei Erstlogin:** Nach der ersten Anmeldung mit E-Mail + Installations-Kennwort erscheint `#/admin/onboarding` — dort optional Backup hochladen (nicht im Shell-Installer).
+
+**Laufender Betrieb:** `#/admin/backups` oder regelmäßig `./data/` sichern.
 
 ---
 
@@ -392,8 +405,8 @@ Im Browser: Drucken → „Als PDF sichern“. Version und Datum im Guide-Kopf.
 | `docs/installation.md` | Installation |
 | `docs/projektdokumentation.md` | Technische Spezifikation |
 | `docs/verfahrensverzeichnis.md` | DSGVO Art. 30 |
-| `frontend/help/articles.json` | Hilfe-Katalog v6 (22 Artikel) |
+| `frontend/help/articles.json` | Hilfe-Katalog v9 · Programm v1.2.1 (25 Artikel) |
 
 ---
 
-*Bei Abweichungen gilt der Stand der HTML-Artikel unter `frontend/help/` (Version in `articles.json`).*
+*Bei Abweichungen gilt der Stand der HTML-Artikel unter `frontend/help/` (Programmversion **v1.2.1**, Katalog-Version in `articles.json`).*

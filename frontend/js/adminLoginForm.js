@@ -333,6 +333,11 @@ async function onPasswordLogin(container, state) {
     return;
   }
   disposeLoginForm(container);
+  if (r.data?.bootstrapCompleted) {
+    if (r.data.requiresPinSetup) sessionStorage.setItem("pulse:requires-pin-setup", "1");
+    state.options.onSuccess?.("#/admin/onboarding");
+    return;
+  }
   if (r.data?.requiresPinSetup) {
     state.options.onSuccess?.("#/admin/email");
     return;

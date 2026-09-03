@@ -2,7 +2,7 @@
 
 Anleitung zum lokalen Testen und zum Produktivbetrieb. Voraussetzungen, Schnellstart per Skript, manuelle Schritte und Docker Compose.
 
-**Stand:** Ist-Zustand aus dem Repository (Node ≥ 22, npm, optional Docker Compose).
+**Stand:** Programmversion **v1.2.1** · Ist-Zustand aus dem Repository (Node ≥ 22, npm, optional Docker Compose).
 
 ---
 
@@ -237,7 +237,9 @@ Compose bindet das Host-Verzeichnis **`./data`** nach **`/app/data`** in den App
 
 Weitere Docker-Volumes: `redis-data`, `prometheus-data`, `grafana-data`.
 
-**Backup:** regelmäßig `./data/` sichern (komplettes Verzeichnis).
+**Backup bei Erstlogin:** Nach der ersten Anmeldung mit Installations-Kennwort erscheint `#/admin/onboarding` — dort optional eine Backup-ZIP hochladen und Bereiche gruppenweise einspielen. Laufender Betrieb: `#/admin/backups`. Bei abweichender Backup-Version führt Pulse automatisch Migrations-Skripte aus.
+
+**Gruppen bei Wiederherstellung:** Sessions, Events, Teams, Benutzer, Branding, Datenschutz, SSL, E-Mail, Betrieb, Uploads, `.env` — entsprechend der Admin-Navigation.
 
 **SQLite auf gemeinsamem Volume ist nicht multi-writer-sicher.** Für zwei App-Container in Produktion besser `DATABASE_URL` (PostgreSQL) setzen und Paket `pg` installieren.
 
@@ -297,6 +299,8 @@ Daten in `data/` bzw. im Volume `pulse-data` bleiben erhalten.
 
 Weitere Betriebsdetails: `docs/projektdokumentation.md` (Abschnitt 6), Funktionsübersicht: `README.md`.
 
+**Dokumentations-Version:** Bei jeder Versionsänderung in `package.json` einmal `npm run docs:sync-version` ausführen — aktualisiert Hilfe-Katalog, Markdown-Doku und HTML-Fußzeilen auf dieselbe Programmversion.
+
 ---
 
 ## 8. Verwandte Dateien
@@ -307,7 +311,7 @@ Weitere Betriebsdetails: `docs/projektdokumentation.md` (Abschnitt 6), Funktions
 | `scripts/install-vps-ubuntu.sh` | VPS Ubuntu: Docker installieren, Stack starten, Daten seeden |
 | `scripts/seed-data.sh` | Grundeinstellungen in `data/` (nur fehlende Dateien) |
 | `.env.example` | Vorlage für Umgebungsvariablen |
-| `package.json` | npm-Skripte (`start`, `test`, `migrate:events`) |
+| `package.json` | npm-Skripte (`start`, `test`, `migrate:events`, `docs:sync-version`) |
 | `Dockerfile` | App-Image (Node 22 Alpine) |
 | `docker-compose.yml` | Stack mit pulse, pulse-b, redis, nginx, Prometheus, Grafana |
 | `deploy/nginx.conf` | Reverse Proxy, WebSocket-Sticky |

@@ -44,7 +44,7 @@ readonly DEFAULT_INSTALL_DIR="/opt/pulse"
 readonly DEFAULT_GIT_URL="https://github.com/markusringe/pulse.git"
 readonly DEFAULT_GIT_BRANCH="main"
 readonly PULSE_REPO="markusringe/pulse"
-readonly PULSE_INSTALLER_VER="2.4"
+readonly PULSE_INSTALLER_VER="2.5"
 
 # --- Optionen (werden per getopts-Loop gesetzt) ---
 INSTALL_DIR=""
@@ -68,7 +68,7 @@ INSTALL_ADMIN_NAME="admin"
 INSTALL_ADMIN_PASSWORD=""
 
 STEP=0
-TOTAL_STEPS=10
+TOTAL_STEPS=11
 
 # =============================================================================
 # Robuste Pfadermittlung — funktioniert lokal, per curl|bash und nach Download.
@@ -334,6 +334,51 @@ install_nodejs() {
   ok "Node.js installiert: $(node -v), npm $(npm -v)"
 }
 
+# Postfix/Sendmail für PIN-E-Mails (npm-Modus auf dem Host — Docker-Image bringt Postfix mit)
+install_sendmail() {
+  step
+  log "Sendmail/Postfix für PIN-E-Mails prüfen…"
+  if command -v sendmail >/dev/null 2>&1 || [ -x /usr/sbin/sendmail ]; then
+    ok "Sendmail vorhanden: $(command -v sendmail 2>/dev/null || echo /usr/sbin/sendmail)"
+  else
+    log "Postfix installieren (Versand nach außen, nur localhost lauscht)…"
+    debconf-set-selections <<'DEBCONF' || true
+postfix postfix/mailname string localhost
+postfix postfix/main_mailer_type select Internet Site
+DEBCONF
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postfix libsasl2-modules \
+      || die "Postfix-Installation fehlgeschlagen — PIN-E-Mails benötigen Sendmail."
+    ok "Postfix installiert"
+  fi
+  postconf -e 'inet_interfaces=loopback-only' 2>/dev/null || true
+  postconf -e 'mynetworks=127.0.0.0/8 [::1]/128' 2>/dev/null || true
+  postconf -e 'mydestination=localhost, $myhostname' 2>/dev/null || true
+  postconf -e 'smtpd_relay_restrictions=permit_mynetworks,reject_unauth_destination' 2>/dev/null || true
+  postconf -e 'smtpd_recipient_restrictions=permit_mynetworks,reject' 2>/dev/null || true
+  systemctl enable postfix 2>/dev/null || true
+  systemctl restart postfix 2>/dev/null || true
+  ok "Postfix abgesichert (nur localhost, Versand nach außen möglich)"
+}
+
+configure_pulse_sendmail() {
+  local dir="$1"
+  log "Pulse-E-Mail-Konfiguration auf Sendmail setzen…"
+  if (cd "$dir" && node -e "
+    require('./lib/sendmailSetup')
+      .ensureSendmailForPulse({ allowInstall: false })
+      .then((r) => {
+        if (r.configured) console.log('[sendmail] Standard-Versand aktiviert:', r.sendmailPath);
+        else if (r.sendmailPath) console.log('[sendmail] Sendmail bereit:', r.sendmailPath);
+        else console.warn('[sendmail] Kein Sendmail-Binary gefunden');
+      })
+      .catch((e) => { console.warn('[sendmail]', e.message || e); process.exit(0); });
+  "); then
+    ok "Sendmail als Standard-Versand konfiguriert"
+  else
+    warn "Sendmail-Konfiguration übersprungen — später unter #/admin/email einrichten"
+  fi
+}
+
 install_docker() {
   if [ "$SKIP_DOCKER" -eq 1 ]; then
     step
@@ -414,7 +459,7 @@ ensure_data_dir() {
   ok "data/ angelegt"
 }
 
-# Interaktive Konfiguration: Domain, optional Let's Encrypt, Admin-Kennwort.
+# Interaktive Konfiguration: optional Backup, Domain, SSL, Admin-Kennwort.
 configure_interactive() {
   if [ -n "${PULSE_DOMAIN:-}" ]; then
     INSTALL_DOMAIN="$PULSE_DOMAIN"
@@ -992,9 +1037,9 @@ print_summary() {
 
   Nächste Schritte:
     1. Anwendung starten (falls noch nicht läuft)
-    2. Erstlogin mit E-Mail + Installations-Kennwort
-    3. E-Mail-Versand unter #/admin/email einrichten (SMTP/Sendmail)
-    4. Danach Anmeldung per E-Mail-PIN möglich
+    2. Erstlogin mit E-Mail + Installations-Kennwort — optional Backup unter #/admin/onboarding einspielen
+    3. PIN-Versand läuft standardmäßig per Sendmail (Postfix); SMTP optional unter #/admin/email
+    4. Vollständige Backups und gruppenweise Wiederherstellung unter #/admin/backups
 
   Dokumentation: docs/installation.md
   Repository:    https://github.com/${PULSE_REPO}
@@ -1045,7 +1090,9 @@ main() {
     write_env_file "$dir"
     configure_server_domain "$dir"
     configure_firewall
+    install_sendmail
     start_npm_stack "$dir"
+    configure_pulse_sendmail "$dir"
   else
     install_docker
     prepare_project "$dir"

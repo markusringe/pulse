@@ -1,12 +1,12 @@
 /**
  * Admin-UI für vollständige Instanz-Backups (#/admin/backups).
- * ZIP-Erstellung, Download, Upload und Wiederherstellung.
+ * ZIP-Erstellung, Download, Upload und gruppenweise Wiederherstellung.
  */
 
-import { api } from "./websocket.js?v=nav20";
-import { ensureStepUp, withStepUp } from "./stepUp.js?v=nav42";
-import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav42";
-import { syncAdminNav } from "./adminNav.js?v=nav42";
+import { api } from "./websocket.js?v=nav44";
+import { withStepUp } from "./stepUp.js?v=nav44";
+import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav44";
+import { syncAdminNav } from "./adminNav.js?v=nav44";
 
 function $(id) {
   return document.getElementById(id);
@@ -109,13 +109,6 @@ async function loadBackups() {
 /** Neues Backup erstellen und Download starten. */
 async function onCreateBackup() {
   const btn = $("backup-create-btn");
-  if (!(await ensureStepUp())) {
-    setMsg(
-      "Bestätigung erforderlich — geben Sie Ihren Anmeldecode ein oder melden Sie sich erneut an.",
-      true
-    );
-    return;
-  }
   if (btn) {
     btn.disabled = true;
     btn.textContent = "Backup wird erstellt…";
@@ -147,18 +140,109 @@ function downloadBackup(filename) {
   window.location.href = `/api/backups/download/${encodeURIComponent(filename)}`;
 }
 
-/** Backup wiederherstellen (mit Bestätigung). */
+let restoreDialogEl = null;
+
+/** Modal für gruppenweise Wiederherstellung. */
+function ensureRestoreDialog() {
+  if (restoreDialogEl) return restoreDialogEl;
+  restoreDialogEl = document.createElement("dialog");
+  restoreDialogEl.id = "backup-restore-dialog";
+  restoreDialogEl.className = "modal backup-restore-dialog";
+  restoreDialogEl.innerHTML = `
+    <form method="dialog" class="panel" id="backup-restore-form">
+      <h2>Backup wiederherstellen</h2>
+      <p class="muted" id="backup-restore-filename"></p>
+      <p class="muted">Wählen Sie die Bereiche, die eingespielt werden sollen (gruppiert wie in der Administration):</p>
+      <div id="backup-restore-groups" class="backup-restore-groups"></div>
+      <p class="muted backup-restore-hint">Nicht ausgewählte Bereiche bleiben unverändert. Der Server startet danach neu.</p>
+      <p id="backup-restore-msg" class="muted" role="status"></p>
+      <menu class="modal-actions">
+        <button type="button" class="btn ghost" id="backup-restore-cancel">Abbrechen</button>
+        <button type="submit" class="btn primary btn-warning">Wiederherstellen</button>
+      </menu>
+    </form>`;
+  document.body.appendChild(restoreDialogEl);
+  restoreDialogEl.querySelector("#backup-restore-cancel")?.addEventListener("click", () => restoreDialogEl.close(false));
+  return restoreDialogEl;
+}
+
+/**
+ * Checkbox-Gruppen aus Inspect-Antwort rendern.
+ * @param {object} inspect
+ */
+function renderRestoreGroups(inspect) {
+  const host = $("backup-restore-groups");
+  if (!host) return;
+  const available = inspect.available || {};
+  const version = inspect.versionInfo;
+  const versionHtml = version
+    ? `<p class="onboarding-version ${version.status === "match" ? "muted" : "backup-version-warn"}" role="status">${esc(version.message || "")}</p>`
+    : "";
+  host.innerHTML = `${versionHtml}${(inspect.groups || [])
+    .map((section) => {
+      const items = (section.items || [])
+        .map((item) => {
+          const present = available[item.id] === true;
+          const disabled = !present ? " disabled" : "";
+          const hint = present ? "" : " (nicht im Backup)";
+          return `<label class="backup-restore-item${disabled ? " is-missing" : ""}">
+            <input type="checkbox" name="restore-group" value="${esc(item.id)}"${present ? " checked" : ""}${disabled} />
+            <span>${esc(item.label)}${esc(hint)}</span>
+          </label>`;
+        })
+        .join("");
+      return `<fieldset class="backup-restore-section">
+        <legend>${esc(section.label)}</legend>
+        ${items}
+      </fieldset>`;
+    })
+    .join("");
+}
+
+/**
+ * Dialog: Gruppen wählen und Wiederherstellung starten.
+ * @param {string} filename
+ */
 async function restoreBackup(filename) {
-  if (
-    !confirm(
-      `Backup „${filename}“ wirklich wiederherstellen?\n\nDer Server wird neu gestartet. Aktive Sessions werden kurz unterbrochen.`
-    )
-  ) {
+  const dlg = ensureRestoreDialog();
+  const fnEl = dlg.querySelector("#backup-restore-filename");
+  const msgEl = dlg.querySelector("#backup-restore-msg");
+  if (fnEl) fnEl.textContent = `Datei: ${filename}`;
+  if (msgEl) msgEl.textContent = "Lade Backup-Informationen…";
+
+  const inspect = await withStepUp(() => api.backupsInspect(filename));
+  if (!inspect?.ok) {
+    setMsg(inspect?.data?.error || "Backup konnte nicht gelesen werden.", true);
     return;
   }
-  if (!(await ensureStepUp())) return;
+  renderRestoreGroups(inspect.data);
+  if (msgEl) msgEl.textContent = "";
+
+  const groups = await new Promise((resolve) => {
+    const form = dlg.querySelector("#backup-restore-form");
+    const onClose = () => {
+      form?.removeEventListener("submit", onSubmit);
+      dlg.removeEventListener("close", onClose);
+      resolve(dlg.returnValue === "ok" ? collectSelectedGroups(dlg) : null);
+    };
+    const onSubmit = (ev) => {
+      ev.preventDefault();
+      const selected = collectSelectedGroups(dlg);
+      if (!selected.length) {
+        if (msgEl) msgEl.textContent = "Bitte mindestens einen Bereich auswählen.";
+        return;
+      }
+      dlg.close("ok");
+    };
+    form?.addEventListener("submit", onSubmit);
+    dlg.addEventListener("close", onClose);
+    dlg.showModal();
+  });
+
+  if (!groups?.length) return;
+
   setMsg("Wiederherstellung läuft…");
-  const r = await withStepUp(() => api.backupsRestore({ filename }));
+  const r = await withStepUp(() => api.backupsRestore({ filename, groups }));
   if (!r?.ok) {
     setMsg(r?.data?.error || "Wiederherstellung fehlgeschlagen.", true);
     showToast("Wiederherstellung fehlgeschlagen", "error");
@@ -169,6 +253,11 @@ async function restoreBackup(filename) {
   setTimeout(() => window.location.reload(), 5000);
 }
 
+/** Ausgewählte Gruppen-IDs aus dem Dialog lesen. */
+function collectSelectedGroups(dlg) {
+  return [...dlg.querySelectorAll('input[name="restore-group"]:checked')].map((el) => el.value);
+}
+
 /** ZIP-Backup hochladen. */
 async function onUploadBackup() {
   const input = $("backup-upload-file");
@@ -177,7 +266,6 @@ async function onUploadBackup() {
     showToast("Bitte wählen Sie eine ZIP-Datei aus.", "warning");
     return;
   }
-  if (!(await ensureStepUp())) return;
   const btn = $("backup-upload-btn");
   if (btn) {
     btn.disabled = true;
@@ -206,7 +294,6 @@ async function onUploadBackup() {
 /** Auto-Backup-Einstellungen speichern. */
 async function onSaveConfig(ev) {
   ev.preventDefault();
-  if (!(await ensureStepUp())) return;
   const body = {
     enabled: $("backup-auto-enabled")?.checked !== false,
     interval: $("backup-interval")?.value === "weekly" ? "weekly" : "daily",

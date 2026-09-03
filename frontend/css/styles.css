@@ -1195,6 +1195,57 @@ body.admin-area .view:not([hidden]) {
   color: var(--danger, #c0392b);
 }
 
+.backup-restore-dialog .panel {
+  max-width: 36rem;
+  max-height: 85vh;
+  overflow: auto;
+}
+
+.backup-restore-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.backup-restore-section {
+  border: 1px solid var(--border, #ddd);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem 0.65rem;
+  margin: 0;
+}
+
+.backup-restore-section legend {
+  font-weight: 600;
+  padding: 0 0.35rem;
+}
+
+.backup-restore-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0.35rem 0;
+  font-size: 0.92rem;
+}
+
+.backup-restore-item.is-missing {
+  opacity: 0.55;
+}
+
+.backup-restore-hint {
+  font-size: 0.88rem;
+}
+
+.backup-version-warn {
+  color: var(--warn-text, #d35400);
+  font-size: 0.92rem;
+  margin-bottom: 0.5rem;
+}
+
+.onboarding-panel {
+  max-width: 40rem;
+}
+
 .btn-warning {
   border-color: var(--warn-border, #e67e22);
   color: var(--warn-text, #d35400);

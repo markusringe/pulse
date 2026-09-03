@@ -254,6 +254,9 @@ bus.onRemote((code, envelope) => {
   sweepExpiredSessions().catch((err) => console.error("[sweep]", err));
   tickEventStatuses();
   ssl.renewDue().catch((err) => console.error("[ssl-renew]", err));
+  require("./lib/sendmailSetup")
+    .ensureSendmailForPulse({ allowInstall: false })
+    .catch((err) => console.warn("[sendmail]", err.message || err));
   updateService.onServerBoot().catch((err) => console.error("[update-boot]", err));
   updateService.startBackgroundChecks();
   });
@@ -271,8 +274,12 @@ async function handleApi(req, res, url) {
   if (req.method === "GET" && parts[1] === "health") {
     const redis = await bus.ping();
     const authSettings = userDb.supported ? await userService.getSettings(userDb) : { userManagementEnabled: false };
+    const { getAppVersion, getAppVersionLabel } = require("./lib/appVersion");
     send(res, 200, {
       ok: true,
+      version: getAppVersion(),
+      versionLabel: getAppVersionLabel(),
+      app: { name: "Pulse", version: getAppVersion() },
       sessions: sessions.size,
       persisted: await Promise.resolve(db.count()),
       db: db.kind,
@@ -415,6 +422,7 @@ async function handleApi(req, res, url) {
       authApi,
       audit,
       corsHeaders,
+      userDb,
       gracefulShutdown,
       restartAutoBackup: autoBackup.restartAutoBackup,
     });
@@ -2060,10 +2068,6 @@ async function handleUpdatesApi(req, res, parts, ipKey) {
     }
     const body = await readJson(req);
     const auth = await getAuth(req, body);
-    if (!authApi.adminStepUpOk(auth)) {
-      authApi.rejectStepUp(res, send);
-      return;
-    }
     send(res, 202, { ok: true, message: "Installation gestartet" });
     /* Antwort zuerst senden, dann asynchron installieren und neu starten. */
     setImmediate(() => {

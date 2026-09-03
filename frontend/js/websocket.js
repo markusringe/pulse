@@ -595,6 +595,54 @@ export const api = {
     return requestResult("GET", "/backups/list");
   },
 
+  /** Backup-ZIP inspizieren (Upload, ohne Speicherung). */
+  async backupsInspectUpload(formData) {
+    try {
+      const headers = {};
+      if (api.adminKey) headers["X-Admin-Key"] = api.adminKey;
+      if (api.clientId) headers["X-Client-Id"] = api.clientId;
+      const res = await fetch(`${api.base}/backups/inspect`, {
+        method: "POST",
+        headers,
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch {
+      return { ok: false, status: 0, data: {} };
+    }
+  },
+
+  /** Backup bei Erstanmeldung einspielen. */
+  async backupsOnboardingRestore(formData) {
+    try {
+      const headers = {};
+      if (api.adminKey) headers["X-Admin-Key"] = api.adminKey;
+      if (api.clientId) headers["X-Client-Id"] = api.clientId;
+      const res = await fetch(`${api.base}/backups/onboarding`, {
+        method: "POST",
+        headers,
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch {
+      return { ok: false, status: 0, data: {} };
+    }
+  },
+
+  /** Backup-Gruppen-Katalog (Admin-Navigation). */
+  async backupsGroups() {
+    return requestResult("GET", "/backups/groups");
+  },
+
+  /** Backup inspizieren (verfügbare Gruppen). */
+  async backupsInspect(filename) {
+    return requestResult("GET", `/backups/inspect/${encodeURIComponent(filename)}`);
+  },
+
   /** Vollständiges ZIP-Backup erstellen. */
   async backupsCreate() {
     return requestResult("GET", "/backups/create");

@@ -2,7 +2,7 @@
 
 **Anwendung:** Pulse  
 **Verantwortliche Stelle:** Landeshauptstadt Saarbrücken  
-**Stand:** 2026-09-03  
+**Stand:** 2026-09-03 · **Programmversion:** v1.2.1
 **Fassung:** 5 (Entwurf)
 
 > **Entwurf für die/den Datenschutzbeauftragte/n — keine Rechtsberatung.**  
@@ -226,7 +226,7 @@ Es gelten DSGVO, BDSG und für öffentliche Stellen des Saarlandes das **Saarlä
 |---|---|
 | Bezeichnung | Hilfe, Tour, Druck-Guides |
 | Zwecke | Nutzerführung (Presenter, Teilnehmende, Admins); keine Verarbeitung personenbezogener Daten auf dem Server |
-| Datenkategorien | Hilfe-Inhalte in `frontend/help/` (HTML, Katalog `articles.json`, **Version 7**, Artikel **Auth/Login**, **Picker**). Markdown-Spiegel: `docs/hilfe.md`. Feedback ja/nein nur in `localStorage` (`pulse:help-feedback`, s. 5.3). Erstnutzer-Tour: `pulse:tour-done` / `pulse:tour-later`. |
+| Datenkategorien | Hilfe-Inhalte in `frontend/help/` (HTML, Katalog `articles.json`, **Version 9**, Programm **v1.2.1**; u. a. Auth/Login, Picker, Backups). Markdown-Spiegel: `docs/hilfe.md` (Programmversion im Kopf). Feedback ja/nein nur in `localStorage` (`pulse:help-feedback`, s. 5.3). Erstnutzer-Tour: `pulse:tour-done` / `pulse:tour-later`. |
 | Empfänger | Keine Übermittlung an Dritte; statische Dateien vom gleichen Server |
 | Löschung | Lokal auf dem Endgerät |
 
@@ -242,6 +242,21 @@ Es gelten DSGVO, BDSG und für öffentliche Stellen des Saarlandes das **Saarlä
 | Empfänger | SMTP-Relais (Abschnitt 4.1); sonst nur Server der Instanz |
 | Löschung | Benutzer löschen in `#/admin/users`; PINs nach Verbrauch/Ablauf bereinigt; Sitzungen bei Logout/Widerruf/Kennwortänderung |
 | Nicht enthalten | Teilnehmer-Login; SSO/LDAP; Passkeys/WebAuthn (nicht implementiert) |
+
+### 5.12 Unterposition — Instanz-Backups (ZIP, Admin)
+
+| Feld | Inhalt |
+|---|---|
+| Bezeichnung | Vollständige oder teilweise Sicherung/Wiederherstellung der Instanz (`#/admin/backups`, `lib/backupService.js`) |
+| Zwecke | Disaster Recovery, Migration, gezieltes Einspielen einzelner Admin-Bereiche |
+| Kategorien Betroffener | Instanz-Administratoren; Inhalte der gesicherten Bereiche (s. u.) |
+| Datenkategorien (Ist) | ZIP mit `pulse.db` (Sessions, Benutzer, Teams, Auth), `events.json`, `branding.json`, Privacy-JSON, `email-config.json`, `audit.json`, Backup-/Update-Konfiguration, `ssl/` (PEMs), `uploads/`, optional `.env`. Metadaten: `backup-metadata.json`. Speicherort: `data/backups/` (konfigurierbar `BACKUP_DIR`). |
+| Gruppenweise Wiederherstellung | Auswahl nach Admin-Bereichen — API `groups[]`; Erstlogin unter `#/admin/onboarding` |
+| Version / Migration | Abweichende `appVersion` in Metadaten → `lib/dataMigration.js` (Events-Legacy, SQL-Hinweise) |
+| Empfänger | Keine automatische Übermittlung; Download liegt beim Admin; Upload nur in lokales Backup-Verzeichnis |
+| Löschung | Manuelles Löschen in der UI; Auto-Backup-Aufbewahrung `retentionDays` (Default 7) |
+| DSB-Hinweis | Backups können **Private Keys**, Benutzerdaten und Session-Inhalte enthalten — wie Secrets behandeln, verschlüsselt lagern, Zugriff protokollieren |
+| Abgrenzung | Settings-Export (5.8) nur Branding/Privacy/SSL-Metadaten+PEM; Update-Backups nur für Code-Deployment |
 
 ---
 
@@ -262,6 +277,7 @@ Es gelten DSGVO, BDSG und für öffentliche Stellen des Saarlandes das **Saarlä
 | Instanz-Benutzer (`users`, PINs, Sessions) | Bis Löschung/Deaktivierung durch Admin | `#/admin/users`; Sweep abgelaufener PINs/Sessions |
 | SSL-Zertifikate / PEMs | Bis Löschen, Widerruf oder Ablauf | Admin-SSL / Dateisystem |
 | Settings-Backup | Aufbewahrung der Stelle (Datei liegt beim Downloadenden) | Kein Server-Archiv der Exports in der App |
+| Instanz-ZIP-Backups | Aufbewahrung der Stelle (`data/backups/`, Default 7 Tage Auto-Backup) | Admin-UI `#/admin/backups`; optional bei Installation |
 | Reaktionen | Keine Speicherung | Nur live |
 | Hilfe-Feedback | Nur lokal, kein Server | `pulse:help-feedback` |
 | VPS-Installationsdatei | Bis manuelle Löschung durch Betrieb | `INSTALL-CREDENTIALS.txt` (enthält `ADMIN_SECRET`, Grafana-Passwort; **nicht** in Git, chmod 600; außerhalb der App-Logik) |

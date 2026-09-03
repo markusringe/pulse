@@ -10,6 +10,7 @@ const state = {
   bootstrapPasswordLogin: false,
   passwordLoginMode: false,
   pinLoginAvailable: false,
+  onboardingBackupPending: false,
   loaded: false,
   stepUpUntil: null,
   /** Legacy-Zugriff per ADMIN_SECRET / X-Admin-Key (ohne Cookie-Login). */
@@ -52,6 +53,7 @@ export async function loadAuth() {
         : NAV_FALLBACK[state.user?.role] || [];
     state.stepUpUntil = me.data?.stepUpUntil || null;
     state.viaSecret = Boolean(me.data?.viaSecret);
+    state.onboardingBackupPending = Boolean(me.data?.onboardingBackupPending);
     if (state.viaSecret && !state.user) {
       state.nav = NAV_FALLBACK.admin;
     }
@@ -88,6 +90,7 @@ export async function refreshAuthMe() {
       ? me.data.nav
       : NAV_FALLBACK[me.data.user.role] || [];
     state.stepUpUntil = me.data.stepUpUntil || null;
+    state.onboardingBackupPending = Boolean(me.data.onboardingBackupPending);
   }
 }
 
@@ -223,6 +226,7 @@ export async function bootstrapLogin(email, password, persistent = true) {
     state.stepUpUntil = r.data.stepUpUntil || Date.now() + 15 * 60 * 1000;
     state.bootstrapPasswordLogin = false;
     state.passwordLoginMode = !state.pinLoginAvailable;
+    if (r.data.bootstrapCompleted) state.onboardingBackupPending = true;
   }
   return r;
 }
@@ -248,6 +252,17 @@ export async function loginPassword(email, password, persistent = true) {
 export async function submitStepUpPin(pin) {
   const r = await fetchJson("/auth/step-up", { method: "POST", body: { pin } });
   if (r.ok) state.stepUpUntil = r.data.stepUpUntil || Date.now() + 15 * 60 * 1000;
+  return r;
+}
+
+export function isOnboardingBackupPending() {
+  return state.onboardingBackupPending;
+}
+
+/** Ersteinrichtung „Backup einspielen“ überspringen. */
+export async function completeOnboardingBackup() {
+  const r = await fetchJson("/auth/onboarding-backup-done", { method: "POST" });
+  if (r.ok) state.onboardingBackupPending = false;
   return r;
 }
 

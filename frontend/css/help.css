@@ -696,6 +696,18 @@
   border-color: transparent;
 }
 
+.help-version-foot {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  max-width: 48rem;
+}
+
+.help-guide-version {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line, #ddd);
+}
+
 @media print {
   .help-no-print,
   .help-fab,

@@ -45,6 +45,18 @@ function assert(cond, msg) {
   const valid = await backupService.validateBackupZip(zipPath);
   assert(valid.valid, "ZIP gültig");
   assert(valid.metadata.appVersion === "1.0.0", "Metadaten Version");
+  assert(valid.groups?.length > 0, "Gruppen-Katalog");
+
+  await backupService.restoreFromBackup(zipPath, {
+    groups: ["branding"],
+    broadcast: false,
+  });
+  const branding = JSON.parse(fs.readFileSync("data/branding.json", "utf8"));
+  assert(branding.appName === "Test", "Selektives Branding-Restore");
+
+  const version = backupService.analyzeBackupVersion(valid.metadata);
+  assert(version.currentVersion === "1.0.0", "Aktuelle Version");
+  assert(version.status === "match", "Version match");
 
   const list = backupService.listBackups();
   assert(list.length === 1, "Ein Backup in Liste");

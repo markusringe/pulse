@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Instanz-Backups</title>
+</head>
+<body>
+  <h1>Instanz-Backups</h1>
+  <p>Unter <strong>#/admin/backups</strong> sichern Sie die gesamte Pulse-Instanz als ZIP-Datei oder stellen sie wieder her.</p>
+
+  <h2>Backup erstellen</h2>
+  <p>Klicken Sie auf <strong>Backup erstellen</strong>. Das ZIP enthält Datenbank, JSON-Konfigurationen, SSL-Zertifikate und Uploads. Der Download startet automatisch.</p>
+
+  <h2>Gruppenweise Wiederherstellung</h2>
+  <p>Bei <strong>Wiederherstellen</strong> wählen Sie die Bereiche — gruppiert wie in der Administration:</p>
+  <ul>
+    <li><strong>Sessions</strong> — Live-Umfragen, Folien, Antworten</li>
+    <li><strong>Events</strong> — Event-Stammdaten und Zugriffsrechte</li>
+    <li><strong>Teams & Benutzer</strong> — Organisation und Anmeldung</li>
+    <li><strong>Branding, Datenschutz, SSL, E-Mail</strong> — jeweilige Admin-Bereiche</li>
+    <li><strong>Einstellungen & Uploads</strong> — Audit, Betriebskonfiguration, Dateien</li>
+    <li><strong>.env</strong> — optional, nur bei vertrauenswürdiger Ablage</li>
+  </ul>
+  <p>Nicht ausgewählte Bereiche bleiben unverändert. Vor jeder Wiederherstellung legt Pulse automatisch ein Sicherungs-Backup an.</p>
+
+  <h2>Installation / Erstlogin</h2>
+  <p>Nach der <strong>ersten Anmeldung</strong> mit Installations-Kennwort erscheint <strong>#/admin/onboarding</strong>. Dort können Sie optional ein Backup hochladen und gruppenweise einspielen — nicht mehr im Shell-Installer.</p>
+  <p>Stimmt die Backup-Version nicht mit der installierten Pulse-Version überein, werden Migrations-Skripte automatisch ausgeführt.</p>
+
+  <h2>Abgrenzung</h2>
+  <p>Der <strong>Settings-Export</strong> auf der Branding-Seite enthält nur Branding, Datenschutz und SSL — keine Sessions oder Events. Update-Backups dienen dem Code-Deployment.</p>
+
+  <p><a href="#/admin/backups">Zur Backup-Verwaltung</a></p>
+
+  <footer class="help-guide-version">
+    <p class="muted">Pulse v1.2.1 · Hilfe-Katalog v9 · Dokumentation bezieht sich auf die installierte Programmversion.</p>
+  </footer>
+</body>
+</html>

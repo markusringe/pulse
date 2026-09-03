@@ -97,6 +97,24 @@
       </header>
       <!-- Anmeldung mit E-Mail-PIN (#/admin/login) -->
       <section id="view-login" class="view view-login" data-view="login" hidden></section>
+
+      <section id="view-onboarding" class="view view-onboarding branding-page" data-view="onboarding" hidden>
+        <h1>Ersteinrichtung</h1>
+        <p class="muted">Optional können Sie jetzt ein Backup einer früheren Pulse-Instanz einspielen. Wählen Sie die Bereiche wie in der Administration gruppiert.</p>
+        <div class="panel onboarding-panel">
+          <h2>Backup hochladen</h2>
+          <label class="field settings-file-label">
+            <span>ZIP-Backup-Datei</span>
+            <input type="file" id="onboarding-backup-file" accept=".zip,application/zip" />
+          </label>
+          <div id="onboarding-restore-groups" class="backup-restore-groups"></div>
+          <p id="onboarding-msg" class="muted" role="status"></p>
+          <p class="modal-actions">
+            <button type="button" id="onboarding-skip-btn" class="btn ghost">Überspringen — ohne Backup fortfahren</button>
+            <button type="button" id="onboarding-restore-btn" class="btn primary">Backup einspielen</button>
+          </p>
+        </div>
+      </section>
       <!-- Benutzerverwaltung (#/admin/users) -->
       <section id="view-users" class="view view-users" data-view="users" hidden></section>
       <!-- Team-Verwaltung (#/admin/teams) -->
@@ -773,7 +791,7 @@
 
       <section id="view-backups" class="view view-backups branding-page" data-view="backups" hidden>
         <h1>Backups</h1>
-        <p class="muted">Vollständige Sicherung aller Instanzdaten (Datenbank, Konfiguration, SSL, Uploads) als ZIP-Archiv.</p>
+        <p class="muted">Vollständige Sicherung aller Instanzdaten als ZIP — Wiederherstellung gruppenweise nach Admin-Bereichen.</p>
 
         <div class="backups-panel panel">
           <h2>Neues Backup</h2>

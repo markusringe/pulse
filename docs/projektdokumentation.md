@@ -2,7 +2,7 @@
 
 **Ist-Zustand / Spezifikation**
 
-**Stand:** Ist-Zustand aus dem Quellcode, 3. September 2026.  
+**Stand:** Programmversion **v1.2.1** · Ist-Zustand aus dem Quellcode, 2026-09-03.
 **Kein Soll-Konzept:** Nur Funktionen und Technik, die im Repository tatsächlich vorhanden sind.  
 **Produktname:** Pulse. Technische Präfixe: `data/pulse.db`, `pulse:session:…`, Docker-Services `pulse` / `pulse-b`.
 
@@ -287,6 +287,17 @@ Admin-Branding: `stageShowLogo` / `stageShowFooter` (Default aus), `qaDefaultLim
 - WebSocket: `update_started`, `update_progress`, `update_completed`, `update_failed`, `update_rollback`, `server_shutdown`.
 - Nur Rolle `admin` darf installieren; Audit-Log-Einträge `update_*`.
 
+### 3.21b Instanz-Backups (ZIP)
+
+- Admin `#/admin/backups`. REST: `GET /api/backups/list|config|groups|create|inspect/:filename|download/:filename`, `PATCH /api/backups/config`, `POST /api/backups/upload|restore|inspect`, `DELETE /api/backups/:filename`.
+- Service: `lib/backupService.js`, Gruppenkatalog `lib/backupGroups.js` (strukturiert wie Admin-Navigation: Sessions, Events, Teams, Benutzer, Branding, Datenschutz, SSL, E-Mail, Einstellungen, Uploads, `.env`).
+- ZIP-Inhalt: `pulse.db`, JSON-Dateien unter `data/`, Verzeichnisse `ssl/`, `uploads/`, optional `.env`, `backup-metadata.json`, `package.json`.
+- **Gruppenweise Wiederherstellung:** `POST /api/backups/restore` mit `{ filename, groups: ["branding", …] }` — nicht gewählte Bereiche bleiben unverändert; vollständig ohne `groups` oder mit `["all"]`.
+- Auto-Backup: `lib/autoBackup.js`, Konfiguration `data/backup-config.json`, Env `BACKUP_*`.
+- Installation: nach **Erstlogin** (Bootstrap-Kennwort) optional unter `#/admin/onboarding` — ZIP hochladen, gruppenweise einspielen; Setting `onboardingBackupPending` in `auth_settings`. CLI: `scripts/install-restore-backup.js`.
+- **Versionsprüfung:** `analyzeBackupVersion()` vergleicht `backup-metadata.json` mit `package.json`; bei Abweichung `lib/dataMigration.js` (Events-Legacy, SQL-Hinweise).
+- UI: `frontend/js/backupsPage.js` — Erstellen, Download, Upload, Wiederherstellen mit Gruppen-Dialog.
+
 ### 3.22 Einstellungen Export / Import
 
 - UI auf der Branding-Seite (`frontend/js/settings.js`, Panel `#settings-panel`). Privacy- und SSL-Seiten verlinken dorthin.
@@ -299,7 +310,7 @@ Admin-Branding: `stageShowLogo` / `stageShowFooter` (Default aus), `qaDefaultLim
 ### 3.23 Hilfe / Tour
 
 - Hash `#/help`, `#/help/<slug>`, `#/admin/help`. Katalog `frontend/help/articles.json`, HTML-Artikel unter `frontend/help/`.
-- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (22 Artikel, Stand Katalog **Version 6**).
+- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**25 Artikel**, Stand Katalog **Version 9**, Programm **v1.2.1**).
 - Suche (UND-Tokens, Kategorie) in `frontend/js/help.js` / `lib/helpIndex.js`.
 - Erstnutzer-Tour (nach Consent), Tooltips (`frontend/js/tooltips.js`), Mini-Hilfe, Tastaturhilfe, Feedback ja/nein nur in **localStorage** (`pulse:help-feedback`) — **kein** Server-Upload.
 - In den Hilfe-HTML-Dateien stehen **Platzhalter „Video folgt“**, keine eingebetteten Videos.

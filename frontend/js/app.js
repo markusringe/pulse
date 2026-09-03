@@ -30,7 +30,7 @@ import { introQuiz, knowledgeCheck, icebreakerQuiz } from "./templates.js";
 import { questionsToCsv, downloadText, printQuestionsPdf, simpleMarkdown } from "./export.js";
 import { mountReactionBar, burstReaction } from "./reactions.js";
 import { bindSslPage, showSslPage } from "./ssl.js?v=nav13";
-import { bindHelp, showHelpPage, explainError } from "./help.js?v=nav12";
+import { bindHelp, showHelpPage, explainError } from "./help.js?v=help9";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
 import { syncAdminNav } from "./adminNav.js?v=nav43";
@@ -136,6 +136,7 @@ const els = {
     adminSettings: document.getElementById("view-settings"),
     updates: document.getElementById("view-updates"),
     backups: document.getElementById("view-backups"),
+    onboarding: document.getElementById("view-onboarding"),
     teams: document.getElementById("view-teams"),
     help: document.getElementById("view-help"),
     stage: document.getElementById("view-stage"),
@@ -353,6 +354,7 @@ function expectedViewFromHash() {
   if (hash === "/admin/settings") return "adminSettings";
   if (hash === "/admin/updates") return "updates";
   if (hash === "/admin/backups") return "backups";
+  if (hash === "/admin/onboarding") return "onboarding";
   if (hash === "/admin/login") return "login";
   if (hash === "/admin/users") return "users";
   if (hash === "/admin/teams") return "teams";
@@ -468,7 +470,16 @@ function route(forcedHash) {
     return;
   }
 
-  if (isAuthEnabled() && hash.startsWith("/admin") && hash !== "/admin/login" && !hasAdminAccess()) {
+  if (hash === "/admin/onboarding") {
+    teardownRealtime();
+    showView("onboarding", hash);
+    import("./onboardingPage.js?v=nav45")
+      .then((m) => m.showOnboardingPage())
+      .catch((err) => console.error("[onboarding-page]", err));
+    return;
+  }
+
+  if (isAuthEnabled() && hash.startsWith("/admin") && hash !== "/admin/login" && hash !== "/admin/onboarding" && !hasAdminAccess()) {
     if (isAdminLoginModalOpen()) return;
     const target = hash;
     revertAdminHash();
@@ -562,7 +573,7 @@ function route(forcedHash) {
   if (hash === "/admin/backups") {
     teardownRealtime();
     showView("backups", hash);
-    import("./backupsPage.js?v=nav42")
+    import("./backupsPage.js?v=nav44")
       .then((m) => m.showBackupsPage())
       .catch((err) => {
         console.error("[backups-page]", err);
@@ -661,6 +672,7 @@ function showView(name, routeHash) {
   if (!els.views.updates) els.views.updates = document.getElementById("view-updates");
   if (!els.views.email) els.views.email = document.getElementById("view-email");
   if (!els.views.backups) els.views.backups = document.getElementById("view-backups");
+  if (!els.views.onboarding) els.views.onboarding = document.getElementById("view-onboarding");
   for (const [key, el] of Object.entries(els.views)) {
     if (!el) continue;
     const active = key === name;

@@ -14,7 +14,53 @@ import { explainError } from "./errors.js";
 const TOUR_DONE_KEY = "pulse:tour-done";
 const TOUR_LATER_KEY = "pulse:tour-later";
 const FEEDBACK_KEY = "pulse:help-feedback";
-const ARTICLES_URL = "/help/articles.json?v=help7";
+const ARTICLES_URL = "/help/articles.json?v=help8";
+
+/** @type {string|null} */
+let appVersionLabel = null;
+
+/** Programmversion für Hilfe-Kopfzeile (Health-API oder articles.json). */
+async function resolveAppVersionLabel() {
+  if (appVersionLabel) return appVersionLabel;
+  try {
+    const res = await fetch("/api/health");
+    const data = await res.json().catch(() => ({}));
+    if (data.versionLabel) {
+      appVersionLabel = data.versionLabel;
+      return appVersionLabel;
+    }
+    if (data.version) {
+      appVersionLabel = data.version.startsWith("v") ? data.version : `v${data.version}`;
+      return appVersionLabel;
+    }
+  } catch {
+    /* offline / Tests */
+  }
+  if (catalog?.appVersion) {
+    appVersionLabel = catalog.appVersion.startsWith("v") ? catalog.appVersion : `v${catalog.appVersion}`;
+    return appVersionLabel;
+  }
+  appVersionLabel = "";
+  return appVersionLabel;
+}
+
+/** Anzeige-Text: Programm + Hilfe-Katalog. */
+function helpVersionLine() {
+  const app = appVersionLabel || (catalog?.appVersion ? `v${catalog.appVersion}` : "");
+  const cat = catalog?.version ? ` · Hilfe-Katalog v${catalog.version}` : "";
+  return app ? `Pulse ${app}${cat}` : "Pulse";
+}
+
+/** Versionszeile in der Hilfe-Ansicht aktualisieren. */
+async function refreshHelpVersionLine() {
+  await resolveAppVersionLabel();
+  const eyebrow = document.getElementById("help-version-label");
+  if (eyebrow) eyebrow.textContent = helpVersionLine();
+  const foot = document.getElementById("help-version-foot");
+  if (foot) {
+    foot.textContent = `Dokumentation bezieht sich auf ${helpVersionLine()}. Bei Abweichungen gilt der Stand der HTML-Artikel unter frontend/help/.`;
+  }
+}
 
 /** @type {object | null} */
 let catalog = null;
@@ -197,7 +243,7 @@ function ensureHelpView() {
   view.innerHTML = `
     <header class="help-header">
       <div>
-        <p class="eyebrow">Pulse</p>
+        <p class="eyebrow" id="help-version-label">Pulse</p>
         <h1>Hilfe</h1>
       </div>
       <p><a href="#/">← Start</a></p>
@@ -214,6 +260,7 @@ function ensureHelpView() {
       <div id="help-main"></div>
       <aside class="help-side" id="help-side"></aside>
     </div>
+    <p class="muted help-version-foot" id="help-version-foot"></p>
   `;
   const app = document.getElementById("app");
   app?.append(view);
@@ -358,6 +405,7 @@ async function loadCatalog() {
 
 async function renderHelp(slug, admin) {
   const data = await loadCatalog();
+  await refreshHelpVersionLine();
   const articles = data.articles || [];
   const cats = data.categories || [];
   const roleDefs = data.roles || [];

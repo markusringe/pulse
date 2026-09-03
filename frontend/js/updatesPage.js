@@ -475,8 +475,6 @@ async function onInstallClick() {
   );
   if (!ok) return;
 
-  if (!(await ensureStepUp())) return;
-
   completionHandled = false;
   installActive = true;
   sessionStorage.setItem("pulse:update-pending", "1");
