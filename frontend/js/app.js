@@ -560,7 +560,7 @@ function route(forcedHash) {
   if (hash === "/admin/updates") {
     teardownRealtime();
     showView("updates");
-    import("./updatesPage.js?v=nav43")
+    import("./updatesPage.js?v=nav44")
       .then((m) => m.showUpdatesPage())
       .catch((err) => {
         console.error("[updates-page]", err);
@@ -1228,7 +1228,7 @@ function connectRealtime(role) {
     }
   });
   /* Update-Fortschritt optional anbinden (Modul darf Admin-Start nicht blockieren). */
-  import("./updatesPage.js?v=nav43")
+  import("./updatesPage.js?v=nav44")
     .then((m) => m.bindUpdateWsEvents(rt))
     .catch(() => {});
   rt.on("pong", (payload) => {

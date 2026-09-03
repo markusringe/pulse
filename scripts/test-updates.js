@@ -66,6 +66,15 @@ const cached = updateService.getCachedInfo();
 assert(cached.info.currentVersion === "1.0.0", "Cached Info aktuelle Version");
 assert(Array.isArray(updateService.getStatus().history) || updateService.getStatus().history === undefined, "Status");
 
+assert(updateService.effectiveRepo() === "markusringe/pulse", "effectiveRepo aus Env");
+
+delete process.env.UPDATE_REPO;
+process.env.UPDATE_ENABLED = "true";
+delete require.cache[require.resolve("../lib/updateService")];
+const fallbackRepo = require("../lib/updateService");
+assert(fallbackRepo.effectiveRepo() === "markusringe/pulse", "effectiveRepo Fallback DEFAULT_REPO");
+assert(fallbackRepo.updatesEnabled(), "Updates mit DEFAULT_REPO aktiv");
+
 delete process.env.UPDATE_REPO;
 process.env.UPDATE_ENABLED = "false";
 delete require.cache[require.resolve("../lib/updateService")];

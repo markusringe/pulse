@@ -2019,7 +2019,8 @@ async function handleUpdatesApi(req, res, parts, ipKey) {
     try {
       const force = urlForceCheck(req);
       const info = await updateService.checkForUpdates({ force });
-      send(res, 200, { info, config: updateService.getConfig() });
+      const cached = updateService.getCachedInfo();
+      send(res, 200, { info, config: cached.config, enabled: cached.enabled, lastCheckAt: cached.lastCheckAt });
     } catch (err) {
       send(res, 502, { error: String(err.message || err) });
     }

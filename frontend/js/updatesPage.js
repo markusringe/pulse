@@ -273,7 +273,7 @@ export function bindUpdatesPage() {
 export async function showUpdatesPage() {
   bindUpdatesPage();
   notesExpanded = false;
-  await refreshUpdatesPage();
+  await onCheck();
 
   /* Nach Reload/Navigation: laufenden Neustart fortsetzen. */
   if (sessionStorage.getItem("pulse:update-pending") === "1" && !completionHandled) {
@@ -315,7 +315,12 @@ function renderDashboard(cachedWrap, statusWrap) {
   const disabledEl = $("update-disabled-hint");
 
   if (currentEl) currentEl.textContent = `v${info.currentVersion || "?"}`;
-  if (latestEl) latestEl.textContent = info.hasUpdate ? `v${info.latestVersion}` : "—";
+  if (latestEl) {
+    if (info.hasUpdate) latestEl.textContent = `v${info.latestVersion}`;
+    else if (info.latestVersion) {
+      latestEl.textContent = `v${info.latestVersion}${info.source === "tag" ? " · Tag" : ""}`;
+    } else latestEl.textContent = "—";
+  }
   if (badgeEl) {
     badgeEl.hidden = !info.hasUpdate;
     badgeEl.textContent = info.critical ? "Kritisches Update" : "Update verfügbar";
@@ -327,7 +332,7 @@ function renderDashboard(cachedWrap, statusWrap) {
   if (disabledEl) {
     disabledEl.hidden = enabled;
     disabledEl.textContent =
-      "Automatische Updates sind deaktiviert (UPDATE_REPO / UPDATE_ENABLED). Manuelle Prüfung bleibt möglich.";
+      "Automatische Hintergrund-Prüfung ist deaktiviert (UPDATE_ENABLED). Manuelle Prüfung oben bleibt möglich.";
   }
 
   if (notesEl) {
@@ -460,8 +465,27 @@ async function onCheck() {
     if (msg) msg.textContent = res.data?.error || "GitHub nicht erreichbar — bitte später erneut versuchen.";
     return;
   }
-  if (msg) msg.textContent = "";
-  await refreshUpdatesPage();
+  const wrap = res.data || {};
+  const status = await api.updatesStatus();
+  renderDashboard(
+    {
+      info: wrap.info,
+      config: wrap.config,
+      enabled: wrap.enabled,
+      lastCheckAt: wrap.lastCheckAt,
+    },
+    status?.data || status || {}
+  );
+  const info = wrap.info || {};
+  if (msg) {
+    if (info.hasUpdate) {
+      msg.textContent = `Update verfügbar: v${info.latestVersion}${info.source === "tag" ? " (Git-Tag)" : ""}.`;
+    } else if (info.latestVersion && info.latestVersion !== info.currentVersion) {
+      msg.textContent = `Neueste Version auf GitHub: v${info.latestVersion} — installierte Version: v${info.currentVersion}.`;
+    } else {
+      msg.textContent = `Kein neueres Release — installiert: v${info.currentVersion || "?"}.`;
+    }
+  }
 }
 
 async function onInstallClick() {
