@@ -13,6 +13,7 @@ import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRating
 import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js?v=nav1";
+import { stageStatusMessage } from "./interactionPresenter.js?v=nav55";
 
 /** @type {RealtimeClient | null} */
 let rt = null;
@@ -112,6 +113,23 @@ function connectStage(code) {
   rt.on("lobby", (payload) => {
     if (!session) return;
     session.lobby = Boolean(payload.lobby);
+    renderStage();
+  });
+  rt.on("event_meta", (payload) => {
+    if (!session || !payload?.eventMeta) return;
+    session.eventMeta = { ...session.eventMeta, ...payload.eventMeta };
+    if (payload.serverNow) clockSkew = payload.serverNow - Date.now();
+    countdownSkipped = Boolean(payload.eventMeta.countdownDismissed);
+    stopEventCountdown();
+    renderStage();
+  });
+  rt.on("interaction", (payload) => {
+    if (!session || !payload?.slideId) return;
+    const slide = session.slides.find((s) => s.id === payload.slideId);
+    if (slide && payload.interaction) {
+      slide.interaction = { ...slide.interaction, ...payload.interaction };
+    }
+    if (payload.serverNow) clockSkew = payload.serverNow - Date.now();
     renderStage();
   });
   rt.on("results", (payload) => {
@@ -310,7 +328,7 @@ function renderStage() {
     frame.innerHTML = `<p class="stage-wait">${esc(t("stage.empty"))}</p>`;
     return;
   }
-  fadeIfNeeded(`${slide.id}:${slide.type}:${Boolean(slide.resultsVisible)}:${slide.round?.status || ""}`);
+  fadeIfNeeded(`${slide.id}:${slide.type}:${Boolean(slide.resultsVisible)}:${slide.round?.status || ""}:${slide.interaction?.state || ""}:${slide.interaction?.seq || 0}`);
   destroyPoll();
   destroyStageCloud();
 
@@ -324,6 +342,14 @@ function renderStage() {
     renderTyped(frame, slide);
   } else {
     frame.innerHTML = `<h1 class="stage-question">${esc(slide.question || "")}</h1>`;
+  }
+
+  const ixBanner = stageStatusMessage(slide);
+  if (ixBanner) {
+    frame.insertAdjacentHTML(
+      "afterbegin",
+      `<p class="stage-interaction-hint" role="status">${esc(ixBanner)}</p>`
+    );
   }
 }
 
@@ -367,7 +393,13 @@ function syncEventCountdown() {
       },
       onEnded: () => {
         stopEventCountdown();
-        renderStage();
+        api.getSession(session?.code).then((remote) => {
+          if (remote?.session) {
+            session = remote.session;
+            if (remote.session.serverNow) clockSkew = remote.session.serverNow - Date.now();
+            renderStage();
+          }
+        });
       },
     });
   } else {

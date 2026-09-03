@@ -139,6 +139,19 @@
   color: #fff;
 }
 
+.event-countdown-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.event-countdown-actions .btn {
+  min-height: 48px;
+  min-width: min(100%, 14rem);
+}
+
 .event-countdown-skip {
   margin-top: 1rem;
   color: #fff !important;

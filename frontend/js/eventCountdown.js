@@ -30,6 +30,7 @@ export function remainingMs(startTime, clockSkew = 0) {
  */
 export function shouldShowCountdown(meta, clockSkew = 0, opts = {}) {
   if (opts.skipped) return false;
+  if (meta?.countdownDismissed) return false;
   if (!meta?.startTime) return false;
   return remainingMs(meta.startTime, clockSkew) > 0;
 }
@@ -118,7 +119,11 @@ export function countdownHtml(meta, ms, opts = {}) {
       <p class="event-countdown-label">${esc(formatCountdownLabel(ms))}</p>
       ${digits}
       <div class="event-countdown-bar" aria-hidden="true"><span style="width:${progressPct(ms)}%"></span></div>
-      ${opts.showSkip ? `<button type="button" class="btn ghost event-countdown-skip" data-countdown-skip>Countdown überspringen</button>` : ""}
+      ${opts.showSkip ? `<button type="button" class="btn ghost event-countdown-skip" data-countdown-skip>${esc(opts.skipLabel || "Countdown überspringen")}</button>` : ""}
+      ${opts.showStart ? `<div class="event-countdown-actions">
+        <button type="button" class="btn primary event-countdown-start" data-countdown-start>${esc(opts.startLabel || "Los geht's – jetzt starten")}</button>
+        <button type="button" class="btn ghost event-countdown-continue" data-countdown-continue>${esc(opts.continueLabel || "Countdown läuft weiter")}</button>
+      </div>` : ""}
     </div>
   `;
 }
@@ -155,7 +160,13 @@ function escapeAttr(value) {
  * @param {{
  *   getSkew?: () => number,
  *   showSkip?: boolean,
+ *   showStart?: boolean,
+ *   skipLabel?: string,
+ *   startLabel?: string,
+ *   continueLabel?: string,
  *   onSkip?: () => void,
+ *   onStart?: () => void,
+ *   onContinue?: () => void,
  *   onEnded?: () => void,
  *   syncEveryMs?: number,
  *   onSync?: () => void,
@@ -172,11 +183,23 @@ export function mountCountdown(host, meta, opts = {}) {
   const paint = () => {
     if (stopped || !host) return;
     const ms = remainingMs(meta.startTime, getSkew());
-    host.innerHTML = countdownHtml(meta, ms, { showSkip: opts.showSkip });
+    host.innerHTML = countdownHtml(meta, ms, {
+      showSkip: opts.showSkip,
+      showStart: opts.showStart,
+      skipLabel: opts.skipLabel,
+      startLabel: opts.startLabel,
+      continueLabel: opts.continueLabel,
+    });
     host.hidden = false;
     host.classList.add("event-countdown-host");
     host.querySelector("[data-countdown-skip]")?.addEventListener("click", () => {
       opts.onSkip?.();
+    });
+    host.querySelector("[data-countdown-start]")?.addEventListener("click", () => {
+      opts.onStart?.();
+    });
+    host.querySelector("[data-countdown-continue]")?.addEventListener("click", () => {
+      opts.onContinue?.();
     });
     if (ms <= 0 && !endedFired) {
       endedFired = true;

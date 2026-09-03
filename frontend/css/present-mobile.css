@@ -32,11 +32,12 @@
   }
 }
 
-/* Bühne — Mindesthöhe für Folien */
+/* Bühne — Mindesthöhe für Folien (ca. zwei Drittel der Inhaltsfläche) */
 .view-present .present-stage {
   position: relative;
-  min-height: min(42dvh, 100%);
+  min-height: min(58dvh, 100%);
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 /* Wortwolke — Canvas an Container, Rangliste darunter (nicht ausblenden) */

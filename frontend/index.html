@@ -49,6 +49,7 @@
     <link rel="stylesheet" href="/css/event-countdown.css?v=nav54" />
     <link rel="stylesheet" href="/css/join-slides.css?v=nav54" />
     <link rel="stylesheet" href="/css/admin-settings.css?v=nav54" />
+    <link rel="stylesheet" href="/css/present-interaction.css?v=nav55" />
     <link rel="stylesheet" href="/css/present-mobile.css?v=nav54" />
     <link rel="stylesheet" href="/css/updates.css?v=nav43" />
     <!-- Minimaler Fallback, falls einzelne Stylesheets auf Mobilnetzen ausbleiben. -->
@@ -468,6 +469,7 @@
             </button>
           </div>
         </header>
+        <div id="present-interaction-bar" class="present-interaction-bar" hidden aria-label="Interaktionssteuerung"></div>
         </div>
 
         <main class="present-stage" id="present-stage" data-transition="slide">
@@ -631,6 +633,7 @@
             <div id="join-quiz" class="quiz-container" hidden></div>
             <div id="join-rating" class="rating-scale pulse-rating-scale" hidden></div>
             <div id="join-extra" class="slide-input" hidden></div>
+            <p id="join-interaction-hint" class="join-interaction-hint" role="status" aria-live="polite" hidden></p>
             <p id="join-feedback" class="feedback pulse-join-feedback" role="status" aria-live="polite"></p>
             <div id="join-reactions" class="reaction-bar pulse-join-reactions"></div>
           </div>
@@ -1241,6 +1244,6 @@
       <button type="button" id="consent-ok" class="btn primary" data-i18n="consent.ok">Verstanden</button>
     </aside>
 
-    <script type="module" src="/js/app.js?v=nav54"></script>
+    <script type="module" src="/js/app.js?v=nav55"></script>
   </body>
 </html>

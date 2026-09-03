@@ -735,8 +735,36 @@ a#btn-admin-home {
 
 /* ----- Presenter ----- */
 .view-present {
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto minmax(0, 2fr) auto minmax(0, 1fr);
   gap: 12px;
+}
+
+.view-present .present-head {
+  min-height: 0;
+}
+
+.view-present .present-stage {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-present #present-question {
+  font-size: clamp(1.25rem, 2.5vw, 2rem);
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.view-present .present-dock {
+  min-height: 0;
+  max-height: min(32vh, 280px);
+  overflow-y: auto;
+  align-items: flex-start;
+}
+
+.view-present .present-deck {
+  flex: 0 0 auto;
+  max-height: 72px;
 }
 
 .present-top {

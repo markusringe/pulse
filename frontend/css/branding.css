@@ -252,7 +252,8 @@ body.footer-hidden .app-footer {
 }
 
 @media (min-width: 1440px) {
-  .present-stage { max-width: 60%; margin-inline: auto; width: 100%; }
+  /* Volle Breite für Bühnenfläche — kein schmales 60%-Fenster mehr */
+  .present-stage { max-width: none; margin-inline: 0; width: 100%; }
 }
 
 /* Instanz-Einstellungen (Export/Import) unter #/admin/settings. */

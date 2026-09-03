@@ -217,6 +217,23 @@ const HIDEABLE_TYPES = new Set([
   "picker",
 ]);
 
+/** Interaktive Folientypen — gemeinsame Ablauf-/Timer-Konfiguration. */
+const INTERACTIVE_TYPES = new Set([
+  "choice",
+  "wordcloud",
+  "qa",
+  "quiz",
+  "rating_scale",
+  "ranking",
+  "points100",
+  "open_text",
+  "image_choice",
+  "datetime",
+  "picker",
+]);
+
+const IX_TIMER_PRESETS = [30, 60, 90, 120, 180, 300];
+
 function isInlineEditable(type) {
   return INLINE_EDIT_TYPES.has(type);
 }
@@ -2258,14 +2275,13 @@ function buildEditorFields(slide) {
 
   if (type === "qa") {
     const moderated = slide.moderated !== false;
-    const timer = slide.qaTimer || {};
     parts.push(`
       <label class="check"><input type="checkbox" id="edit-moderated"${moderated ? " checked" : ""} /> ${esc(tx("events.slides.moderated"))}</label>
-      <label class="check"><input type="checkbox" id="edit-qa-enabled"${timer.enabled ? " checked" : ""} /> ${esc(tx("events.slides.qaTimer"))}</label>
-      <label class="field"><span>${esc(tx("events.slides.qaLimit"))}</span>
-        <input id="edit-qa-limit" type="number" min="10" max="300" step="10" value="${esc(String(timer.limitSec || 60))}" />
-      </label>
     `);
+  }
+
+  if (INTERACTIVE_TYPES.has(type)) {
+    parts.push(buildInteractionEditorFields(slide));
   }
 
   if (type === "picker") {
@@ -2314,6 +2330,51 @@ function buildEditorFields(slide) {
   `);
 
   return parts.join("");
+}
+
+/**
+ * Editor-Abschnitt „Ablauf und Zeitlimit“ für interaktive Folien.
+ * @param {object} slide
+ */
+function buildInteractionEditorFields(slide) {
+  const type = slide.type;
+  if (type === "quiz") {
+    return `
+      <fieldset class="slide-edit-ix">
+        <legend>${esc(tx("events.slides.ixSection"))}</legend>
+        <p class="muted">${esc(tx("events.slides.ixQuizHint"))}</p>
+      </fieldset>
+    `;
+  }
+  const ix = slide.interaction || {};
+  const manualStart = ix.manualStart !== false;
+  const timerOn = Boolean(ix.timerEnabled);
+  const timerSec = Number(ix.timerSec) || 60;
+  const presetOpts = IX_TIMER_PRESETS.map(
+    (s) => `<option value="${s}"${timerSec === s ? " selected" : ""}>${s} s</option>`
+  ).join("");
+  return `
+    <fieldset class="slide-edit-ix">
+      <legend>${esc(tx("events.slides.ixSection"))}</legend>
+      <p class="muted">${esc(tx("events.slides.ixHint"))}</p>
+      <label class="check">
+        <input type="checkbox" id="edit-ix-manual"${manualStart ? " checked" : ""} />
+        ${esc(tx("events.slides.ixManualStart"))}
+      </label>
+      <label class="check">
+        <input type="checkbox" id="edit-ix-timer"${timerOn ? " checked" : ""} />
+        ${esc(tx("events.slides.ixTimerEnabled"))}
+      </label>
+      <div id="edit-ix-timer-wrap"${timerOn ? "" : " hidden"}>
+        <label class="field"><span>${esc(tx("events.slides.ixTimerPreset"))}</span>
+          <select id="edit-ix-timer-preset">${presetOpts}</select>
+        </label>
+        <label class="field"><span>${esc(tx("events.slides.ixTimerCustom"))}</span>
+          <input id="edit-ix-timer-sec" type="number" min="30" max="300" step="10" value="${esc(String(timerSec))}" />
+        </label>
+      </div>
+    </fieldset>
+  `;
 }
 
 /**
@@ -2458,6 +2519,19 @@ function bindEditorFieldEvents(body, draft, onDirty) {
     });
     refreshEditPickerPreview(body, draft);
   }
+
+  body.querySelector("#edit-ix-timer")?.addEventListener("change", () => {
+    const wrap = body.querySelector("#edit-ix-timer-wrap");
+    if (wrap) wrap.hidden = !body.querySelector("#edit-ix-timer")?.checked;
+    onDirty();
+  });
+  body.querySelector("#edit-ix-timer-preset")?.addEventListener("change", () => {
+    const sec = body.querySelector("#edit-ix-timer-preset")?.value;
+    const custom = body.querySelector("#edit-ix-timer-sec");
+    if (custom && sec) custom.value = sec;
+    onDirty();
+  });
+  body.querySelector("#edit-ix-manual")?.addEventListener("change", onDirty);
 
   bindOptionRowEvents(body, draft, onDirty);
 }
@@ -2621,9 +2695,27 @@ function collectEditorPayload(body, slide) {
 
   if (slide.type === "qa") {
     payload.moderated = Boolean(body.querySelector("#edit-moderated")?.checked);
-    const enabled = Boolean(body.querySelector("#edit-qa-enabled")?.checked);
-    const limitSec = Number(body.querySelector("#edit-qa-limit")?.value) || 60;
-    payload.qaTimer = { ...(slide.qaTimer || {}), enabled, limitSec };
+  }
+
+  if (INTERACTIVE_TYPES.has(slide.type) && slide.type !== "quiz") {
+    const manualStart = body.querySelector("#edit-ix-manual")?.checked !== false;
+    const timerEnabled = Boolean(body.querySelector("#edit-ix-timer")?.checked);
+    let timerSec = Number(body.querySelector("#edit-ix-timer-sec")?.value) || 60;
+    timerSec = Math.max(30, Math.min(300, Math.round(timerSec)));
+    payload.interaction = {
+      ...(slide.interaction || {}),
+      manualStart,
+      timerEnabled,
+      timerSec,
+      state: manualStart ? "active" : "running",
+    };
+    if (slide.type === "qa") {
+      payload.qaTimer = {
+        ...(slide.qaTimer || {}),
+        enabled: timerEnabled,
+        limitSec: timerSec,
+      };
+    }
   }
 
   if (slide.type === "picker") {

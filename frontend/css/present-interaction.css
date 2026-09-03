@@ -1,0 +1,120 @@
+/**
+ * Presenter — Interaktionsleiste (Start, Timer, Pause, Ende).
+ */
+
+.present-interaction-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-pulse-sm, 0.75rem);
+  border: 1px solid color-mix(in srgb, var(--line) 40%, transparent);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+}
+
+.present-interaction-bar__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: min(100%, 12rem);
+}
+
+.present-interaction-bar__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.present-interaction-bar__badge--active {
+  background: color-mix(in srgb, var(--primary-color, #007cc1) 12%, var(--bg-soft));
+  color: var(--ink);
+}
+
+.present-interaction-bar__badge--running {
+  background: color-mix(in srgb, #14532d 15%, var(--bg-soft));
+  color: var(--ink);
+}
+
+.present-interaction-bar__badge--paused {
+  background: color-mix(in srgb, #facc15 35%, var(--bg-soft));
+  color: var(--ink);
+}
+
+.present-interaction-bar__badge--ended {
+  background: color-mix(in srgb, var(--line) 25%, var(--bg-soft));
+  color: var(--muted);
+}
+
+.present-interaction-bar__timer {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.present-interaction-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.present-interaction-bar__actions .btn {
+  min-height: 44px;
+}
+
+.present-interaction-bar__actions .btn.danger {
+  border-color: color-mix(in srgb, #b91c1c 40%, transparent);
+  color: #b91c1c;
+}
+
+@media (max-width: 640px) {
+  .present-interaction-bar__actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .present-interaction-bar__actions .btn {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  .present-interaction-bar__actions .btn.primary {
+    flex: 1 1 100%;
+  }
+}
+
+.join-interaction-hint {
+  text-align: center;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.stage-interaction-hint {
+  text-align: center;
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  font-weight: 650;
+  color: var(--muted);
+  margin: 0 0 1rem;
+  letter-spacing: 0.02em;
+}
+
+.slide-edit-ix {
+  margin: 1rem 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+  border-radius: var(--radius-pulse-sm, 0.75rem);
+}
+
+.slide-edit-ix legend {
+  font-weight: 650;
+  padding: 0 6px;
+}

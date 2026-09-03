@@ -20,6 +20,7 @@ import { enterStage, leaveStage } from "./stage.js?v=nav19";
 import {
   mountCountdown,
   shouldShowCountdown,
+  remainingMs,
 } from "./eventCountdown.js?v=nav1";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
@@ -70,6 +71,7 @@ import {
 } from "./presenterStats.js";
 import { bindJoinGestures, hapticSuccess } from "./joinMobile.js";
 import { bindPresentMobileUi } from "./presentMobile.js?v=nav54";
+import { bindInteractionBar, joinInputsBlocked, joinStatusMessage, computeRemainingMs, formatCountdown } from "./interactionPresenter.js?v=nav55";
 import { bindAdminMobileNav, bindPublicMobileMenu } from "./mobileNav.js?v=nav54";
 import {
   renderRankingInput,
@@ -212,6 +214,7 @@ const els = {
   joinLobby: document.getElementById("join-lobby"),
   joinReactions: document.getElementById("join-reactions"),
   presentStage: document.getElementById("present-stage"),
+  presentInteractionBar: document.getElementById("present-interaction-bar"),
   presenterStats: document.getElementById("presenter-stats"),
   presentOfflineBanner: document.getElementById("present-offline-banner"),
   joinOfflineBanner: document.getElementById("join-offline-banner"),
@@ -223,6 +226,11 @@ const els = {
   joinMain: document.getElementById("join-main"),
   joinConnectionStatus: document.getElementById("join-connection-status"),
 };
+
+/** Interaktionsleiste Presenter (Start/Pause/Ende). */
+let interactionBarCtrl = null;
+/** Lokaler Timer-Tick für Countdown-Darstellung. */
+let interactionTickTimer = null;
 
 /** @type {{ session: any, role: string, rt: RealtimeClient | null, sim: number }} */
 const ctx = {
@@ -311,6 +319,11 @@ async function bootUi() {
   bindPrivacyPages();
   bindHelp();
   bindPresentMobileUi();
+  interactionBarCtrl = bindInteractionBar({
+    bar: els.presentInteractionBar,
+    emitLive,
+    getSlide: currentSlide,
+  });
   bindAdminMobileNav();
   bindPublicMobileMenu();
   bindEvents({
@@ -1294,6 +1307,35 @@ function connectRealtime(role) {
     if (ctx.role === "present") renderLobby();
     else renderJoinSlide();
   });
+  rt.on("interaction", (payload) => {
+    if (!ctx.session || !payload?.slideId) return;
+    const slide = ctx.session.slides.find((s) => s.id === payload.slideId);
+    if (slide && payload.interaction) {
+      slide.interaction = { ...slide.interaction, ...payload.interaction };
+    }
+    if (payload.serverNow) ctx.eventClockSkew = payload.serverNow - Date.now();
+    persistLocal(ctx.session);
+    syncInteractionTick();
+    if (ctx.role === "present") {
+      if (slide?.id === currentSlide()?.id) renderActiveSlide();
+      else interactionBarCtrl?.render();
+    } else if (ctx.role === "join") {
+      renderJoinSlide();
+    }
+  });
+  rt.on("event_meta", (payload) => {
+    if (!ctx.session || !payload?.eventMeta) return;
+    ctx.session.eventMeta = { ...ctx.session.eventMeta, ...payload.eventMeta };
+    if (payload.serverNow) ctx.eventClockSkew = payload.serverNow - Date.now();
+    ctx.eventCountdownSkipped = Boolean(payload.eventMeta.countdownDismissed);
+    persistLocal(ctx.session);
+    if (ctx.role === "present") {
+      presentCountdownCtl?.stop();
+      presentCountdownCtl = null;
+      renderLobby();
+      renderActiveSlide();
+    }
+  });
   rt.on("results", (payload) => {
     const slide = ctx.session?.slides.find((s) => s.id === payload.slideId) || currentSlide();
     if (slide) {
@@ -1395,6 +1437,9 @@ function connectRealtime(role) {
       if (payload?.error === "blocked") setJoinFeedback(t("qa.blocked"), { state: "error" });
       else if (payload?.error === "qa_closed") setJoinFeedback(t("qa.closed"), { state: "error" });
       else if (payload?.error === "rate") setJoinFeedback(t("qa.rateWait", { n: payload.waitTime || 30 }), { state: "error" });
+      else if (payload?.error === "interaction_not_started") setJoinFeedback(t("interaction.join.waiting"), { state: "info" });
+      else if (payload?.error === "interaction_paused") setJoinFeedback(t("interaction.join.paused"), { state: "info" });
+      else if (payload?.error === "interaction_ended") setJoinFeedback(t("interaction.join.ended"), { state: "info" });
       else if (payload?.pendingReview) setJoinFeedback(t("qa.pendingHint"));
       else setJoinFeedback(explainError(msg).html, { html: true, state: "error" });
     }
@@ -1410,6 +1455,7 @@ function connectRealtime(role) {
 
 function teardownRealtime() {
   stopDemoSimulator();
+  clearInteractionTick();
   destroyPresenterStats();
   ctx.rt?.disconnect();
   ctx.rt = null;
@@ -1425,6 +1471,7 @@ function teardownRealtime() {
 function applySession(session) {
   if (!session) return;
   if (session.serverNow) ctx.eventClockSkew = session.serverNow - Date.now();
+  if (session.eventMeta?.countdownDismissed) ctx.eventCountdownSkipped = true;
   if (ctx.role === "join") {
     stripPresenterSecrets(session);
     ctx.session = session;
@@ -1451,6 +1498,7 @@ function applySession(session) {
   } else if (ctx.role === "join") {
     renderJoinSlide();
   }
+  syncInteractionTick();
 }
 
 function renderPresenterChrome() {
@@ -1539,6 +1587,7 @@ function renderActiveSlide() {
     } else renderTypedResults(els.pollRoot, slide, { t });
   }
   syncPresentResults();
+  syncInteractionTick();
   refreshPresenterPanel();
 }
 
@@ -1566,6 +1615,10 @@ function renderJoinSlide() {
   }
   els.joinQuestion.textContent = slide.question;
   setJoinFeedback("");
+  const inputBlocked = joinInputsBlocked(slide) || Boolean(s.paused);
+  const ixMsg = joinStatusMessage(slide);
+  if (ixMsg) setJoinFeedback(ixMsg, { state: "info" });
+  updateJoinInteractionHint(slide);
   const voted = ctx.votedSlide.has(slide.id);
   els.joinChoice.hidden = slide.type !== "choice";
   els.joinWordForm.hidden = slide.type !== "wordcloud";
@@ -1592,7 +1645,7 @@ function renderJoinSlide() {
       btn.setAttribute("aria-selected", voted ? "true" : "false");
       btn.tabIndex = voted ? -1 : i === 0 ? 0 : -1;
       btn.textContent = opt.label;
-      btn.disabled = voted;
+      btn.disabled = voted || inputBlocked;
       if (voted) btn.classList.add("is-selected");
       btn.addEventListener("click", () => submitVote(opt.id, btn));
       els.joinChoice.append(btn);
@@ -1600,36 +1653,36 @@ function renderJoinSlide() {
     els.joinChoice.onkeydown = onChoiceKeys;
   } else if (slide.type === "rating_scale") {
     renderRatingInput(els.joinRating, slide, {
-      disabled: voted || ctx.session.paused,
+      disabled: voted || inputBlocked,
       onPick: (value, btn) => submitVote(String(value), btn),
     });
   } else if (slide.type === "wordcloud") {
-    els.wordInput.disabled = false;
+    els.wordInput.disabled = inputBlocked;
   } else if (slide.type === "qa") {
     mountQa(els.joinQa, "participant", slide);
   } else if (slide.type === "quiz") {
     mountQuiz(els.joinQuiz, "participant", slide);
   } else if (slide.type === "ranking") {
     renderRankingInput(els.joinExtra, slide.options, {
-      disabled: voted || ctx.session.paused,
+      disabled: voted || inputBlocked,
       t,
       onSubmit: (payload) => submitTypedVote(payload),
     });
   } else if (slide.type === "points100") {
     renderPointsInput(els.joinExtra, slide.options, {
-      disabled: voted || ctx.session.paused,
+      disabled: voted || inputBlocked,
       t,
       onSubmit: (payload) => submitTypedVote(payload),
     });
   } else if (slide.type === "open_text") {
     renderOpenTextInput(els.joinExtra, {
-      disabled: voted || ctx.session.paused,
+      disabled: voted || inputBlocked,
       t,
       onSubmit: (payload) => submitTypedVote(payload),
     });
   } else if (slide.type === "image_choice") {
     renderImageChoiceInput(els.joinExtra, slide.options, {
-      disabled: voted || ctx.session.paused,
+      disabled: voted || inputBlocked,
       onSubmit: (payload) => {
         if (payload.btn) payload.btn.classList.add("is-selected");
         submitTypedVote(payload);
@@ -1637,22 +1690,23 @@ function renderJoinSlide() {
     });
   } else if (slide.type === "datetime") {
     renderDatetimeInput(els.joinExtra, slide.options, {
-      disabled: voted || ctx.session.paused,
+      disabled: voted || inputBlocked,
       t,
       onSubmit: (payload) => submitTypedVote(payload),
     });
   } else if (slide.type === "picker") {
     renderPickerInput(els.joinExtra, slide, {
-      disabled: voted || ctx.session.paused,
+      disabled: voted || inputBlocked,
       t,
       onSubmit: (payload) => submitTypedVote(payload),
     });
   }
+  syncInteractionTick();
 }
 
 function submitTypedVote(payload) {
   const slide = currentSlide();
-  if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused) return;
+  if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused || joinInputsBlocked(slide)) return;
   ctx.votedSlide.add(slide.id);
   ctx.rt?.send("vote", { code: ctx.session.code, slideId: slide.id, ...payload });
   hapticSuccess();
@@ -1667,7 +1721,7 @@ function submitTypedVote(payload) {
 
 function submitVote(optionId, btn) {
   const slide = currentSlide();
-  if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused) return;
+  if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused || joinInputsBlocked(slide)) return;
   ctx.votedSlide.add(slide.id);
   btn.classList.add("is-selected");
   btn.setAttribute("aria-selected", "true");
@@ -1739,6 +1793,7 @@ function onWordSubmit(ev) {
   const text = (els.wordInput.value || "").trim();
   if (!text) return;
   const slide = currentSlide();
+  if (!slide || joinInputsBlocked(slide) || ctx.session?.paused) return;
   ctx.rt?.send("word", { code: ctx.session.code, text, slideId: slide.id });
   els.wordInput.value = "";
   hapticSuccess();
@@ -1962,6 +2017,49 @@ function stripSlideSecrets(slide) {
 function refreshPresenterPanel() {
   if (ctx.role !== "present" || !ctx.session) return;
   refreshPresenterStats({ session: ctx.session, t, lobby: Boolean(ctx.session.lobby) });
+  interactionBarCtrl?.render();
+}
+
+/** Countdown lokal aktualisieren, solange Interaktion läuft oder pausiert ist. */
+function syncInteractionTick() {
+  clearInteractionTick();
+  const slide = currentSlide();
+  const ix = slide?.interaction;
+  if (!ix?.timerEnabled) return;
+  const state = ix.state;
+  if (state !== "running" && state !== "paused") return;
+  interactionTickTimer = setInterval(() => {
+    const active = currentSlide();
+    if (!active?.interaction?.timerEnabled) {
+      clearInteractionTick();
+      return;
+    }
+    const now = Date.now() + (ctx.eventClockSkew || 0);
+    active.interaction.remainingMs = computeRemainingMs(active, now);
+    if (ctx.role === "present") interactionBarCtrl?.render();
+    else if (ctx.role === "join") updateJoinInteractionHint(active);
+  }, 1000);
+}
+
+function clearInteractionTick() {
+  if (interactionTickTimer) clearInterval(interactionTickTimer);
+  interactionTickTimer = null;
+}
+
+/** Timer- und Statushinweis in der Teilnehmeransicht aktualisieren. */
+function updateJoinInteractionHint(slide) {
+  const hint = document.getElementById("join-interaction-hint");
+  if (!hint || !slide) return;
+  const blocked = joinInputsBlocked(slide);
+  const msg = joinStatusMessage(slide);
+  let text = msg;
+  if (slide.interaction?.timerEnabled && slide.interaction.state === "running") {
+    const rem = computeRemainingMs(slide, Date.now() + (ctx.eventClockSkew || 0));
+    text = `${t("interaction.join.running")} · ${formatCountdown(rem / 1000)}`;
+  }
+  hint.textContent = text || "";
+  hint.hidden = !text;
+  if (blocked && msg) setJoinFeedback(msg, { state: "info" });
 }
 
 function patchCurrentSlide(fields) {
@@ -2400,6 +2498,7 @@ function openStageWindow() {
  */
 function maybeAutoStartQaTimer(slide, role) {
   if (role !== "presenter" || slide?.type !== "qa") return;
+  if (slide.interaction?.manualStart !== false) return;
   if (ctx.qaAutoStarted.has(slide.id)) return;
   const snap = slide.qaTimer || currentQaTimerSnapshot();
   const st = snap?.status;
@@ -2462,7 +2561,9 @@ function syncPresentEventCountdown() {
   if (!presentCountdownCtl) {
     presentCountdownCtl = mountCountdown(host, meta, {
       getSkew: () => ctx.eventClockSkew,
-      showSkip: true,
+      showStart: true,
+      startLabel: t("countdown.startNow"),
+      continueLabel: t("countdown.continue"),
       syncEveryMs: 10_000,
       onSync: () => {
         try {
@@ -2471,24 +2572,38 @@ function syncPresentEventCountdown() {
           /* offline */
         }
       },
-      onSkip: () => {
-        ctx.eventCountdownSkipped = true;
-        presentCountdownCtl?.stop();
-        presentCountdownCtl = null;
-        renderLobby();
-        renderActiveSlide();
-      },
+      onStart: () => requestEventCountdownStart("start_now"),
+      onContinue: () => {},
       onEnded: () => {
-        presentCountdownCtl?.stop();
-        presentCountdownCtl = null;
-        renderLobby();
-        renderActiveSlide();
+        requestEventCountdownStart("ended");
       },
     });
   } else {
     presentCountdownCtl.refresh?.();
   }
   return true;
+}
+
+/** Presenter startet Event vorzeitig oder nach Countdown-Ablauf — serverseitig autoritativ. */
+function requestEventCountdownStart(action) {
+  const meta = ctx.session?.eventMeta;
+  if (!meta?.startTime || !ctx.session?.code) return;
+  const rem = remainingMs(meta.startTime, ctx.eventClockSkew);
+  const SIGNIFICANT_EARLY_MS = 5 * 60 * 1000;
+  if (action === "start_now" && rem > SIGNIFICANT_EARLY_MS) {
+    const planned = new Date(Date.parse(meta.startTime)).toLocaleString(undefined, {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+    const now = new Date().toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
+    if (!window.confirm(t("countdown.confirmEarly", { planned, now }))) return;
+  }
+  ctx.eventCountdownSkipped = true;
+  presentCountdownCtl?.stop();
+  presentCountdownCtl = null;
+  emitLive("event_countdown", { code: ctx.session.code, action });
+  renderLobby();
+  renderActiveSlide();
 }
 
 function ensurePresentCountdownHost() {

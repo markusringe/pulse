@@ -29,6 +29,7 @@ const slideTypes = require("./lib/slideTypes");
 const slideVotes = require("./lib/slideVotes");
 const compress = require("./lib/compress");
 const qaTimer = require("./lib/qaTimer");
+const interactionState = require("./lib/interactionState");
 const { createUserDb } = require("./lib/userDb");
 const authApi = require("./lib/authApi");
 const permissions = require("./lib/permissions");
@@ -86,6 +87,8 @@ const qaBatches = new Map();
 const persistTimers = new Map();
 /** Auto-Ende der Q&A-Runde (key = code:slideId). Nach Restore aus DB neu gesetzt. */
 const qaEndTimers = new Map();
+/** Folien-Interaktion: serverseitiger Timer-Ablauf (endsAt). */
+const interactionEndTimers = new Map();
 const presenterLocks = new Map();
 
 const MIME = {
@@ -532,6 +535,7 @@ async function handleApi(req, res, url) {
     for (const slide of session.slides) resetSlide(slide);
     session.votes.clear();
     clearQaEndTimers(session.code);
+    clearAllInteractionEndTimers(session.code);
     schedulePersist(session);
     announceSession(session);
     send(res, 200, { session: publicSession(session, { reveal: true }) });
@@ -617,8 +621,15 @@ async function handleApi(req, res, url) {
     return;
   }
   if (req.method === "POST" && parts[3] === "slide") {
+    const prevSlide = session.slides[session.activeSlideIndex];
     const index = clamp(Number(body.index) || 0, 0, session.slides.length - 1);
     session.activeSlideIndex = index;
+    const slide = session.slides[index];
+    if (prevSlide?.id !== slide?.id) {
+      clearInteractionEndTimer(session.code, prevSlide?.id);
+      interactionState.onSlideActivated(session, slide, prevSlide);
+      scheduleInteractionEnd(session, slide);
+    }
     schedulePersist(session);
     announceSlide(session);
     send(res, 200, { session: publicSession(session, { reveal: true }) });
@@ -840,6 +851,7 @@ async function getSession(code) {
   const session = hydrate(row);
   sessions.set(code, session);
   restoreQaTimers(session);
+  restoreInteractionTimers(session);
   return session;
 }
 
@@ -1058,7 +1070,13 @@ function normalizeSlide(raw = {}) {
     };
   }
   /* Notizen und Zeitplan bleiben am Slide, gehen aber nicht in publicSlide ohne reveal. */
-  return { ...slide, ...liveState.presenterMeta(raw) };
+  const slideOut = { ...slide, ...liveState.presenterMeta(raw) };
+  if (raw.interaction != null) {
+    slideOut.interaction = interactionState.empty(raw.interaction);
+  } else if (raw._legacyInteraction !== true) {
+    interactionState.ensureInteraction(slideOut, { legacy: false });
+  }
+  return slideOut;
 }
 
 function demoSlides(question) {
@@ -1128,6 +1146,15 @@ function resetSlide(slide) {
     slide.scores = {};
   }
   if (liveState.canHideResults(slide)) slide.resultsVisible = false;
+  if (interactionState.isInteractiveType(slide.type)) {
+    interactionState.ensureInteraction(slide, { legacy: false });
+    slide.interaction = interactionState.empty({
+      manualStart: slide.interaction.manualStart,
+      timerEnabled: slide.interaction.timerEnabled,
+      timerSec: slide.interaction.timerSec,
+      state: slide.interaction.manualStart ? "active" : "running",
+    });
+  }
 }
 
 function publicSession(session, opts = {}) {
@@ -1236,7 +1263,11 @@ function publicSlide(slide, opts = {}) {
     };
   }
   /* notes / plannedMinutes nur mit Admin-Reveal, analog Quiz-Lösungen. */
-  return { ...out, ...liveState.presenterOnlyFields(slide, opts) };
+  const pub = { ...out, ...liveState.presenterOnlyFields(slide, opts) };
+  if (interactionState.isInteractiveType(slide.type)) {
+    pub.interaction = interactionState.publicSnapshot(slide);
+  }
+  return pub;
 }
 
 /**
@@ -1413,6 +1444,184 @@ function clearQaEndTimers(code) {
   }
 }
 
+/** Persistierte Folien ohne interaction-Feld: Legacy-Verhalten (sofort interaktiv). */
+function hydrateSessionInteractions(session) {
+  if (!session?.slides) return;
+  for (const slide of session.slides) {
+    if (slide.interaction) interactionState.normalizeSlide(slide);
+    else if (interactionState.isInteractiveType(slide.type)) {
+      interactionState.ensureInteraction(slide, { legacy: true });
+    }
+  }
+}
+
+function clearInteractionEndTimer(code, slideId) {
+  if (!slideId) return;
+  const key = `${code}:${slideId}`;
+  const prev = interactionEndTimers.get(key);
+  if (prev) clearTimeout(prev);
+  interactionEndTimers.delete(key);
+}
+
+function clearAllInteractionEndTimers(code) {
+  const prefix = `${code}:`;
+  for (const [key, timer] of interactionEndTimers) {
+    if (!String(key).startsWith(prefix)) continue;
+    clearTimeout(timer);
+    interactionEndTimers.delete(key);
+  }
+}
+
+/**
+ * Timer-Ablauf für Folien-Interaktion (endsAt).
+ * @param {object} session
+ * @param {object} slide
+ */
+function scheduleInteractionEnd(session, slide) {
+  if (!slide?.id) return;
+  clearInteractionEndTimer(session.code, slide.id);
+  const ix = slide.interaction;
+  if (!ix || ix.state !== "running" || !ix.endsAt) return;
+  const delay = Math.max(0, ix.endsAt - Date.now());
+  const key = `${session.code}:${slide.id}`;
+  interactionEndTimers.set(
+    key,
+    setTimeout(() => {
+      interactionEndTimers.delete(key);
+      const live = sessions.get(session.code);
+      const current = live?.slides.find((s) => s.id === slide.id);
+      if (!current) return;
+      const snap = interactionState.onTimerExpired(current);
+      if (!snap) return;
+      schedulePersist(live);
+      announceInteraction(live, current, snap);
+    }, delay + 25)
+  );
+}
+
+function restoreInteractionTimers(session) {
+  hydrateSessionInteractions(session);
+  if (!session?.slides) return;
+  for (const slide of session.slides) {
+    if (!slide.interaction) continue;
+    const snap = interactionState.publicSnapshot(slide);
+    if (snap.state === "ended" && slide.interaction.state === "running") {
+      interactionState.onTimerExpired(slide);
+    }
+    scheduleInteractionEnd(session, slide);
+  }
+}
+
+function announceInteraction(session, slide, interactionSnap) {
+  announce(session.code, {
+    type: "interaction",
+    payload: {
+      slideId: slide.id,
+      interaction: interactionSnap || interactionState.publicSnapshot(slide),
+      serverNow: Date.now(),
+    },
+  });
+}
+
+/** Event-Metadaten (Countdown-Status) an alle Clients der Session. */
+function announceEventMeta(session) {
+  if (!session?.eventId) return;
+  const meta = eventStore.eventMetaFor(session.eventId);
+  if (!meta) return;
+  announce(session.code, {
+    type: "event_meta",
+    payload: { eventMeta: meta, serverNow: Date.now() },
+  });
+}
+
+/**
+ * Event-Countdown beenden und Session starten (manuell oder bei Ablauf).
+ * @param {object} session
+ * @param {object} [payload]
+ * @param {{ role?: string }} [client]
+ */
+function applyEventCountdownStart(session, payload = {}, client = {}) {
+  if (client.role !== "presenter") return { error: "forbidden" };
+  const meta = session.eventId ? eventStore.eventMetaFor(session.eventId) : null;
+  const action = String(payload.action || "start_now");
+  const remaining =
+    meta?.startTime && !meta.countdownDismissed
+      ? Math.max(0, Date.parse(meta.startTime) - Date.now())
+      : 0;
+
+  if (meta?.countdownDismissed && session.lobby === false) {
+    return { ok: true, already: true };
+  }
+
+  if (session.eventId) {
+    eventStore.dismissCountdown(session.eventId, { setActive: true });
+  }
+
+  session.lobby = false;
+  const slide = session.slides[session.activeSlideIndex];
+  if (slide && interactionState.isInteractiveType(slide.type)) {
+    if (!slide.interaction) interactionState.ensureInteraction(slide, { legacy: true });
+    if (slide.interaction.manualStart && slide.type !== "quiz") {
+      slide.interaction.state = "active";
+      slide.interaction.startedAt = null;
+      slide.interaction.endsAt = null;
+      slide.interaction.seq += 1;
+      announceInteraction(session, slide);
+    }
+  }
+
+  audit.log("event_countdown_start", {
+    roomId: session.code,
+    eventId: session.eventId || "",
+    action,
+    plannedStart: meta?.startTime || "",
+    remainingMs: remaining,
+    userId: "presenter",
+  });
+
+  schedulePersist(session);
+  announceEventMeta(session);
+  announce(session.code, { type: "lobby", payload: { lobby: false } });
+  announceSession(session);
+  return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+}
+
+/**
+ * Presenter steuert Interaktionsstatus (Start/Pause/Ende/Verlängern).
+ * @param {object} session
+ * @param {object} payload
+ */
+function applyInteractionControl(session, payload = {}) {
+  const slide =
+    session.slides.find((s) => s.id === payload.slideId) ||
+    session.slides[session.activeSlideIndex];
+  if (!slide) return { error: "Keine Folie" };
+  const action = String(payload.action || "");
+  if (action === "start" && slide.type === "quiz") {
+    return { error: "use_quiz_start", delegate: "quiz_start" };
+  }
+  const out = interactionState.applyAction(session, slide, action, payload);
+  if (!out.ok) return { error: out.error || "Aktion fehlgeschlagen" };
+  if (action === "start" && slide.type === "qa") {
+    const limitSec = slide.interaction.timerEnabled ? slide.interaction.timerSec : 0;
+    if (limitSec > 0 || slide.qaTimer?.enabled) {
+      slide.qaTimer = qaTimer.start(
+        slide.qaTimer,
+        Date.now(),
+        limitSec || slide.qaTimer?.limitSec
+      );
+      scheduleQaEnd(session, slide);
+    }
+  }
+  if (out.audit) {
+    audit.log(out.audit.action, { roomId: session.code, ...out.audit });
+  }
+  scheduleInteractionEnd(session, slide);
+  schedulePersist(session);
+  announceInteraction(session, slide, out.interaction);
+  return { slideId: slide.id, interaction: out.interaction, serverNow: Date.now() };
+}
+
 /* ----------------------------- WebSocket-Logik ---------------------- */
 
 async function onWsMessage(client, data) {
@@ -1445,8 +1654,26 @@ async function onWsMessage(client, data) {
   else if (type === "lobby") {
     if (client.role !== "presenter") return;
     session.lobby = payload.lobby !== false;
+    if (!session.lobby) {
+      const slide = session.slides[session.activeSlideIndex];
+      if (slide && interactionState.isInteractiveType(slide.type)) {
+        if (!slide.interaction) interactionState.ensureInteraction(slide, { legacy: true });
+        if (slide.interaction.manualStart && slide.type !== "quiz") {
+          slide.interaction.state = "active";
+          slide.interaction.startedAt = null;
+          slide.interaction.endsAt = null;
+          slide.interaction.seq += 1;
+          announceInteraction(session, slide);
+        }
+      }
+    }
     schedulePersist(session);
     announce(session.code, { type: "lobby", payload: { lobby: session.lobby } });
+  } else if (type === "event_countdown") {
+    const out = applyEventCountdownStart(session, payload, client);
+    if (out.error) {
+      client.send({ type: "error", payload: out });
+    }
   } else if (type === "results") {
     if (client.role !== "presenter") return;
     const slide =
@@ -1456,8 +1683,13 @@ async function onWsMessage(client, data) {
     schedulePersist(session);
     announceResults(session, slide);
   } else if (type === "submit_question" || type === "new_question") {
-    if (session.lobby) {
-      client.send({ type: "error", payload: { error: "lobby", message: "Warten auf den Start" } });
+    const qSlide = interactive.findQaSlide(session, payload.slideId);
+    const gate = qSlide ? interactionState.canAcceptInput(session, qSlide) : { ok: false, error: "lobby" };
+    if (!gate.ok) {
+      client.send({
+        type: "error",
+        payload: { error: gate.error, message: gate.message || "Warten auf den Start" },
+      });
       return;
     }
     if (session.paused) {
@@ -1506,8 +1738,14 @@ async function onWsMessage(client, data) {
     if (session.lobby) return;
     const out = interactive.startQuiz(session, payload, announce);
     if (out.error) return;
+    const slide = interactive.findQuizSlide(session, out.slideId);
+    if (slide) {
+      interactionState.syncQuizStarted(slide, out.startedAt, out.duration);
+      scheduleInteractionEnd(session, slide);
+    }
     schedulePersist(session);
     announce(session.code, { type: "quiz_started", payload: out });
+    if (slide) announceInteraction(session, slide);
   } else if (type === "quiz_answer") {
     const out = interactive.submitAnswer(session, client, payload);
     schedulePersist(session);
@@ -1525,7 +1763,10 @@ async function onWsMessage(client, data) {
     const slide = interactive.findQuizSlide(session, payload.questionId || payload.slideId);
     if (slide) {
       interactive.endQuiz(session, slide, announce);
+      interactionState.syncQuizEnded(slide);
+      clearInteractionEndTimer(session.code, slide.id);
       schedulePersist(session);
+      announceInteraction(session, slide);
     }
   } else if (type === "emergency") {
     if (client.role !== "presenter") return;
@@ -1542,14 +1783,28 @@ async function onWsMessage(client, data) {
     }
   } else if (type === "slide") {
     if (client.role !== "presenter") return;
+    const prevSlide = session.slides[session.activeSlideIndex];
     session.activeSlideIndex = clamp(Number(payload.index) || 0, 0, session.slides.length - 1);
+    const slide = session.slides[session.activeSlideIndex];
+    if (prevSlide?.id !== slide?.id) {
+      clearInteractionEndTimer(session.code, prevSlide?.id);
+      interactionState.onSlideActivated(session, slide, prevSlide);
+      scheduleInteractionEnd(session, slide);
+    }
     schedulePersist(session);
     announceSlide(session);
+  } else if (type === "interaction") {
+    if (client.role !== "presenter") return;
+    const out = applyInteractionControl(session, payload);
+    if (out.error) {
+      client.send({ type: "error", payload: { error: out.error, message: out.error } });
+    }
   } else if (type === "reset") {
     if (client.role !== "presenter") return;
     for (const slide of session.slides) resetSlide(slide);
     session.votes.clear();
     clearQaEndTimers(session.code);
+    clearAllInteractionEndTimers(session.code);
     schedulePersist(session);
     announceSession(session);
   } else if (type === "qa_timer") {
@@ -1653,12 +1908,13 @@ function leaveSession(client) {
 }
 
 function applyVote(session, client, payload) {
-  if (session.paused || session.lobby) {
-    client.send({ type: "error", payload: { error: session.lobby ? "lobby" : "paused", message: session.lobby ? "Warten auf den Start" : "Session pausiert" } });
-    return;
-  }
   const slide = session.slides.find((s) => s.id === payload.slideId) || session.slides[session.activeSlideIndex];
   if (!slide) return;
+  const gate = interactionState.canAcceptInput(session, slide);
+  if (!gate.ok) {
+    client.send({ type: "error", payload: { error: gate.error, message: gate.message } });
+    return;
+  }
   if (slide.type === "choice" || slide.type === "rating_scale") {
     const key = `${client.id}:${slide.id}`;
     if (session.votes.has(key)) return;
@@ -1684,12 +1940,13 @@ function applyVote(session, client, payload) {
 }
 
 function applyWord(session, client, payload) {
-  if (session.paused || session.lobby) {
-    client.send({ type: "error", payload: { error: session.lobby ? "lobby" : "paused", message: session.lobby ? "Warten auf den Start" : "Session pausiert" } });
-    return;
-  }
   const slide = session.slides.find((s) => s.id === payload.slideId) || session.slides[session.activeSlideIndex];
   if (!slide || slide.type !== "wordcloud") return;
+  const gate = interactionState.canAcceptInput(session, slide);
+  if (!gate.ok) {
+    client.send({ type: "error", payload: { error: gate.error, message: gate.message } });
+    return;
+  }
   const prepared = slideVotes.prepareWord(payload.text, brandingStore.load());
   if (prepared.error) {
     client.send({ type: "error", payload: prepared });
