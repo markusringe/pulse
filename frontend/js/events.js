@@ -280,11 +280,21 @@ if (typeof window !== "undefined") {
     e.returnValue = "";
   });
 }
+/** Sprachwechsel auf der Startseite — debounced, kein sofortiger Full-Rebuild. */
+let homeLangReloadTimer = 0;
+
 export function bindEvents(options = {}) {
   hooks = { ...hooks, ...options };
   onLang(() => {
     const hash = location.hash.replace(/^#/, "") || "/";
-    if (hash === "/" || hash === "") loadHomeEvents();
+    if (hash === "/" || hash === "") {
+      clearTimeout(homeLangReloadTimer);
+      homeLangReloadTimer = window.setTimeout(() => {
+        const box = document.getElementById("home-events");
+        if (box) delete box.dataset.eventsReady;
+        scheduleLoadHomeEvents();
+      }, 150);
+    }
     if (isEventsHash(hash)) {
       showEventsPage();
       syncAdminNav("events", hash);
@@ -379,21 +389,18 @@ let homeCountdownCtl = null;
 /** Gemeinsame API-Anfrage, wenn loadHomeEvents parallel startet. */
 let homeEventsFetch = null;
 
-/** Warteschlange für verzögertes QR-Zeichnen (Main-Thread entlasten). */
-const homeQrQueue = [];
-let homeQrIdleScheduled = false;
-
 /** Verzögerter Start der Event-Liste — Admin-Klick soll nicht warten müssen. */
 let homeEventsIdleHandle = null;
 
 /** Laufende Event-Liste/QR abbrechen (z. B. beim Wechsel in den Adminbereich). */
 export function cancelHomeEventsWork() {
   homeEventsSeq += 1;
-  homeQrQueue.length = 0;
   homeCountdownCtl?.stop();
   homeCountdownCtl = null;
   const hero = document.getElementById("home-event-hero");
+  const box = document.getElementById("home-events");
   if (hero) hero.hidden = true;
+  if (box) delete box.dataset.eventsReady;
   if (homeEventsIdleHandle != null) {
     if (typeof cancelIdleCallback === "function") cancelIdleCallback(homeEventsIdleHandle);
     else clearTimeout(homeEventsIdleHandle);
@@ -403,59 +410,35 @@ export function cancelHomeEventsWork() {
 
 /** Event-Karten erst laden, wenn der Browser Luft hat — Startseite bleibt bedienbar. */
 export function scheduleLoadHomeEvents() {
-  cancelHomeEventsWork();
+  const box = document.getElementById("home-events");
+  if (!box) return;
+  /* Bereits geplant oder gerendert — kein erneutes Abbrechen (verhindert Doppelaufruf aus route + bootUi). */
+  if (homeEventsIdleHandle != null || box.dataset.eventsReady === "1") return;
   const run = () => {
     homeEventsIdleHandle = null;
     void loadHomeEvents();
   };
   if (typeof requestIdleCallback === "function") {
-    homeEventsIdleHandle = requestIdleCallback(run, { timeout: 2500 });
+    homeEventsIdleHandle = requestIdleCallback(run, { timeout: 600 });
   } else {
-    homeEventsIdleHandle = setTimeout(run, 120);
+    homeEventsIdleHandle = setTimeout(run, 0);
   }
 }
 
 /**
- * QR-Codes auf der Startseite in kleinen Paketen zeichnen — verhindert Firefox-Freezes
- * bei vielen Event-Karten (encodeQr blockiert synchron den Main Thread).
+ * QR-Codes erst zeichnen, wenn „Einladung / QR“ geöffnet wird — spart Main-Thread beim ersten Paint.
  * @param {HTMLElement} root
- * @param {number} seq Lauf-ID — verworfene Render-Läufe zeichnen keine QR mehr.
  */
-function scheduleHomeQrDraw(root, seq) {
-  root.querySelectorAll("[data-qr]").forEach((canvas) => {
-    homeQrQueue.push({
-      canvas,
-      url: canvas.getAttribute("data-url") || "",
-      seq,
+function bindHomeEventQrLazy(root) {
+  root.querySelectorAll("details.event-card-details").forEach((details) => {
+    details.addEventListener("toggle", () => {
+      if (!details.open) return;
+      const canvas = details.querySelector("[data-qr]");
+      if (!canvas || canvas.dataset.qrDrawn === "1") return;
+      canvas.dataset.qrDrawn = "1";
+      hooks.drawQrCode(canvas, canvas.getAttribute("data-url") || "");
     });
   });
-  if (homeQrIdleScheduled || !homeQrQueue.length) return;
-  homeQrIdleScheduled = true;
-
-  const drain = (deadline) => {
-    let budget = deadline && typeof deadline.timeRemaining === "function" ? deadline.timeRemaining() : 12;
-    while (homeQrQueue.length && budget > 2) {
-      const item = homeQrQueue.shift();
-      if (item.seq !== homeEventsSeq) continue;
-      if (item.canvas?.isConnected) hooks.drawQrCode(item.canvas, item.url);
-      budget = deadline && typeof deadline.timeRemaining === "function" ? deadline.timeRemaining() : budget - 3;
-    }
-    if (homeQrQueue.length) {
-      if (typeof requestIdleCallback === "function") {
-        requestIdleCallback(drain, { timeout: 400 });
-      } else {
-        setTimeout(() => drain(null), 32);
-      }
-    } else {
-      homeQrIdleScheduled = false;
-    }
-  };
-
-  if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(drain, { timeout: 600 });
-  } else {
-    setTimeout(() => drain(null), 0);
-  }
 }
 
 /**
@@ -546,8 +529,7 @@ export async function loadHomeEvents() {
     ${past.map((ev) => homeCardHtml(ev)).join("")}
   `;
     box.dataset.eventsReady = "1";
-    homeQrQueue.length = 0;
-    scheduleHomeQrDraw(box, seq);
+    bindHomeEventQrLazy(box);
     box.querySelectorAll("[data-copy]").forEach((btn) => {
       btn.addEventListener("click", () => copyText(btn.getAttribute("data-copy") || "", btn));
     });
@@ -680,6 +662,13 @@ async function copyText(text, btn) {
 function downloadQr(canvasId, name) {
   const canvas = document.getElementById(canvasId);
   if (!canvas?.toDataURL) return;
+  if (canvas.dataset.qrDrawn !== "1") {
+    const url = canvas.getAttribute("data-url") || "";
+    if (url) {
+      canvas.dataset.qrDrawn = "1";
+      hooks.drawQrCode(canvas, url);
+    }
+  }
   const a = document.createElement("a");
   a.href = canvas.toDataURL("image/png");
   a.download = name || "qr.png";

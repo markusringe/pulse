@@ -2800,9 +2800,10 @@ async function handleEventsApi(req, res, url, parts) {
 
   if (req.method === "GET" && !id) {
     const pub = eventStore.listPublic();
+    /* listPublic liefert bereits publicEvent-Karten — kein erneutes get() pro Event (N+1 readFileSync). */
     send(res, 200, {
-      upcoming: pub.upcoming.map((ev) => enrichPublicEvent(eventStore.get(ev.id) || ev, origin)),
-      past: pub.past.map((ev) => enrichPublicEvent(eventStore.get(ev.id) || ev, origin)),
+      upcoming: pub.upcoming.map((ev) => enrichPublicEvent(ev, origin)),
+      past: pub.past.map((ev) => enrichPublicEvent(ev, origin)),
     });
     return;
   }

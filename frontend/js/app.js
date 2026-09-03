@@ -42,7 +42,7 @@ import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
 import { showProfilePage } from "./profilePage.js?v=nav30";
 import { ensureStepUp } from "./stepUp.js?v=nav47";
-import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav55";
+import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav56";
 import { drawQrCode, joinUrlFromLocation, absorbPathJoinRoute } from "./qrRender.js?v=nav48";
 import {
   initTheme,
@@ -795,7 +795,10 @@ function navigate(path) {
   const clean = String(path || "/").replace(/^#/, "") || "/";
   const hash = clean.startsWith("/") ? `#${clean}` : `#/${clean}`;
   try {
-    if (location.hash !== hash) location.hash = hash;
+    if (location.hash !== hash) {
+      location.hash = hash;
+      return;
+    }
   } catch {
     /* Webview ohne Hash — View trotzdem wechseln. */
   }
