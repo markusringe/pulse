@@ -71,6 +71,7 @@
             <a href="#/admin/branding" data-admin-nav="branding" data-i18n="admin.nav.branding">Branding</a>
             <a href="#/admin/privacy" data-admin-nav="privacy" data-i18n="admin.nav.privacy">Datenschutz</a>
             <a href="#/admin/ssl" data-admin-nav="ssl" data-i18n="admin.nav.ssl">SSL</a>
+            <a href="#/admin/email" data-admin-nav="email">E-Mail</a>
             <a href="#/admin/settings" data-admin-nav="settings" data-i18n="admin.nav.settings">Einstellungen</a>
             <a href="#/admin/updates" data-admin-nav="updates">Updates</a>
             <a href="#/admin/users" data-admin-nav="users" data-i18n="admin.nav.users">Benutzer</a>
@@ -710,6 +711,57 @@
         </form>
         <h2 data-i18n="ssl.list">Vorhandene Zertifikate</h2>
         <div id="ssl-list" class="ssl-list"></div>
+      </section>
+
+      <section id="view-email" class="view branding-page" hidden>
+        <h1>E-Mail-Versand</h1>
+        <p class="muted">SMTP, Sendmail oder kein Versand. Ohne E-Mail-Anbindung erfolgt die Anmeldung per Kennwort.</p>
+        <p id="email-status" class="muted" role="status"></p>
+        <form id="email-form" class="panel" onsubmit="return false">
+          <label class="field">
+            <span>Provider</span>
+            <select id="email-provider">
+              <option value="none">Kein E-Mail-Versand (nur Kennwort-Login)</option>
+              <option value="smtp">SMTP</option>
+              <option value="sendmail">Sendmail</option>
+            </select>
+          </label>
+          <div id="email-none-panel" class="email-provider-panel">
+            <p class="hint muted">PIN-Anmeldung per E-Mail ist deaktiviert. Benutzer melden sich mit ihrem Kennwort an.</p>
+          </div>
+          <div id="email-smtp-panel" class="email-provider-panel" hidden>
+            <label class="field"><span>SMTP-Host</span><input id="email-smtp-host" placeholder="smtp.example.com" /></label>
+            <label class="field"><span>SMTP-Port</span><input id="email-smtp-port" type="number" value="587" /></label>
+            <label class="field"><span>SMTP-Benutzer</span><input id="email-smtp-user" autocomplete="off" /></label>
+            <label class="field">
+              <span>SMTP-Passwort</span>
+              <input id="email-smtp-pass" type="password" autocomplete="new-password" />
+              <span id="email-smtp-pass-hint" class="hint muted"></span>
+            </label>
+            <label class="field">
+              <span>TLS-Modus</span>
+              <select id="email-smtp-tls">
+                <option value="starttls">STARTTLS (Port 587)</option>
+                <option value="ssl">SSL/TLS (Port 465)</option>
+              </select>
+            </label>
+            <label class="field checkbox">
+              <input type="checkbox" id="email-smtp-secure" />
+              <span>Direktes TLS (secure)</span>
+            </label>
+            <label class="field"><span>Absender-E-Mail</span><input id="email-from" type="email" /></label>
+          </div>
+          <div id="email-sendmail-panel" class="email-provider-panel" hidden>
+            <label class="field"><span>Sendmail-Pfad</span><input id="email-sendmail-path" value="/usr/bin/sendmail" /></label>
+            <label class="field"><span>Absender-E-Mail</span><input id="email-sendmail-from" type="email" /></label>
+          </div>
+          <label class="field"><span>Absender-Name</span><input id="email-from-name" value="Team Townhall" /></label>
+          <p id="email-msg" class="muted" role="status"></p>
+          <div class="btn-row">
+            <button type="button" class="btn primary" id="email-save">Speichern</button>
+            <button type="button" class="btn ghost" id="email-test">Test-E-Mail senden</button>
+          </div>
+        </form>
       </section>
 
       <section id="view-updates" class="view branding-page" hidden>

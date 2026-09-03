@@ -1,23 +1,29 @@
 /**
- * Login-Seite: zweistufige E-Mail-PIN-Anmeldung und Selbstregistrierung.
+ * Login-Seite: E-Mail-PIN, Bootstrap-Kennwort (Erstlogin) oder reines Kennwort ohne E-Mail.
  */
 
 import {
   loadAuth,
   requestPin,
   verifyPin,
+  bootstrapLogin,
+  loginPassword,
   registerAccount,
   getAuthUser,
   isAuthEnabled,
   hasAdminAccess,
   getDevMailbox,
-} from "./authClient.js?v=nav32";
+  isBootstrapPasswordLogin,
+  isPasswordLoginMode,
+  isPinLoginAvailable,
+} from "./authClient.js?v=nav36";
 
 let step = "email";
 let email = "";
 let pinExpiresAt = 0;
 let resendTimer = 0;
 let countdownTimer = 0;
+let loginMode = "pin";
 
 /** Login-UI initialisieren und anzeigen. */
 export async function showLoginPage() {
@@ -28,27 +34,69 @@ export async function showLoginPage() {
     location.hash = "#/admin/events";
     return;
   }
+  loginMode = resolveLoginMode();
   renderLoginShell();
   bindLoginEvents();
+}
+
+/** Welcher Anmelde-Modus aktiv ist. */
+function resolveLoginMode() {
+  if (isBootstrapPasswordLogin()) return "bootstrap";
+  if (isPasswordLoginMode() && !isPinLoginAvailable()) return "password";
+  return "pin";
 }
 
 function renderLoginShell() {
   const root = document.getElementById("view-login");
   if (!root) return;
+
+  const bootstrapHint =
+    loginMode === "bootstrap"
+      ? `<p class="login-bootstrap-hint muted">Erstmaliger Login — verwenden Sie das bei der Installation festgelegte Kennwort.</p>`
+      : "";
+  const passwordOnlyHint =
+    loginMode === "password"
+      ? `<p class="login-bootstrap-hint muted">E-Mail-Versand ist nicht konfiguriert — Anmeldung per Kennwort.</p>`
+      : "";
+
   root.innerHTML = `
     <div class="login-page panel">
       <header class="login-head">
         <h1>Anmelden</h1>
-        <p class="muted">Passwortlose Anmeldung per sechsstelliger Code per E-Mail.</p>
+        ${
+          loginMode === "pin"
+            ? `<p class="muted">Passwortlose Anmeldung per sechsstelliger Code per E-Mail.</p>`
+            : `<p class="muted">Anmeldung mit E-Mail und Kennwort.</p>`
+        }
+        ${bootstrapHint}
+        ${passwordOnlyHint}
       </header>
       <div id="login-step-email" class="login-step">
         <label class="field">
           <span>E-Mail-Adresse</span>
-          <input type="email" id="login-email" autocomplete="username" required value="admin@localhost" />
+          <input type="email" id="login-email" autocomplete="username" required />
         </label>
-        <button type="button" class="btn primary" id="login-send-pin">Code senden</button>
+        ${
+          loginMode === "pin"
+            ? `<button type="button" class="btn primary" id="login-send-pin">Code senden</button>`
+            : `
+        <label class="field">
+          <span>Kennwort</span>
+          <input type="password" id="login-password" autocomplete="current-password" required />
+        </label>
+        <label class="field checkbox">
+          <input type="checkbox" id="login-persistent-pw" checked />
+          <span>Angemeldet bleiben (30 Tage)</span>
+        </label>
+        <button type="button" class="btn primary" id="login-password-submit">Anmelden</button>
+        `
+        }
         <p class="hint muted" id="login-email-hint"></p>
-        <p class="login-register-link"><button type="button" class="btn link" id="login-show-register">Konto anlegen</button></p>
+        ${
+          loginMode === "pin"
+            ? `<p class="login-register-link"><button type="button" class="btn link" id="login-show-register">Konto anlegen</button></p>`
+            : ""
+        }
       </div>
       <div id="login-step-pin" class="login-step" hidden>
         <p class="muted">Code an <strong id="login-email-display"></strong></p>
@@ -88,7 +136,7 @@ function renderLoginShell() {
       <p class="login-error" id="login-error" role="alert" hidden></p>
     </div>
   `;
-  step = "email";
+  step = loginMode === "pin" ? "email" : "email";
 }
 
 function bindLoginEvents() {
@@ -99,6 +147,7 @@ function bindLoginEvents() {
   document.getElementById("login-show-register")?.addEventListener("click", () => showStep("register"));
   document.getElementById("reg-submit")?.addEventListener("click", onRegister);
   document.getElementById("reg-back")?.addEventListener("click", () => showStep("email"));
+  document.getElementById("login-password-submit")?.addEventListener("click", onPasswordLogin);
   document.getElementById("login-not-persistent")?.addEventListener("change", (ev) => {
     const persist = document.getElementById("login-persistent");
     if (persist) persist.checked = !ev.target.checked;
@@ -183,6 +232,36 @@ async function onVerifyPin() {
     return;
   }
   setError("");
+  location.hash = "#/admin/events";
+}
+
+async function onPasswordLogin() {
+  const emailInput = document.getElementById("login-email");
+  const pwInput = document.getElementById("login-password");
+  email = (emailInput?.value || "").trim().toLowerCase();
+  const password = pwInput?.value || "";
+  if (!email.includes("@")) {
+    setError("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
+    return;
+  }
+  if (!password || password.length < 8) {
+    setError("Kennwort muss mindestens 8 Zeichen lang sein.");
+    return;
+  }
+  setError("");
+  const persistent = document.getElementById("login-persistent-pw")?.checked !== false;
+  const r =
+    loginMode === "bootstrap"
+      ? await bootstrapLogin(email, password, persistent)
+      : await loginPassword(email, password, persistent);
+  if (!r.ok) {
+    setError(r.data?.error || "Anmeldung fehlgeschlagen.");
+    return;
+  }
+  if (r.data?.requiresPinSetup) {
+    location.hash = "#/admin/email";
+    return;
+  }
   location.hash = "#/admin/events";
 }
 

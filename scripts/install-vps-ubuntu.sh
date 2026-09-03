@@ -18,6 +18,9 @@
 #   C) Download und Ausführung:
 #      curl -fsSL …/install-vps-ubuntu.sh -o install.sh && sudo bash install.sh
 #
+# Deinstallation (gleiches Muster):
+#   curl -fsSL …/uninstall-vps-ubuntu.sh | sudo bash
+#
 # Optionen:
 #   --dir PATH           Installationsverzeichnis (Default: Repo oder /opt/pulse)
 #   --git URL            Repository klonen (Default bei Remote: markusringe/pulse)
@@ -41,7 +44,7 @@ readonly DEFAULT_INSTALL_DIR="/opt/pulse"
 readonly DEFAULT_GIT_URL="https://github.com/markusringe/pulse.git"
 readonly DEFAULT_GIT_BRANCH="main"
 readonly PULSE_REPO="markusringe/pulse"
-readonly PULSE_INSTALLER_VER="2.1"
+readonly PULSE_INSTALLER_VER="2.3"
 
 # --- Optionen (werden per getopts-Loop gesetzt) ---
 INSTALL_DIR=""
@@ -53,6 +56,16 @@ SKIP_DOCKER=0
 USE_NPM=0
 OUTPUT_JSON=0
 IS_REMOTE=0
+
+# Interaktive Installations-Konfiguration
+INSTALL_DOMAIN=""
+INSTALL_SSL=0
+SSL_ENABLED=0
+SSL_CERT_PATH=""
+SSL_KEY_PATH=""
+INSTALL_ADMIN_EMAIL=""
+INSTALL_ADMIN_NAME="admin"
+INSTALL_ADMIN_PASSWORD=""
 
 STEP=0
 TOTAL_STEPS=10
@@ -376,59 +389,353 @@ ensure_data_dir() {
   ok "data/ angelegt"
 }
 
-# Optionale Benutzerverwaltung in .env eintragen.
+# Interaktive Konfiguration: Domain, optional Let's Encrypt, Admin-Kennwort.
+configure_interactive() {
+  if [ -n "${PULSE_DOMAIN:-}" ]; then
+    INSTALL_DOMAIN="$PULSE_DOMAIN"
+  fi
+  if [ -n "${PULSE_ADMIN_EMAIL:-}" ]; then
+    INSTALL_ADMIN_EMAIL="$PULSE_ADMIN_EMAIL"
+  fi
+  if [ -n "${PULSE_ADMIN_PASSWORD:-}" ]; then
+    INSTALL_ADMIN_PASSWORD="$PULSE_ADMIN_PASSWORD"
+  fi
+  if [ "${PULSE_INSTALL_SSL:-}" = "1" ]; then
+    INSTALL_SSL=1
+  fi
+
+  if [ ! -t 0 ]; then
+    if [ -z "$INSTALL_DOMAIN" ]; then
+      die "PULSE_DOMAIN ist erforderlich (nicht-interaktive Installation)."
+    fi
+    INSTALL_ADMIN_EMAIL="${INSTALL_ADMIN_EMAIL:-admin@${INSTALL_DOMAIN}}"
+    if [ -z "$INSTALL_ADMIN_PASSWORD" ]; then
+      INSTALL_ADMIN_PASSWORD="$(random_hex 16)"
+    fi
+    if [ -z "${PULSE_INSTALL_SSL+x}" ]; then
+      INSTALL_SSL=1
+    elif [ "${PULSE_INSTALL_SSL}" = "1" ]; then
+      INSTALL_SSL=1
+    else
+      INSTALL_SSL=0
+    fi
+    warn "Nicht-interaktiv: Domain ${INSTALL_DOMAIN}, Admin ${INSTALL_ADMIN_EMAIL} — Details in INSTALL-CREDENTIALS.txt"
+    return
+  fi
+
+  echo ""
+  echo "=== Team Townhall (Pulse) Konfiguration ==="
+  echo ""
+
+  while [ -z "$INSTALL_DOMAIN" ]; do
+    printf 'Domain unter der Pulse erreichbar sein soll (z.B. pulse.example.com): '
+    read -r INSTALL_DOMAIN
+    INSTALL_DOMAIN="$(echo "$INSTALL_DOMAIN" | tr '[:upper:]' '[:lower:]' | xargs)"
+    if [ -z "$INSTALL_DOMAIN" ]; then
+      warn "Eine Domain ist für die Server-Installation erforderlich (DNS muss auf diesen Server zeigen)."
+    elif ! echo "$INSTALL_DOMAIN" | grep -Eq '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$'; then
+      warn "Ungültiges Domain-Format — bitte erneut eingeben."
+      INSTALL_DOMAIN=""
+    fi
+  done
+
+  if [ "$INSTALL_SSL" -eq 0 ]; then
+    printf "Let's Encrypt SSL für %s einrichten? [J/n]: " "$INSTALL_DOMAIN"
+    read -r ssl_answer
+    if [ -z "$ssl_answer" ] || echo "$ssl_answer" | grep -qi '^j'; then
+      INSTALL_SSL=1
+    else
+      INSTALL_SSL=0
+    fi
+  fi
+
+  echo ""
+  echo "Administrator-Konto (Erstlogin per Kennwort, kein E-Mail-Versand):"
+  if [ -z "$INSTALL_ADMIN_EMAIL" ]; then
+    printf 'Admin E-Mail-Adresse: '
+    read -r INSTALL_ADMIN_EMAIL
+  fi
+  INSTALL_ADMIN_EMAIL="$(echo "$INSTALL_ADMIN_EMAIL" | tr '[:upper:]' '[:lower:]' | xargs)"
+  if [ -z "$INSTALL_ADMIN_EMAIL" ]; then
+    die "Admin E-Mail ist erforderlich."
+  fi
+
+  if [ -z "$INSTALL_ADMIN_PASSWORD" ]; then
+    while true; do
+      printf 'Initiales Admin-Kennwort (mind. 8 Zeichen): '
+      read -r -s INSTALL_ADMIN_PASSWORD
+      echo ""
+      if [ "${#INSTALL_ADMIN_PASSWORD}" -ge 8 ]; then
+        break
+      fi
+      warn "Kennwort muss mindestens 8 Zeichen lang sein."
+    done
+  fi
+  if [ "${#INSTALL_ADMIN_PASSWORD}" -lt 8 ]; then
+    die "Admin-Kennwort muss mindestens 8 Zeichen lang sein."
+  fi
+
+  ok "Konfiguration erfasst (Domain: ${INSTALL_DOMAIN}, SSL: $([ "$INSTALL_SSL" -eq 1 ] && echo ja || echo nein))"
+}
+
+# Branding: Domain und IP-Sperre aus in data/branding.json.
+configure_branding() {
+  local dir="$1"
+  local domain="$2"
+  local data_dir="$dir/data"
+  mkdir -p "$data_dir"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$data_dir" "$domain" <<'PY'
+import json, os, sys
+data_dir, domain = sys.argv[1], sys.argv[2]
+path = os.path.join(data_dir, "branding.json")
+branding = {}
+if os.path.isfile(path):
+    with open(path, encoding="utf-8") as fh:
+        branding = json.load(fh)
+branding["customDomain"] = domain
+branding["ipBlock"] = False
+with open(path, "w", encoding="utf-8") as fh:
+    json.dump(branding, fh, indent=2, ensure_ascii=False)
+    fh.write("\n")
+PY
+    ok "Branding: customDomain=${domain}, ipBlock=false"
+  elif command -v node >/dev/null 2>&1; then
+    node -e "
+      const fs=require('fs'); const p='${data_dir}/branding.json';
+      let b={}; try{b=JSON.parse(fs.readFileSync(p,'utf8'));}catch{}
+      b.customDomain='${domain}'; b.ipBlock=false;
+      fs.writeFileSync(p, JSON.stringify(b,null,2)+'\n');
+    "
+    ok "Branding: customDomain=${domain}, ipBlock=false"
+  else
+    warn "python3/node fehlt — branding.json manuell anpassen (customDomain, ipBlock=false)"
+  fi
+}
+
+# nginx für Docker-Stack: server_name und optional HTTPS.
+write_nginx_config() {
+  local dir="$1"
+  local domain="$2"
+  local ssl="$3"
+  local nginx_file="$dir/deploy/nginx.conf"
+  mkdir -p "$dir/deploy/certs"
+
+  if [ "$ssl" -eq 1 ]; then
+    cat > "$nginx_file" <<NGINX
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /tmp/nginx.pid;
+
+events {
+    worker_connections 4096;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    sendfile      on;
+    keepalive_timeout 65;
+    server_tokens off;
+
+    map \$http_upgrade \$connection_upgrade {
+        default upgrade;
+        ""      close;
+    }
+
+    upstream pulse_app {
+        ip_hash;
+        server pulse:3000;
+        server pulse-b:3000;
+    }
+
+    server {
+        listen 80;
+        server_name ${domain};
+        return 301 https://\$host\$request_uri;
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name ${domain};
+        ssl_certificate     /etc/nginx/certs/fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/privkey.pem;
+        ssl_protocols       TLSv1.2 TLSv1.3;
+
+        location /metrics {
+            allow 10.0.0.0/8;
+            allow 172.16.0.0/12;
+            allow 192.168.0.0/16;
+            deny all;
+            proxy_pass http://pulse_app;
+        }
+
+        location /.well-known/acme-challenge/ {
+            proxy_pass http://pulse_app;
+            proxy_set_header Host \$host;
+        }
+
+        location / {
+            proxy_pass http://pulse_app;
+            proxy_http_version 1.1;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Connection \$connection_upgrade;
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+        }
+    }
+}
+NGINX
+  else
+    cat > "$nginx_file" <<NGINX
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /tmp/nginx.pid;
+
+events {
+    worker_connections 4096;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    sendfile      on;
+    keepalive_timeout 65;
+    server_tokens off;
+
+    map \$http_upgrade \$connection_upgrade {
+        default upgrade;
+        ""      close;
+    }
+
+    upstream pulse_app {
+        ip_hash;
+        server pulse:3000;
+        server pulse-b:3000;
+    }
+
+    server {
+        listen 80;
+        server_name ${domain};
+
+        location /metrics {
+            allow 10.0.0.0/8;
+            allow 172.16.0.0/12;
+            allow 192.168.0.0/16;
+            deny all;
+            proxy_pass http://pulse_app;
+        }
+
+        location /.well-known/acme-challenge/ {
+            proxy_pass http://pulse_app;
+            proxy_set_header Host \$host;
+        }
+
+        location / {
+            proxy_pass http://pulse_app;
+            proxy_http_version 1.1;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Connection \$connection_upgrade;
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+        }
+    }
+}
+NGINX
+  fi
+  ok "nginx konfiguriert für ${domain} (SSL=$([ "$ssl" -eq 1 ] && echo an || echo aus))"
+}
+
+# Domain in Branding, nginx und Zertifikate für den Docker-Reverse-Proxy.
+configure_server_domain() {
+  local dir="$1"
+  step
+  log "Server für Domain ${INSTALL_DOMAIN} konfigurieren…"
+  configure_branding "$dir" "$INSTALL_DOMAIN"
+
+  if [ "$USE_NPM" -eq 1 ] || [ "$SKIP_DOCKER" -eq 1 ]; then
+    ok "npm-Modus — Pulse nutzt DOMAIN/SSL_DIR aus .env (kein nginx)"
+    return
+  fi
+
+  write_nginx_config "$dir" "$INSTALL_DOMAIN" "$SSL_ENABLED"
+
+  if [ "$SSL_ENABLED" -eq 1 ]; then
+    local cert_src="$dir/data/ssl/$INSTALL_DOMAIN"
+    if [ -f "$cert_src/fullchain.pem" ] && [ -f "$cert_src/privkey.pem" ]; then
+      cp "$cert_src/fullchain.pem" "$dir/deploy/certs/fullchain.pem"
+      cp "$cert_src/privkey.pem" "$dir/deploy/certs/privkey.pem"
+      chmod 600 "$dir/deploy/certs/privkey.pem"
+      ok "TLS-Zertifikate für nginx bereitgestellt"
+    else
+      warn "SSL-Zertifikate fehlen in $cert_src — nginx HTTPS evtl. nicht erreichbar"
+    fi
+  fi
+}
+
+# Let's Encrypt per Certbot (standalone — Port 80 muss frei sein).
+install_letsencrypt() {
+  local domain="$1"
+  local email="$2"
+  local dir="$3"
+  local ssl_root="$dir/data/ssl/$domain"
+
+  step
+  log "Certbot installieren und Zertifikat für $domain anfordern…"
+  apt-get install -y certbot || die "Certbot-Installation fehlgeschlagen."
+
+  if command -v ufw >/dev/null 2>&1; then
+    ufw allow 80/tcp >/dev/null 2>&1 || true
+  fi
+
+  if certbot certonly --standalone -d "$domain" \
+    --agree-tos \
+    --non-interactive \
+    --email "$email" \
+    --keep-until-expiring; then
+    mkdir -p "$ssl_root"
+    cp "/etc/letsencrypt/live/$domain/privkey.pem" "$ssl_root/privkey.pem"
+    cp "/etc/letsencrypt/live/$domain/fullchain.pem" "$ssl_root/fullchain.pem"
+    cp "/etc/letsencrypt/live/$domain/cert.pem" "$ssl_root/cert.pem"
+    cp "/etc/letsencrypt/live/$domain/chain.pem" "$ssl_root/chain.pem"
+    chmod 600 "$ssl_root/privkey.pem"
+    SSL_ENABLED=1
+    SSL_CERT_PATH="$ssl_root/fullchain.pem"
+    SSL_KEY_PATH="$ssl_root/privkey.pem"
+    ok "SSL-Zertifikat installiert: $domain"
+  else
+    warn "SSL-Zertifikat konnte nicht ausgestellt werden — Installation ohne HTTPS fortgesetzt."
+    SSL_ENABLED=0
+  fi
+}
+
+# Optionale Benutzerverwaltung in .env eintragen — ohne SMTP (später in #/admin/email).
 AUTH_CREDS_EXTRA=""
 ADMIN_SECRET_VALUE=""
 configure_user_auth() {
   local env_file="$1"
-  if grep -q '^USER_AUTH_ENABLED=' "$env_file" 2>/dev/null; then
-    return
-  fi
-  local enable=0
-  if [ -t 0 ]; then
-    printf 'Benutzerverwaltung (E-Mail-PIN) aktivieren? [J/n]: '
-    read -r auth_answer
-    if [ -z "$auth_answer" ] || echo "$auth_answer" | grep -qi '^j'; then
-      enable=1
-    fi
-  else
-    enable=1
-    log "USER_AUTH_ENABLED=1 (nicht-interaktiv — SMTP in .env prüfen)"
-  fi
-  if [ "$enable" -eq 0 ]; then
-    return
-  fi
   printf 'USER_AUTH_ENABLED=1\n' >> "$env_file"
-  local admin_name admin_email admin_pw
-  if [ -t 0 ]; then
-    printf 'Bootstrap-Admin Name [admin]: '
-    read -r admin_name
-    admin_name="${admin_name:-admin}"
-    printf 'Bootstrap-Admin E-Mail: '
-    read -r admin_email
-    admin_email="${admin_email:-admin@example.org}"
-    printf 'Bootstrap-Admin Kennwort (nur Kontoänderungen): '
-    read -r -s admin_pw
-    echo ""
-    admin_pw="${admin_pw:-$(random_hex 8)}"
-    printf 'SMTP in .env konfigurieren (SMTP_HOST, SMTP_USER, …) — sonst PIN-Versand ausbleibend.\n'
-  else
-    admin_name="admin"
-    admin_email="admin@example.org"
-    admin_pw="$(random_hex 12)"
-  fi
+  printf 'AUTH_DEV_MAILBOX=0\n' >> "$env_file"
   cat >> "$env_file" <<EOF
-BOOTSTRAP_ADMIN_NAME=${admin_name}
-BOOTSTRAP_ADMIN_EMAIL=${admin_email}
-BOOTSTRAP_ADMIN_PASSWORD=${admin_pw}
+BOOTSTRAP_ADMIN_NAME=${INSTALL_ADMIN_NAME}
+BOOTSTRAP_ADMIN_EMAIL=${INSTALL_ADMIN_EMAIL}
+BOOTSTRAP_ADMIN_PASSWORD=${INSTALL_ADMIN_PASSWORD}
 EOF
   AUTH_CREDS_EXTRA="
 Benutzerverwaltung: aktiv (USER_AUTH_ENABLED=1)
-Bootstrap-Admin E-Mail: ${admin_email}
-Bootstrap-Admin Kennwort (Profil): ${admin_pw}
-Login: http://<server>/#/admin/login (PIN per SMTP)
+Bootstrap-Admin E-Mail: ${INSTALL_ADMIN_EMAIL}
+Erstlogin: Kennwort (bei Installation festgelegt)
+E-Mail-Versand: später unter #/admin/email konfigurieren
 "
-  ok "Benutzerverwaltung in .env konfiguriert"
+  ok "Admin-Konto in .env hinterlegt (kein SMTP bei Installation)"
 }
 
 write_env_file() {
@@ -469,23 +776,70 @@ write_env_file() {
 
   grep -q '^REDIS_URL=' "$env_file" || printf 'REDIS_URL=redis://redis:6379\n' >> "$env_file"
   grep -q '^UPDATE_REPO=' "$env_file" || printf 'UPDATE_REPO=%s\n' "$PULSE_REPO" >> "$env_file"
+  grep -q '^IP_BLOCK=' "$env_file" || printf 'IP_BLOCK=0\n' >> "$env_file"
+  if grep -q '^IP_BLOCK=' "$env_file" 2>/dev/null; then
+    sed -i 's/^IP_BLOCK=.*/IP_BLOCK=0/' "$env_file"
+  fi
 
-  configure_user_auth "$env_file"
+  if [ -n "$INSTALL_DOMAIN" ]; then
+    if grep -q '^DOMAIN=' "$env_file" 2>/dev/null; then
+      sed -i "s/^DOMAIN=.*/DOMAIN=${INSTALL_DOMAIN}/" "$env_file"
+    else
+      printf 'DOMAIN=%s\n' "$INSTALL_DOMAIN" >> "$env_file"
+    fi
+  fi
+
+  if [ "$SSL_ENABLED" -eq 1 ] && [ -n "$INSTALL_DOMAIN" ]; then
+    grep -q '^SSL_DIR=' "$env_file" || printf 'SSL_DIR=%s/data/ssl\n' "$dir" >> "$env_file"
+    grep -q '^HTTPS_PORT=' "$env_file" || printf 'HTTPS_PORT=443\n' >> "$env_file"
+    grep -q '^SSL_REDIRECT=' "$env_file" || printf 'SSL_REDIRECT=1\n' >> "$env_file"
+  fi
+
+  if ! grep -q '^USER_AUTH_ENABLED=' "$env_file" 2>/dev/null; then
+    configure_user_auth "$env_file"
+  elif [ -n "$INSTALL_ADMIN_EMAIL" ] && [ -n "$INSTALL_ADMIN_PASSWORD" ]; then
+    grep -q '^AUTH_DEV_MAILBOX=' "$env_file" && sed -i 's/^AUTH_DEV_MAILBOX=.*/AUTH_DEV_MAILBOX=0/' "$env_file" || printf 'AUTH_DEV_MAILBOX=0\n' >> "$env_file"
+    for key_val in \
+      "BOOTSTRAP_ADMIN_NAME=${INSTALL_ADMIN_NAME}" \
+      "BOOTSTRAP_ADMIN_EMAIL=${INSTALL_ADMIN_EMAIL}" \
+      "BOOTSTRAP_ADMIN_PASSWORD=${INSTALL_ADMIN_PASSWORD}"; do
+      key="${key_val%%=*}"
+      if grep -q "^${key}=" "$env_file" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key_val}|" "$env_file"
+      else
+        printf '%s\n' "$key_val" >> "$env_file"
+      fi
+    done
+    AUTH_CREDS_EXTRA="
+Benutzerverwaltung: aktiv
+Bootstrap-Admin E-Mail: ${INSTALL_ADMIN_EMAIL}
+Erstlogin: Installations-Kennwort (siehe INSTALL-CREDENTIALS.txt bei Remote-Install)
+E-Mail-Versand: #/admin/email
+"
+    ok "Bootstrap-Admin in .env aktualisiert"
+  fi
 
   chmod 600 "$env_file"
   ok ".env geschützt (chmod 600)"
 
   CREDS_FILE="$dir/INSTALL-CREDENTIALS.txt"
+  local admin_pw_line=""
+  if [ -n "$INSTALL_ADMIN_PASSWORD" ]; then
+    admin_pw_line="
+Admin Erstlogin-Kennwort:
+  ${INSTALL_ADMIN_PASSWORD}
+"
+  fi
   cat > "$CREDS_FILE" <<EOF
 Pulse — Installationszugangsdaten ($(date -u +%Y-%m-%dT%H:%M:%SZ))
-Speichern Sie diese Datei sicher und löschen Sie sie nach dem Notieren.
+Speichern Sie diese Datei sicher und löschen Sie diese nach dem Notieren.
 
 ADMIN_SECRET (API / Instanz-Admin):
   ${admin_secret}
 
 Grafana (http://<server>:3001, User admin):
   ${grafana_pw}
-${AUTH_CREDS_EXTRA}
+${admin_pw_line}${AUTH_CREDS_EXTRA}
 Installationsverzeichnis: ${dir}
 EOF
   chmod 600 "$CREDS_FILE"
@@ -503,11 +857,16 @@ configure_firewall() {
     warn "ufw nicht installiert — Ports 22, 80, 443, 3000 manuell öffnen."
     return
   fi
-  log "UFW: SSH, HTTP, HTTPS, Pulse (3000)…"
+  log "UFW: SSH, HTTP, HTTPS…"
   ufw allow OpenSSH >/dev/null 2>&1 || ufw allow 22/tcp
   ufw allow 80/tcp
   ufw allow 443/tcp
-  ufw allow 3000/tcp
+  if [ "$USE_NPM" -eq 1 ]; then
+    ufw allow 3000/tcp
+    log "npm-Modus: Port 3000 geöffnet"
+  else
+    log "Docker/nginx-Modus: Pulse nur intern — kein öffentlicher Port 3000"
+  fi
   if [ "$EXPOSE_GRAFANA" -eq 1 ]; then
     ufw allow 3001/tcp
     warn "Grafana Port 3001 öffentlich — starkes Passwort in .env setzen!"
@@ -563,6 +922,13 @@ print_summary() {
   ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
   [ -n "$ip" ] || ip="<server-ip>"
 
+  local host_label="$INSTALL_DOMAIN"
+  local scheme="http"
+  local port_suffix=""
+  if [ "$SSL_ENABLED" -eq 1 ]; then
+    scheme="https"
+  fi
+
   local start_hint
   if [ "$USE_NPM" -eq 1 ]; then
     start_hint="cd ${dir} && npm start   # Port 3000"
@@ -573,16 +939,21 @@ print_summary() {
   cat <<EOF
 
 ╔══════════════════════════════════════════════════════════════╗
-║  Pulse VPS-Installation abgeschlossen                        ║
+║  Pulse VPS-Installation abgeschlossen (v${PULSE_INSTALLER_VER})          ║
 ╚══════════════════════════════════════════════════════════════╝
 
-  Pulse (HTTP):       http://${ip}:3000/
-  Administration:     http://${ip}:3000/#/admin
-  Anmeldung (Auth):   http://${ip}:3000/#/admin/login
-  Health:             http://${ip}:3000/api/health
-  Updates (Admin):    http://${ip}:3000/#/admin/updates
+  Domain:             ${INSTALL_DOMAIN}
+  SSL:                $([ "$SSL_ENABLED" -eq 1 ] && echo "aktiv (Let's Encrypt)" || echo "nein")
+  Pulse:              ${scheme}://${host_label}${port_suffix}/
+  Administration:     ${scheme}://${host_label}${port_suffix}/#/admin
+  Erstlogin:          ${scheme}://${host_label}${port_suffix}/#/admin/login
+  E-Mail konfig.:     ${scheme}://${host_label}${port_suffix}/#/admin/email
+  Health (intern):    http://${ip}:3000/api/health
 
-  ADMIN_SECRET (einmalig — auch in INSTALL-CREDENTIALS.txt):
+  Admin E-Mail:       ${INSTALL_ADMIN_EMAIL:-—}
+  Erstlogin:          Kennwort (bei Installation festgelegt — nicht per E-Mail)
+
+  ADMIN_SECRET (Notfall / API):
   ${ADMIN_SECRET_VALUE}
 
   Geheimnisse:        ${dir}/INSTALL-CREDENTIALS.txt  (chmod 600)
@@ -592,15 +963,11 @@ print_summary() {
   Start / Neustart:
     ${start_hint}
 
-  Nützliche Befehle:
-    docker compose -f ${dir}/docker-compose.yml ps
-    docker compose -f ${dir}/docker-compose.yml logs -f pulse
-
   Nächste Schritte:
-    1. ADMIN_SECRET sicher notieren
-    2. DNS auf ${ip} zeigen lassen
-    3. HTTPS: #/admin/ssl (Port 80 muss erreichbar sein)
-    4. Optional: UPDATE_REPO=${PULSE_REPO} in .env (bereits gesetzt)
+    1. Anwendung starten (falls noch nicht läuft)
+    2. Erstlogin mit E-Mail + Installations-Kennwort
+    3. E-Mail-Versand unter #/admin/email einrichten (SMTP/Sendmail)
+    4. Danach Anmeldung per E-Mail-PIN möglich
 
   Dokumentation: docs/installation.md
   Repository:    https://github.com/${PULSE_REPO}
@@ -617,8 +984,10 @@ print_summary_json() {
   local ip="$2"
   local mode="docker"
   [ "$USE_NPM" -eq 1 ] && mode="npm"
+  local scheme="http"
+  [ "$SSL_ENABLED" -eq 1 ] && scheme="https"
   cat <<EOF
-{"ok":true,"mode":"${mode}","installDir":"${dir}","adminUrl":"http://${ip}:3000/#/admin","healthUrl":"http://${ip}:3000/api/health","credentialsFile":"${dir}/INSTALL-CREDENTIALS.txt","remote":${IS_REMOTE}}
+{"ok":true,"mode":"${mode}","domain":"${INSTALL_DOMAIN}","installDir":"${dir}","url":"${scheme}://${INSTALL_DOMAIN}/","adminUrl":"${scheme}://${INSTALL_DOMAIN}/#/admin","credentialsFile":"${dir}/INSTALL-CREDENTIALS.txt","remote":${IS_REMOTE}}
 EOF
 }
 
@@ -636,19 +1005,29 @@ main() {
   ok "Pulse VPS-Installer v${PULSE_INSTALLER_VER}"
   log "Pulse VPS-Installer — Zielverzeichnis: $dir"
 
+  configure_interactive
+
   system_update
   if [ "$USE_NPM" -eq 1 ]; then
     install_git
     prepare_project "$dir"
     ensure_data_dir "$dir"
+    if [ "$INSTALL_SSL" -eq 1 ] && [ -n "$INSTALL_DOMAIN" ]; then
+      install_letsencrypt "$INSTALL_DOMAIN" "$INSTALL_ADMIN_EMAIL" "$dir"
+    fi
     write_env_file "$dir"
+    configure_server_domain "$dir"
     configure_firewall
     start_npm_stack "$dir"
   else
     install_docker
     prepare_project "$dir"
     ensure_data_dir "$dir"
+    if [ "$INSTALL_SSL" -eq 1 ] && [ -n "$INSTALL_DOMAIN" ]; then
+      install_letsencrypt "$INSTALL_DOMAIN" "$INSTALL_ADMIN_EMAIL" "$dir"
+    fi
     write_env_file "$dir"
+    configure_server_domain "$dir"
     configure_firewall
     start_docker_stack "$dir"
   fi

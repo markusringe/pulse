@@ -37,6 +37,7 @@ const emailService = require("./lib/emailService");
 const pinLimiter = require("./lib/pinLimiter");
 const { ensureBootstrapAdmin } = require("./lib/bootstrapAdmin");
 const updateService = require("./lib/updateService");
+const emailApi = require("./lib/emailApi");
 
 const PORT = Number(process.env.PORT) || 3000;
 const BATCH_INTERVAL = Number(process.env.BATCH_INTERVAL_MS) || 100;
@@ -357,6 +358,18 @@ async function handleApi(req, res, url) {
   if (parts[1] === "ssl") {
     await handleSslApi(req, res, parts);
     return;
+  }
+  if (parts[1] === "email") {
+    const handled = await emailApi.handleEmailApi({
+      req,
+      res,
+      parts,
+      send,
+      readJson,
+      authApi,
+      getAuth,
+    });
+    if (handled) return;
   }
   if (parts[1] === "updates") {
     await handleUpdatesApi(req, res, parts, ipKey);

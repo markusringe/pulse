@@ -7,6 +7,9 @@ const state = {
   nav: [],
   enabled: false,
   needsBootstrap: false,
+  bootstrapPasswordLogin: false,
+  passwordLoginMode: false,
+  pinLoginAvailable: false,
   loaded: false,
   stepUpUntil: null,
   /** Legacy-Zugriff per ADMIN_SECRET / X-Admin-Key (ohne Cookie-Login). */
@@ -31,6 +34,9 @@ export async function loadAuth() {
   const status = await fetchJson("/auth/status");
   state.enabled = Boolean(status.data?.enabled);
   state.needsBootstrap = Boolean(status.data?.needsBootstrap);
+  state.bootstrapPasswordLogin = Boolean(status.data?.bootstrapPasswordLogin);
+  state.passwordLoginMode = Boolean(status.data?.passwordLoginMode);
+  state.pinLoginAvailable = Boolean(status.data?.pinLoginAvailable);
   if (!state.enabled) {
     state.loaded = true;
     state.user = null;
@@ -85,6 +91,18 @@ export function needsAuthBootstrap() {
   return state.needsBootstrap;
 }
 
+export function isBootstrapPasswordLogin() {
+  return state.bootstrapPasswordLogin;
+}
+
+export function isPasswordLoginMode() {
+  return state.passwordLoginMode;
+}
+
+export function isPinLoginAvailable() {
+  return state.pinLoginAvailable;
+}
+
 /**
  * Ob Admin-Routen ohne Login-Redirect erreichbar sind (Cookie, ADMIN_SECRET oder Bootstrap).
  * @returns {boolean}
@@ -120,6 +138,39 @@ export async function verifyPin(email, pin, persistent = true) {
   const r = await fetchJson("/auth/verify-pin", {
     method: "POST",
     body: { email, pin, persistent },
+  });
+  if (r.ok) {
+    state.user = r.data.user;
+    state.nav = r.data.nav || [];
+    state.stepUpUntil = r.data.stepUpUntil || Date.now() + 15 * 60 * 1000;
+    state.bootstrapPasswordLogin = false;
+    state.passwordLoginMode = false;
+    state.pinLoginAvailable = true;
+  }
+  return r;
+}
+
+/** Erstlogin mit bei der Installation festgelegtem Kennwort. */
+export async function bootstrapLogin(email, password, persistent = true) {
+  const r = await fetchJson("/auth/bootstrap-login", {
+    method: "POST",
+    body: { email, password, persistent },
+  });
+  if (r.ok) {
+    state.user = r.data.user;
+    state.nav = r.data.nav || [];
+    state.stepUpUntil = r.data.stepUpUntil || Date.now() + 15 * 60 * 1000;
+    state.bootstrapPasswordLogin = false;
+    state.passwordLoginMode = !state.pinLoginAvailable;
+  }
+  return r;
+}
+
+/** Anmeldung per Kennwort wenn E-Mail-Versand deaktiviert ist. */
+export async function loginPassword(email, password, persistent = true) {
+  const r = await fetchJson("/auth/login-password", {
+    method: "POST",
+    body: { email, password, persistent },
   });
   if (r.ok) {
     state.user = r.data.user;
@@ -205,6 +256,18 @@ export async function deleteUser(id) {
 
 export async function getDevMailbox() {
   return fetchJson("/auth/dev-mailbox");
+}
+
+export async function getEmailConfig() {
+  return fetchJson("/email");
+}
+
+export async function saveEmailConfig(body) {
+  return fetchJson("/email", { method: "PATCH", body });
+}
+
+export async function sendTestEmail(body = {}) {
+  return fetchJson("/email/test", { method: "POST", body });
 }
 
 /**

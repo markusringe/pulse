@@ -59,6 +59,37 @@ assert(userDb.supported, "SQLite userDb verfügbar");
   const adminCount = await userService.countAdmins(userDb);
   assert(adminCount === 1, "Ein Admin vorhanden");
 
+  /* Bootstrap-Kennwort-Login ohne E-Mail */
+  await userDb.setSetting("bootstrapPasswordLogin", "1");
+  const emailService = require("../lib/emailService");
+  emailService.reloadConfig();
+  assert(await userService.isPasswordLoginMode(userDb), "Passwort-Modus bei Bootstrap");
+  assert(await userService.isBootstrapPasswordLogin(userDb), "Bootstrap-Flag gesetzt");
+
+  let pinBlocked = false;
+  const prevDev = process.env.AUTH_DEV_MAILBOX;
+  process.env.AUTH_DEV_MAILBOX = "0";
+  emailService.reloadConfig();
+  try {
+    await userService.requestPin(userDb, { email: "admin@test.local", ipHash: "x", lang: "de" });
+  } catch (err) {
+    pinBlocked = err.statusCode === 503;
+  }
+  assert(pinBlocked, "PIN ohne SMTP blockiert wenn Dev-Mailbox aus");
+  process.env.AUTH_DEV_MAILBOX = prevDev;
+  emailService.reloadConfig();
+
+  const pwLogin = await userService.verifyPasswordLogin(userDb, {
+    email: "admin@test.local",
+    password: "InitPass123!",
+    ipHash: "abc",
+    userAgent: "test",
+    persistent: true,
+    bootstrapOnly: true,
+  });
+  assert(pwLogin.token, "Bootstrap-Login erfolgreich");
+  assert(!(await userService.isBootstrapPasswordLogin(userDb)), "Bootstrap-Flag nach Login gelöscht");
+
   /* Selbstregistrierung */
   await userDb.setSetting("selfRegistrationEnabled", "1");
   const settings = await userService.getSettings(userDb);

@@ -35,7 +35,7 @@ import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
 import { syncAdminNav } from "./adminNav.js?v=nav15";
 import { loadAuth, ensureAdminAccess, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, logout } from "./authClient.js?v=nav32";
-import { showLoginPage, initAuthOnBoot } from "./loginPage.js?v=nav32";
+import { showLoginPage, initAuthOnBoot } from "./loginPage.js?v=nav36";
 import { showUsersPage } from "./usersAdmin.js?v=nav30";
 import { showProfilePage } from "./profilePage.js?v=nav30";
 import { ensureStepUp } from "./stepUp.js?v=nav35";
@@ -337,6 +337,7 @@ function expectedViewFromHash() {
   if (hash === "/admin/privacy") return "adminPrivacy";
   if (hash === "/admin/branding") return "branding";
   if (hash === "/admin/ssl") return "ssl";
+  if (hash === "/admin/email") return "email";
   if (hash === "/admin/settings") return "adminSettings";
   if (hash === "/admin/updates") return "updates";
   if (hash === "/admin/login") return "login";
@@ -495,6 +496,16 @@ function route(forcedHash) {
     showSslPage();
     return;
   }
+  if (hash === "/admin/email") {
+    teardownRealtime();
+    showView("email");
+    import("./emailPage.js?v=nav36")
+      .then((m) => m.showEmailPage())
+      .catch((err) => {
+        console.error("[email-page]", err);
+      });
+    return;
+  }
   if (hash === "/admin/settings") {
     teardownRealtime();
     showView("adminSettings");
@@ -601,6 +612,7 @@ function showView(name, routeHash) {
   if (!els.views.users) els.views.users = document.getElementById("view-users");
   if (!els.views.profile) els.views.profile = document.getElementById("view-profile");
   if (!els.views.updates) els.views.updates = document.getElementById("view-updates");
+  if (!els.views.email) els.views.email = document.getElementById("view-email");
   for (const [key, el] of Object.entries(els.views)) {
     if (!el) continue;
     const active = key === name;
