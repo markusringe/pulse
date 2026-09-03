@@ -32,6 +32,25 @@ assert(updateService.semverGt("1.3.0", "1.2.3"), "1.3.0 > 1.2.3");
 assert(!updateService.semverGt("1.2.3", "1.3.0"), "1.2.3 nicht > 1.3.0");
 assert(!updateService.semverGt("1.2.3", "1.2.3"), "gleiche Version");
 assert(updateService.semverGt("2.0.0", "1.9.9"), "Major-Sprung");
+
+const picked = updateService.pickHighestReleaseCandidate(
+  [
+    { tag_name: "v1.2.1", draft: false, prerelease: false, body: "Release 1.2.1" },
+  ],
+  [{ name: "v1.2.3" }, { name: "v1.2.2" }, { name: "v1.2.1" }],
+  false,
+  "markusringe/pulse"
+);
+assert(picked?.tag_name === "v1.2.3", "Neuester Tag schlägt älteres GitHub-Release");
+
+const noUpdate = updateService.pickHighestReleaseCandidate(
+  [{ tag_name: "v1.2.1", draft: false, prerelease: false }],
+  [{ name: "v1.2.1" }],
+  false,
+  "markusringe/pulse"
+);
+assert(noUpdate?.tag_name === "v1.2.1", "Gleiche Version aus Release");
+
 assert(updateService.configuredRepo() === "markusringe/pulse", "Repo aus Env");
 assert(updateService.updatesEnabled(), "Updates aktiv");
 assert(updateService.loadPackageVersion() === "1.0.0", "package.json Version");
