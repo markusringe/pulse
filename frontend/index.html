@@ -74,6 +74,7 @@
             <a href="#/admin/email" data-admin-nav="email">E-Mail</a>
             <a href="#/admin/settings" data-admin-nav="settings" data-i18n="admin.nav.settings">Einstellungen</a>
             <a href="#/admin/updates" data-admin-nav="updates">Updates</a>
+            <a href="#/admin/backups" data-admin-nav="backups">Backups</a>
             <a href="#/admin/users" data-admin-nav="users" data-i18n="admin.nav.users">Benutzer</a>
             <a href="#/admin/help" data-admin-nav="help" data-i18n="admin.nav.help">Hilfe</a>
           </nav>
@@ -764,6 +765,73 @@
         </form>
       </section>
 
+      <section id="view-backups" class="view branding-page" hidden>
+        <h1>Backups</h1>
+        <p class="muted">Vollständige Sicherung aller Instanzdaten (Datenbank, Konfiguration, SSL, Uploads) als ZIP-Archiv.</p>
+
+        <div class="backups-panel panel">
+          <h2>Neues Backup</h2>
+          <p class="muted">Erstellt ein vollständiges Backup aller Daten als ZIP-Datei und startet den Download.</p>
+          <button type="button" id="backup-create-btn" class="btn primary">Backup erstellen</button>
+        </div>
+
+        <h2>Verfügbare Backups</h2>
+        <div class="backup-list-wrap panel">
+          <table class="backup-table" id="backups-table">
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Größe</th>
+                <th>Checksum</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="backups-table-body"></tbody>
+          </table>
+        </div>
+
+        <div class="backups-upload panel">
+          <h2>Backup hochladen</h2>
+          <p class="muted">ZIP-Datei für die Wiederherstellung hochladen (max. 100&nbsp;MB).</p>
+          <label class="field settings-file-label">
+            <span>ZIP-Datei</span>
+            <input type="file" id="backup-upload-file" accept=".zip,application/zip" />
+          </label>
+          <button type="button" id="backup-upload-btn" class="btn ghost">Hochladen</button>
+        </div>
+
+        <h2>Automatische Backups</h2>
+        <form id="backup-config-form" class="panel">
+          <label class="field">
+            <input type="checkbox" id="backup-auto-enabled" checked />
+            <span>Automatische Backups aktivieren</span>
+          </label>
+          <label class="field">
+            Intervall
+            <select id="backup-interval">
+              <option value="daily">Täglich (3:00 Uhr)</option>
+              <option value="weekly">Wöchentlich (Sonntag 3:00 Uhr)</option>
+            </select>
+          </label>
+          <label class="field">
+            Backups behalten (Tage)
+            <input type="number" id="backup-retention" min="1" max="365" value="7" />
+          </label>
+          <label class="field">
+            <input type="checkbox" id="backup-include-env" />
+            <span>.env-Datei in Backups einschließen (sicherheitsrelevant — nur bei vertrauenswürdiger Ablage)</span>
+          </label>
+          <label class="field">
+            Backup-Verzeichnis
+            <input id="backup-dir-label" readonly />
+          </label>
+          <p id="backup-config-msg" class="muted" role="status"></p>
+          <button type="submit" class="btn primary">Einstellungen speichern</button>
+        </form>
+
+        <p id="backup-msg" class="muted" role="status"></p>
+      </section>
+
       <section id="view-updates" class="view branding-page" hidden>
         <h1>Updates</h1>
         <p class="muted">Automatische Prüfung auf neue GitHub-Releases und sichere Installation mit Backup.</p>
@@ -975,7 +1043,7 @@
         </form>
         <section id="settings-panel" class="panel settings-panel" aria-labelledby="settings-heading">
           <h2 id="settings-heading" data-i18n="settings.backupTitle">Sicherung</h2>
-          <p class="muted" data-i18n="settings.intro">Branding (inkl. Logo), Rechtstexte und SSL-Zertifikate als Datei sichern. Die Datei enthält private Schlüssel — wie ein Passwort aufbewahren. Umfragen und Sessions sind nicht enthalten.</p>
+          <p class="muted" data-i18n="settings.intro">Branding (inkl. Logo), Rechtstexte und SSL-Zertifikate als Datei sichern. Für vollständige Instanz-Backups siehe <a href="#/admin/backups">Backups</a>. Die Datei enthält private Schlüssel — wie ein Passwort aufbewahren. Umfragen und Sessions sind nicht enthalten.</p>
           <div class="settings-actions">
             <button type="button" id="settings-export" class="btn primary" data-i18n="settings.export">Exportieren</button>
             <label class="field settings-file-label">
@@ -1032,6 +1100,6 @@
     </aside>
 
     <script type="module" src="./js/help.js?v=nav12"></script>
-    <script type="module" src="./js/app.js?v=nav37"></script>
+    <script type="module" src="./js/app.js?v=nav38"></script>
   </body>
 </html>

@@ -1162,6 +1162,44 @@ body.admin-area .view:not([hidden]) {
   border: none;
 }
 
+.backup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.backup-table th,
+.backup-table td {
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+}
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.backup-checksum {
+  font-size: 0.82rem;
+}
+
+.backups-panel,
+.backups-upload,
+.backup-list-wrap {
+  margin-bottom: 1.25rem;
+}
+
+.backup-msg-error {
+  color: var(--danger, #c0392b);
+}
+
+.btn-warning {
+  border-color: var(--warn-border, #e67e22);
+  color: var(--warn-text, #d35400);
+}
+
 .login-page {
   padding: 1.5rem;
 }

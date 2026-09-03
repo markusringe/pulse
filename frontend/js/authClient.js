@@ -323,6 +323,7 @@ function navKeyFromHash(hash) {
   if (hash === "/admin/ssl") return "ssl";
   if (hash === "/admin/settings") return "settings";
   if (hash === "/admin/updates") return "updates";
+  if (hash === "/admin/backups") return "backups";
   if (hash === "/admin/users") return "users";
   if (hash === "/admin/profile") return "profile";
   if (/^\/admin\/help/.test(hash)) return "help";

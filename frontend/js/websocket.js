@@ -589,6 +589,45 @@ export const api = {
   async updatesRollback(body) {
     return requestResult("POST", "/updates/rollback", body);
   },
+
+  /** Backup-Liste und Konfiguration. */
+  async backupsList() {
+    return requestResult("GET", "/backups/list");
+  },
+
+  /** Vollständiges ZIP-Backup erstellen. */
+  async backupsCreate() {
+    return requestResult("GET", "/backups/create");
+  },
+
+  /** Backup wiederherstellen (Server-Neustart). */
+  async backupsRestore(body) {
+    return requestResult("POST", "/backups/restore", body);
+  },
+
+  /** Backup-Konfiguration speichern. */
+  async backupsSaveConfig(body) {
+    return requestResult("PATCH", "/backups/config", body);
+  },
+
+  /** ZIP-Backup hochladen. */
+  async backupsUpload(formData) {
+    try {
+      const headers = {};
+      if (api.adminKey) headers["X-Admin-Key"] = api.adminKey;
+      if (api.clientId) headers["X-Client-Id"] = api.clientId;
+      const res = await fetch(`${api.base}/backups/upload`, {
+        method: "POST",
+        headers,
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data };
+    } catch {
+      return { ok: false, status: 0, data: { error: "Netzwerkfehler" } };
+    }
+  },
 };
 
 async function request(method, path, body) {

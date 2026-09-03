@@ -134,6 +134,7 @@ const els = {
     adminPrivacy: document.getElementById("view-admin-privacy"),
     adminSettings: document.getElementById("view-settings"),
     updates: document.getElementById("view-updates"),
+    backups: document.getElementById("view-backups"),
     help: document.getElementById("view-help"),
     stage: document.getElementById("view-stage"),
     events: document.getElementById("view-events"),
@@ -351,6 +352,7 @@ function expectedViewFromHash() {
   if (hash === "/admin/email") return "email";
   if (hash === "/admin/settings") return "adminSettings";
   if (hash === "/admin/updates") return "updates";
+  if (hash === "/admin/backups") return "backups";
   if (hash === "/admin/login") return "login";
   if (hash === "/admin/users") return "users";
   if (hash === "/admin/profile") return "profile";
@@ -547,6 +549,18 @@ function route(forcedHash) {
         console.error("[updates-page]", err);
         const msg = document.getElementById("update-msg");
         if (msg) msg.textContent = "Updates-Modul konnte nicht geladen werden — bitte Seite neu laden (Strg+F5).";
+      });
+    return;
+  }
+  if (hash === "/admin/backups") {
+    teardownRealtime();
+    showView("backups");
+    import("./backupsPage.js?v=nav38")
+      .then((m) => m.showBackupsPage())
+      .catch((err) => {
+        console.error("[backups-page]", err);
+        const msg = document.getElementById("backup-msg");
+        if (msg) msg.textContent = "Backups-Modul konnte nicht geladen werden — bitte Seite neu laden (Strg+F5).";
       });
     return;
   }

@@ -24,18 +24,22 @@
     "test:auth": "node scripts/test-auth.js",
     "test:email-config": "node scripts/test-email-config.js",
     "test:updates": "node scripts/test-updates.js",
+    "test:backups": "node scripts/test-backups.js",
     "test:install-vps": "bash scripts/test-install-vps-path.sh",
     "bootstrap:admin": "node scripts/bootstrap-admin.js",
     "migrate:events": "node scripts/migrate-events.js",
     "setup": "bash scripts/install.sh",
     "setup:vps": "bash scripts/install-vps-ubuntu.sh",
-    "test": "node scripts/test-security.js && node scripts/test-deck.js && node scripts/test-live.js && node scripts/test-presenter.js && node scripts/test-ssl.js && node scripts/test-theme.js && node scripts/test-privacy.js && node scripts/test-help.js && node scripts/test-branding.js && node scripts/test-settings.js && node scripts/test-slides.js && node scripts/test-qa-timer.js && node scripts/test-events.js && node scripts/test-auth.js && node scripts/test-email-config.js && node scripts/test-updates.js && bash scripts/test-install-vps-path.sh && bash scripts/test-uninstall-vps-path.sh"
+    "test": "node scripts/test-security.js && node scripts/test-deck.js && node scripts/test-live.js && node scripts/test-presenter.js && node scripts/test-ssl.js && node scripts/test-theme.js && node scripts/test-privacy.js && node scripts/test-help.js && node scripts/test-branding.js && node scripts/test-settings.js && node scripts/test-slides.js && node scripts/test-qa-timer.js && node scripts/test-events.js && node scripts/test-auth.js && node scripts/test-email-config.js && node scripts/test-updates.js && node scripts/test-backups.js && bash scripts/test-install-vps-path.sh && bash scripts/test-uninstall-vps-path.sh"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
-    "acme-client": "^5.4.0"
+    "acme-client": "^5.4.0",
+    "archiver": "^7.0.1",
+    "extract-zip": "^2.0.1",
+    "node-cron": "^3.0.3"
   },
   "optionalDependencies": {
     "pg": "^8.13.1"

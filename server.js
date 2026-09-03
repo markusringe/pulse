@@ -38,6 +38,9 @@ const pinLimiter = require("./lib/pinLimiter");
 const { ensureBootstrapAdmin } = require("./lib/bootstrapAdmin");
 const updateService = require("./lib/updateService");
 const emailApi = require("./lib/emailApi");
+const backupService = require("./lib/backupService");
+const backupApi = require("./lib/backupApi");
+const autoBackup = require("./lib/autoBackup");
 
 const PORT = Number(process.env.PORT) || 3000;
 const BATCH_INTERVAL = Number(process.env.BATCH_INTERVAL_MS) || 100;
@@ -373,6 +376,24 @@ async function handleApi(req, res, url) {
   }
   if (parts[1] === "updates") {
     await handleUpdatesApi(req, res, parts, ipKey);
+    return;
+  }
+  if (parts[1] === "backups") {
+    await backupApi.handleBackupsApi({
+      req,
+      res,
+      parts,
+      send,
+      readJson,
+      readRawWithLimit,
+      isSettingsAdmin,
+      getAuth,
+      authApi,
+      audit,
+      corsHeaders,
+      gracefulShutdown,
+      restartAutoBackup: autoBackup.restartAutoBackup,
+    });
     return;
   }
   if (req.method === "GET" && parts[1] === "audit") {
@@ -2104,6 +2125,22 @@ updateService.registerProgressSink((event, payload) => {
   broadcastSystem({ type: event, payload });
 });
 updateService.registerShutdownHook(gracefulShutdown);
+
+backupService.setHooks({
+  persistSessions: async () => {
+    for (const session of sessions.values()) {
+      try {
+        await Promise.resolve(db.save(session.code, sessionToPersistable(session)));
+      } catch (err) {
+        console.error("[backup-persist]", session.code, err);
+      }
+    }
+  },
+  broadcast: broadcastSystem,
+  shutdown: gracefulShutdown,
+});
+
+autoBackup.startAutoBackup();
 
 process.on("SIGTERM", () => gracefulShutdown("sigterm"));
 process.on("SIGINT", () => gracefulShutdown("sigint"));
