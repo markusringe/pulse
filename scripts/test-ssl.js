@@ -90,6 +90,9 @@ assert(String(captured.body).includes("key-authorization-value"), "Challenge-Bod
 assert(ssl.serveChallenge("/.well-known/acme-challenge/fehlt", res), "unbekanntes Token trotzdem Challenge-Route");
 assert(captured.status === 404, "Challenge 404");
 assert(!ssl.serveChallenge("/admin/ssl", res), "kein Challenge-Pfad");
+assert(ssl.isSecureRequest({ headers: { "x-forwarded-proto": "https" }, socket: {} }), "Proxy HTTPS");
+assert(!ssl.isSecureRequest({ headers: { "x-forwarded-proto": "http" }, socket: {} }), "Proxy HTTP");
+assert(ssl.isSecureRequest({ headers: {}, socket: { encrypted: true } }), "direktes TLS");
 ssl._challenges.delete("test-token");
 
 const info = ssl.httpsInfo();

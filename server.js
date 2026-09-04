@@ -158,7 +158,7 @@ async function onHttpRequest(req, res) {
       return;
     }
     /* Nur Klartext-HTTP umleiten, sobald ein aktives Zertifikat liegt. */
-    if (!req.socket.encrypted && ssl.shouldRedirectHttp(url)) {
+    if (!ssl.isSecureRequest(req) && ssl.shouldRedirectHttp(url)) {
       res.writeHead(301, { Location: ssl.httpsLocation(req, url), ...corsHeaders(req) });
       res.end();
       return;
