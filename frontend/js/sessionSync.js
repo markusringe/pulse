@@ -77,6 +77,27 @@ export function acceptStructural(session, payload, { role = "presenter", eventTy
 }
 
 /**
+ * Folienwechsel-Payload in Session übernehmen (Presenter, Teilnehmer, Stage).
+ * @param {object} session
+ * @param {object} payload
+ * @param {{ stripSlide?: (s: object) => object }} [opts]
+ * @returns {number | null} neuer Index oder null
+ */
+export function applySlidePayload(session, payload, opts = {}) {
+  if (!session || payload?.index == null) return null;
+  const index = Number(payload.index);
+  if (!Number.isFinite(index)) return null;
+  session.activeSlideIndex = index;
+  normalizeSessionSlides(session);
+  if (payload.slide) {
+    const incoming = opts.stripSlide ? opts.stripSlide(payload.slide) : payload.slide;
+    session.slides[index] = { ...(session.slides[index] || {}), ...incoming };
+  }
+  applyIncoming(session, payload);
+  return session.activeSlideIndex;
+}
+
+/**
  * WS-Envelope: stateVersion von Top-Level in Payload übernehmen (announce-Fanout).
  * @param {object | null | undefined} envelope
  * @returns {object | null | undefined}

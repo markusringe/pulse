@@ -74,7 +74,7 @@ import {
   renderPresentStrip,
   applyMockDeck,
 } from "./deck.js";
-import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming } from "./sessionSync.js";
+import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming, applySlidePayload } from "./sessionSync.js";
 import {
   mountPresenterStats,
   refreshPresenterStats,
@@ -250,6 +250,8 @@ let interactionBarCtrl = null;
 let interactionTickTimer = null;
 /** Timeout bis poll:update die Stimme bestätigt — danach einmal Retry. */
 let voteConfirmTimer = 0;
+/** rAF-Coalescing für Teilnehmer-Folien-Render bei schnellen Wechseln. */
+let joinSlideRaf = 0;
 
 /** @type {{ session: any, role: string, rt: RealtimeClient | null, sim: number }} */
 const ctx = {
@@ -1421,22 +1423,7 @@ function connectRealtime(role) {
     if (lobbyN) lobbyN.textContent = String(n);
     refreshPresenterPanel();
   });
-  rt.on("slide", (payload) => {
-    if (!ctx.session) return;
-    const syncRole = wsSyncRole();
-    if (!acceptStructural(ctx.session, payload, { role: syncRole, eventType: "slide" })) return;
-    if (ctx.pendingVoteSlideId) rollbackPendingVote();
-    ctx.session.activeSlideIndex = payload.index;
-    normalizeSessionSlides(ctx.session);
-    if (payload.slide) {
-      const incoming = ctx.role === "join" ? stripSlideSecrets(payload.slide) : payload.slide;
-      ctx.session.slides[payload.index] = { ...ctx.session.slides[payload.index], ...incoming };
-    }
-    applyIncoming(ctx.session, payload);
-    persistLocal(ctx.session);
-    if (ctx.role === "present") renderActiveSlide();
-    else renderJoinSlide();
-  });
+  rt.on("slide", (payload) => handleRemoteSlide(payload));
   rt.on("deck", (payload) => {
     if (!ctx.session) return;
     const syncRole = wsSyncRole();
@@ -1710,6 +1697,8 @@ function teardownRealtime() {
   clearInteractionTick();
   window.clearTimeout(voteConfirmTimer);
   voteConfirmTimer = 0;
+  if (joinSlideRaf) cancelAnimationFrame(joinSlideRaf);
+  joinSlideRaf = 0;
   ctx.pendingVoteSlideId = null;
   ctx.pendingVotePayload = null;
   destroyPresenterStats();
@@ -1804,7 +1793,7 @@ function renderActiveSlide() {
   els.presentQuestion.textContent = slide.question;
   els.slideIndicator.textContent = `${index + 1} / ${s.slides.length}`;
   renderPresentStrip(els.presentDeck, s, t, {
-    onGoto: (i) => shiftSlide(i - (s.activeSlideIndex || 0)),
+  onGoto: (i) => gotoSlideIndex(i),
     onAdd: openSlideDialog,
   });
 
@@ -2230,17 +2219,91 @@ function patchSlideResults(payload) {
 }
 
 function shiftSlide(delta) {
-  if (!ctx.session) return;
-  const next = Math.max(0, Math.min(ctx.session.slides.length - 1, (ctx.session.activeSlideIndex || 0) + delta));
+  gotoSlideIndex((ctx.session?.activeSlideIndex || 0) + delta);
+}
+
+/**
+ * Präsentator: Folie wechseln und sofort an alle Teilnehmer senden.
+ * @param {number} index Ziel-Folienindex
+ */
+function gotoSlideIndex(index) {
+  if (!ctx.session?.slides?.length || ctx.role !== "present") return;
+  const next = Math.max(0, Math.min(ctx.session.slides.length - 1, Number(index) || 0));
   if (next === ctx.session.activeSlideIndex) return;
   ctx.session.activeSlideIndex = next;
+  normalizeSessionSlides(ctx.session);
   persistLocal(ctx.session);
   renderActiveSlide();
-  ctx.rt?.send("slide", {
+  void publishSlideChange(next);
+}
+
+/**
+ * Folienwechsel an Server — WebSocket zuerst, REST als Fallback (Mock/offline Queue).
+ * @param {number} index
+ */
+async function publishSlideChange(index) {
+  if (!ctx.session) return;
+  const payload = {
     code: ctx.session.code,
-    index: next,
+    index,
     slide: currentSlide(),
     expectedVersion: ctx.session.stateVersion ?? 0,
+  };
+  const viaWs = ctx.rt?.send("slide", payload);
+  const needsRest = viaWs === false || ctx.rt?.mock;
+  if (!needsRest || !isLiveServer()) return;
+  try {
+    const res = await api.setSlide(ctx.session.code, index, {
+      expectedVersion: ctx.session.stateVersion ?? 0,
+    });
+    if (res?.ok && res.data?.session) {
+      applyIncoming(ctx.session, res.data.session);
+      persistLocal(ctx.session);
+      return;
+    }
+    if (res?.status === 409) {
+      await reloadSessionAfterVersionConflict();
+      ctx.rt?.send("slide", {
+        ...payload,
+        expectedVersion: ctx.session.stateVersion ?? 0,
+      });
+    }
+  } catch (err) {
+    console.warn("[present] Folienwechsel REST-Fallback fehlgeschlagen", err);
+  }
+}
+
+/**
+ * Remote-Folienwechsel (WebSocket) — Teilnehmer sofort aktualisieren.
+ * @param {object} payload
+ */
+function handleRemoteSlide(payload) {
+  if (!ctx.session) return;
+  const syncRole = wsSyncRole();
+  if (!acceptStructural(ctx.session, payload, { role: syncRole, eventType: "slide" })) {
+    console.debug("[slide] verworfen (stale)", payload?.index, payload?.stateVersion);
+    return;
+  }
+  if (ctx.pendingVoteSlideId) rollbackPendingVote();
+  applySlidePayload(ctx.session, payload, {
+    stripSlide: ctx.role === "join" ? stripSlideSecrets : undefined,
+  });
+  persistLocal(ctx.session);
+  if (ctx.role === "join") {
+    const slide = currentSlide();
+    if (slide && els.joinQuestion) els.joinQuestion.textContent = slide.question || "";
+    scheduleJoinSlideRender();
+  } else if (ctx.role === "present") {
+    renderActiveSlide();
+  }
+}
+
+/** Teilnehmer-UI nach Folienwechsel im nächsten Frame vollständig rendern. */
+function scheduleJoinSlideRender() {
+  if (joinSlideRaf) return;
+  joinSlideRaf = requestAnimationFrame(() => {
+    joinSlideRaf = 0;
+    if (ctx.role === "join") renderJoinSlide({ preserveFeedback: true });
   });
 }
 
@@ -3128,7 +3191,11 @@ function applyDeckEvent(payload) {
     if (ctx.role === "join") stripPresenterSecrets(ctx.session);
     persistLocal(ctx.session);
     if (ctx.role === "present") renderActiveSlide();
-    else if (ctx.role === "join") renderJoinSlide();
+    else if (ctx.role === "join") {
+      const slide = currentSlide();
+      if (slide && els.joinQuestion) els.joinQuestion.textContent = slide.question || "";
+      scheduleJoinSlideRender();
+    }
     return;
   }
   if (payload.action && ctx.rt?.mock) {
@@ -3138,7 +3205,11 @@ function applyDeckEvent(payload) {
     });
     persistLocal(ctx.session);
     if (ctx.role === "present") renderActiveSlide();
-    else if (ctx.role === "join") renderJoinSlide();
+    else if (ctx.role === "join") {
+      const slide = currentSlide();
+      if (slide && els.joinQuestion) els.joinQuestion.textContent = slide.question || "";
+      scheduleJoinSlideRender();
+    }
   }
 }
 

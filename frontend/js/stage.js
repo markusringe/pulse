@@ -12,7 +12,7 @@ import { t } from "./i18n.js";
 import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRatingResults } from "./poll.js";
 import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
-import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming } from "./sessionSync.js";
+import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming, applySlidePayload } from "./sessionSync.js";
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js";
 import { stageStatusMessage } from "./interactionPresenter.js";
 
@@ -103,12 +103,7 @@ function connectStage(code) {
   rt.on("slide", (payload) => {
     if (!session) return;
     if (!acceptStructural(session, payload, { role: "stage", eventType: "slide" })) return;
-    session.activeSlideIndex = payload.index;
-    normalizeSessionSlides(session);
-    if (payload.slide) {
-      session.slides[payload.index] = { ...session.slides[payload.index], ...payload.slide };
-    }
-    applyIncoming(session, payload);
+    applySlidePayload(session, payload);
     renderStage();
   });
   rt.on("deck", (payload) => {

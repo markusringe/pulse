@@ -26,6 +26,20 @@ const DEFAULTS = {
 
 const BATCHABLE = new Set(["vote", "word", "submit_question", "upvote_question"]);
 
+/** Strukturelle Events immer über den echten Server — nie an den Demo-Mock. */
+const STRUCTURAL_TYPES = new Set([
+  "slide",
+  "deck",
+  "lobby",
+  "reset",
+  "interaction",
+  "results",
+  "emergency_activated",
+  "emergency_resumed",
+  "qa_timer",
+  "event_countdown",
+]);
+
 export class RealtimeClient {
   /**
    * @param {string} url  z. B. ws://localhost:3000/ws
@@ -140,7 +154,9 @@ export class RealtimeClient {
 
   #sendRaw(envelope) {
     const msg = JSON.stringify(envelope);
-    if (this.mock) {
+    const structural = STRUCTURAL_TYPES.has(envelope.type);
+    /* Demo-Mock nur für Stimmen/Wörter — Folienwechsel müssen beim echten Server ankommen. */
+    if (this.mock && !structural) {
       this.mock.send(envelope.type, envelope.payload);
       return true;
     }
@@ -400,8 +416,12 @@ export const api = {
     return request("POST", `/sessions/${encodeURIComponent(code)}/reset`);
   },
 
-  async setSlide(code, index) {
-    return request("POST", `/sessions/${encodeURIComponent(code)}/slide`, { index });
+  async setSlide(code, index, extra = {}) {
+    return requestResult("POST", `/sessions/${encodeURIComponent(code)}/slide`, {
+      index,
+      allowLocal: true,
+      ...extra,
+    });
   },
 
   async updateDeck(code, action, extra = {}) {
