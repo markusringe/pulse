@@ -8,13 +8,13 @@ Legende: **✓** erledigt · **~** teilweise / Regression lokal · **✗** offen
 
 ---
 
-## Automatisiert (Prod v1.5.9, 2026-09-04)
+## Automatisiert (Prod v1.5.10, 2026-09-04)
 
-Remote-Smoke `npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.9` — **12/12 OK**:
+Remote-Smoke `npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.10` — **16/16 OK**:
 
-- GET `/`, `/js/app.js`, `/api/health`, `/api/health/live`, `/api/health/ready`, `/api/auth/status`
-- Version **1.5.9**, Betriebsmodus **single**, Readiness **ready**, nicht degraded
-- HTML/JS mit automatischem `?h=<content-hash>` (Phase 5)
+- GET `/`, `/js/app.js?h=…`, `/api/health`, `/api/health/live`, `/api/health/ready`, `/api/auth/status`
+- Version **1.5.10**, Betriebsmodus **cluster**, Readiness **ready**, Check **asset_manifest** ok
+- Gehashtes JS: `Cache-Control: immutable`; `__PULSE_ASSET_H__` injiziert
 
 ---
 
