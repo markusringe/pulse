@@ -13,7 +13,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-001 | Auth | Klick „Administration“ ohne sichtbare Reaktion | **behoben** | nav59: Modal-Fallback, Route-Trigger |
 | B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | **behoben** | v1.5.1: authClient nav62 + sync:install-password |
 | B-003 | Auth | Redirect-Schleife Login ↔ Onboarding | **behoben** | v1.4.5 / v1.5.1 |
-| B-004 | Rechte | Teamrechte serverseitig umgehbar | **teilweise** | `test-api-permissions.js` |
+| B-004 | Rechte | Teamrechte serverseitig umgehbar | **teilweise** | `test-api-permissions.js` (+ Session/Viewer/Branding) |
 | B-005 | Live | Antworten vor Interaktionsstart | **behoben (Unit)** | `test-interaction-state.js` |
 | B-006 | Live | Falsche aktive Folie bei Reconnect | **teilweise** | v1.5.0 clamp + v1.5.2 join; `test-ws-reconnect.js` |
 
@@ -73,6 +73,6 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 1. **v1.5.2 auf Prod deployen** — Deep-Link + Reconnect-join + nav63
 2. Smoke-Checkliste Live-Reconnect manuell (Presenter + Join)
-3. Block 4: Permission-Tests erweitern
+3. Block 4: Permission-Tests erweitern ✓ (Session-Folie, Viewer, Instanz-API)
 4. Mobile Smoke 320–430 px
 5. Freeze-Abschluss: `docs/feature-freeze.md` Kriterien abhaken

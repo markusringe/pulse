@@ -30,11 +30,11 @@ function cookiesFromResponse(headers) {
   return list.map((c) => c.split(";")[0]).join("; ");
 }
 
-function httpRequest(method, url, body, cookie = "") {
+function httpRequest(method, url, body, cookie = "", extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
     const payload = body != null ? JSON.stringify(body) : null;
-    const headers = {};
+    const headers = { ...extraHeaders };
     if (payload) {
       headers["Content-Type"] = "application/json";
       headers["Content-Length"] = Buffer.byteLength(payload);
@@ -195,7 +195,8 @@ function restoreEventsFile(backup) {
     );
     assert(eventRes.status === 200 || eventRes.status === 201, `Event Team B (${eventRes.status})`);
     const eventId = eventRes.json.event?.id;
-    assert(eventId, "Event-ID");
+    const teamBSessionCode = eventRes.json.event?.sessionCode || eventRes.json.event?.joinCode;
+    assert(eventId && teamBSessionCode, "Event-ID und Session-Code Team B");
 
     /* --- Teammitglied: fremdes Team / Event --- */
     const memberCookie = await loginPassword(port, "member-a@test.local", "MemberPass123!");
@@ -228,6 +229,92 @@ function restoreEventsFile(backup) {
     /* --- Teammitglied: eigenes Team --- */
     const ownTeam = await httpRequest("GET", `${base}/api/teams/${teamAId}`, null, memberCookie);
     assert(ownTeam.status === 200, `Eigenes Team lesen → 200 (war ${ownTeam.status})`);
+
+    /* --- Teammember: keine Instanz-Administration --- */
+    for (const [label, method, pathSuffix, body] of [
+      ["branding", "PUT", "/api/branding", { branding: { appName: "Hack" } }],
+      ["backups", "GET", "/api/backups", null],
+      ["settings export", "GET", "/api/settings/export", null],
+      ["teams POST", "POST", "/api/teams", { name: "Illegales Team" }],
+    ]) {
+      const r = await httpRequest(method, `${base}${pathSuffix}`, body, memberCookie);
+      assert(r.status === 403, `${label} als Teammember → 403 (war ${r.status})`);
+    }
+
+    /* --- Teammember: Event nur im eigenen Team anlegen --- */
+    const foreignEventCreate = await httpRequest(
+      "POST",
+      `${base}/api/events`,
+      { title: "Fremdes Team Event", teamId: teamBId, visibility: "private" },
+      memberCookie
+    );
+    assert(foreignEventCreate.status === 403, `Event in Team B → 403 (war ${foreignEventCreate.status})`);
+
+    const ownEventCreate = await httpRequest(
+      "POST",
+      `${base}/api/events`,
+      {
+        title: "Team-A Event",
+        teamId: teamAId,
+        visibility: "private",
+        slides: [
+          { type: "choice", question: "F1", options: [{ label: "A" }, { label: "B" }] },
+          { type: "choice", question: "F2", options: [{ label: "C" }, { label: "D" }] },
+        ],
+      },
+      memberCookie
+    );
+    assert(ownEventCreate.status === 201, `Event in Team A → 201 (war ${ownEventCreate.status})`);
+    const ownEventId = ownEventCreate.json.event?.id;
+    const ownSessionCode =
+      ownEventCreate.json.event?.sessionCode || ownEventCreate.json.event?.joinCode;
+    assert(ownEventId && ownSessionCode, "Event-ID und Session-Code aus Antwort");
+
+    /* --- Session-Folie: Teammitglied darf eigene Event-Session steuern (ohne Admin-Key) --- */
+    const ownSlide = await httpRequest(
+      "POST",
+      `${base}/api/sessions/${ownSessionCode}/slide`,
+      { index: 1 },
+      memberCookie
+    );
+    assert(ownSlide.status === 200, `Folie Team-A-Session → 200 (war ${ownSlide.status})`);
+    assert(ownSlide.json.session?.activeSlideIndex === 1, "activeSlideIndex auf 1 gesetzt");
+
+    /* --- Session-Folie: kein Zugriff auf fremdes Team-Event --- */
+    const foreignSlide = await httpRequest(
+      "POST",
+      `${base}/api/sessions/${teamBSessionCode}/slide`,
+      { index: 1 },
+      memberCookie
+    );
+    assert(foreignSlide.status === 403, `Folie Team-B-Session → 403 (war ${foreignSlide.status})`);
+
+    /* --- Viewer: kein Event-Anlegen --- */
+    const viewerUser = await httpRequest(
+      "POST",
+      `${base}/api/users`,
+      {
+        displayName: "Viewer Test",
+        email: "viewer@test.local",
+        password: "ViewerPass123!",
+        role: "viewer",
+        status: "active",
+      },
+      adminCookie
+    );
+    assert(viewerUser.status === 201, `Viewer anlegen (${viewerUser.status})`);
+    const viewerCookie = await loginPassword(port, "viewer@test.local", "ViewerPass123!");
+    const viewerEvent = await httpRequest(
+      "POST",
+      `${base}/api/events`,
+      { title: "Viewer Event", teamId: teamAId, visibility: "private" },
+      viewerCookie
+    );
+    assert(viewerEvent.status === 403, `Viewer darf kein Event anlegen → 403 (war ${viewerEvent.status})`);
+
+    /* --- Session anlegen ohne Auth (USER_AUTH + ADMIN_SECRET) --- */
+    const anonSession = await httpRequest("POST", `${base}/api/sessions`, { type: "demo" });
+    assert(anonSession.status === 403, `Session ohne Auth → 403 (war ${anonSession.status})`);
 
     console.log(`API-Permissions-Tests OK (Port ${port})`);
   } finally {
