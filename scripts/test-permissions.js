@@ -20,4 +20,13 @@ for (const name of scripts) {
   }
 }
 
+const apiPerm = spawnSync(process.execPath, [path.join(root, "test-api-permissions.js")], {
+  stdio: "inherit",
+  env: process.env,
+});
+if (apiPerm.status !== 0) {
+  console.error("Permissions-Suite fehlgeschlagen bei test-api-permissions.js");
+  process.exit(apiPerm.status || 1);
+}
+
 console.log("Permissions-Suite OK");
