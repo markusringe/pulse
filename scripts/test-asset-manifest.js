@@ -89,6 +89,12 @@ assert(
 );
 assert(!/from\s+\.\//.test(appOut), "Keine ungültigen unquoted ES-Module-Imports");
 assert(!appOut.includes("https://"), "Keine externen URLs verändert");
+const bpHash = assets["/js/backupsPage.js"];
+assert(
+  appOut.includes(`import("./backupsPage.js?h=${bpHash}")`) ||
+    appOut.includes(`import('./backupsPage.js?h=${bpHash}')`),
+  "Dynamische import() in app.js müssen Content-Hash erhalten",
+);
 
 console.log("test-asset-manifest: ES-Modul-Syntax (Admin-Seitenmodule)…");
 const { pathToFileURL } = require("url");
