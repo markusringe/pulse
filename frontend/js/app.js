@@ -1601,79 +1601,28 @@ function connectRealtime(role) {
       reloadSessionAfterVersionConflict();
       return;
     }
-    const msg = payload?.message || payload?.error || "Verbindungsfehler";
-    const errCode = payload?.error || payload?.code || "";
     if (ctx.role === "join") {
-      console.warn("[join] WS-Fehler", errCode || msg, payload);
-      if (payload?.error === "blocked") setJoinFeedback(t("qa.blocked"), { state: "error" });
-      else if (payload?.error === "qa_closed") setJoinFeedback(t("qa.closed"), { state: "error" });
-      else if (payload?.error === "rate") setJoinFeedback(t("qa.rateWait", { n: payload.waitTime || 30 }), { state: "error" });
-      else if (payload?.error === "interaction_not_started") setJoinFeedback(t("interaction.join.waiting"), { state: "info" });
-      else if (payload?.error === "interaction_paused") {
-        setJoinFeedback(t("interaction.join.paused"), { state: "info" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-      } else if (payload?.error === "interaction_ended") {
-        setJoinFeedback(t("interaction.join.ended"), { state: "info" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-      } else if (payload?.error === "invalid") {
-        setJoinFeedback(t("interaction.join.rankIncomplete"), { state: "error" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-      } else if (payload?.error === "sum") {
-        setJoinFeedback(t("interaction.join.pointsIncomplete"), { state: "error" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-      } else if (payload?.error === "wrong_slide") {
-        setJoinFeedback(t("join.error.wrongSlide"), { state: "info" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-        void resyncJoinSession();
-      } else if (payload?.error === "lobby") {
-        setJoinFeedback(t("lobby.wait"), { state: "info" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-      } else if (payload?.error === "paused") {
-        setJoinFeedback(t("join.error.paused"), { state: "info" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-      } else if (payload?.error === "already_voted") {
-        setJoinFeedback(t("join.error.alreadyVoted"), { state: "info" });
-        confirmPendingVote();
-      } else if (payload?.error === "invalid_option") {
-        setJoinFeedback(t("join.error.invalidOption"), { state: "error" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-      } else if (payload?.pendingReview) setJoinFeedback(t("qa.pendingHint"));
-      else {
-        setJoinFeedback(explainError(msg).html, { html: true, state: "error" });
-        rollbackPendingVote();
-        renderJoinSlide({ preserveFeedback: true });
-      }
-    }
-    if (ctx.role === "present") {
-      const eventSession = isEventLinkedSession(ctx.session);
-      const authErr =
-        payload?.error === "auth_required" ||
-        payload?.error === "admin_lock" ||
-        payload?.error === "forbidden" ||
-        /berechtigung|team-konto/i.test(msg);
-      if (eventSession && authErr) {
-        const notice = !getAuthUser()
-          ? t("events.presentLoginRequired")
-          : t("events.accessDenied");
-        showPresentAuthNotice(notice);
-        if (!getAuthUser() && isAuthEnabled()) {
-          rememberAdminRedirect(`#/present/${ctx.session?.code || ""}`);
-        }
-        return;
-      }
-    }
-    if (payload?.error === "auth_required") {
-      if (ctx.role === "join") setJoinFeedback(t("events.accessDenied"), { state: "error" });
+      handleJoinParticipantError(payload);
       return;
     }
+    const msg = payload?.message || payload?.error || "Verbindungsfehler";
+    const eventSession = isEventLinkedSession(ctx.session);
+    const authErr =
+      payload?.error === "auth_required" ||
+      payload?.error === "admin_lock" ||
+      payload?.error === "forbidden" ||
+      /berechtigung|team-konto/i.test(msg);
+    if (eventSession && authErr) {
+      const notice = !getAuthUser()
+        ? t("events.presentLoginRequired")
+        : t("events.accessDenied");
+      showPresentAuthNotice(notice);
+      if (!getAuthUser() && isAuthEnabled()) {
+        rememberAdminRedirect(`#/present/${ctx.session?.code || ""}`);
+      }
+      return;
+    }
+    if (payload?.error === "auth_required") return;
     if (isEventLinkedSession(ctx.session) && ctx.role === "present") return;
     if (msg.toLowerCase().includes("admin") && payload?.error !== "auth_required") {
       syncPresentUnlockUi(ctx.session);
@@ -1992,7 +1941,7 @@ function submitTypedVote(payload) {
   const slide = currentSlide();
   if (!slide || ctx.votedSlide.has(slide.id) || ctx.pendingVoteSlideId === slide.id || ctx.session?.paused) return;
   if (joinInputsBlocked(slide)) {
-    setJoinFeedback(joinStatusMessage(slide) || t("interaction.join.timeout"), { state: "info" });
+    /* Status steht in #join-interaction-hint — kein doppeltes Feedback. */
     return;
   }
   const votePayload = { code: ctx.session.code, slideId: slide.id, ...payload };
@@ -2050,6 +1999,13 @@ function scheduleVoteConfirmRetry(payload, immediateReconnect) {
   const delay = immediateReconnect ? 600 : 4500;
   voteConfirmTimer = window.setTimeout(() => {
     if (!ctx.pendingVoteSlideId || ctx.pendingVoteSlideId !== payload.slideId) return;
+    const slide = currentSlide();
+    /* Kein Retry solange Interaktion lokal noch gesperrt ist (Abstimmung nicht gestartet). */
+    if (!slide || joinInputsBlocked(slide)) {
+      rollbackPendingVote();
+      refreshJoinSlideUi();
+      return;
+    }
     if (ctx.rt?.state === "open" && !ctx.rt?.mock) {
       console.warn("[join] Stimme ohne Bestätigung — Retry", payload.slideId);
       ctx.rt.send("vote", payload);
@@ -2073,6 +2029,100 @@ function confirmPendingVote() {
   ctx.pendingVotePayload = null;
   window.clearTimeout(voteConfirmTimer);
   voteConfirmTimer = 0;
+}
+
+/**
+ * WebSocket-Fehler in der Teilnehmeransicht — kein generisches „Das hat nicht geklappt“ für bekannte Zustände.
+ * Interaktionsstatus nur über #join-interaction-hint, nicht doppelt in #join-feedback.
+ * @param {object} payload
+ */
+function handleJoinParticipantError(payload) {
+  const code = String(payload?.error || payload?.code || "").trim();
+  const msg = payload?.message || payload?.error || "";
+  console.warn("[join] WS-Fehler", code || msg, payload);
+
+  /** Nur Hint aktualisieren — kein Feedback-Banner (vermeidet Doppeltext). */
+  const hintOnly = new Set([
+    "interaction_not_started",
+    "interaction_paused",
+    "interaction_ended",
+    "lobby",
+    "not_interactive",
+    "no_slide",
+  ]);
+
+  if (code === "blocked") {
+    setJoinFeedback(t("qa.blocked"), { state: "error" });
+    rollbackPendingVote();
+    return;
+  }
+  if (code === "qa_closed") {
+    setJoinFeedback(t("qa.closed"), { state: "error" });
+    rollbackPendingVote();
+    return;
+  }
+  if (code === "rate") {
+    setJoinFeedback(t("qa.rateWait", { n: payload.waitTime || 30 }), { state: "error" });
+    return;
+  }
+  if (code === "invalid") {
+    setJoinFeedback(t("interaction.join.rankIncomplete"), { state: "error" });
+    rollbackPendingVote();
+    renderJoinSlide({ preserveFeedback: true });
+    return;
+  }
+  if (code === "sum") {
+    setJoinFeedback(t("interaction.join.pointsIncomplete"), { state: "error" });
+    rollbackPendingVote();
+    renderJoinSlide({ preserveFeedback: true });
+    return;
+  }
+  if (code === "wrong_slide") {
+    setJoinFeedback(t("join.error.wrongSlide"), { state: "info" });
+    rollbackPendingVote();
+    refreshJoinSlideUi();
+    void resyncJoinSession();
+    return;
+  }
+  if (code === "paused") {
+    setJoinFeedback(t("join.error.paused"), { state: "info" });
+    rollbackPendingVote();
+    refreshJoinSlideUi();
+    return;
+  }
+  if (code === "already_voted" || code === "already") {
+    setJoinFeedback(t("join.error.alreadyVoted"), { state: "info" });
+    confirmPendingVote();
+    refreshJoinSlideUi();
+    return;
+  }
+  if (code === "invalid_option") {
+    setJoinFeedback(t("join.error.invalidOption"), { state: "error" });
+    rollbackPendingVote();
+    refreshJoinSlideUi();
+    return;
+  }
+  if (payload?.pendingReview) {
+    setJoinFeedback(t("qa.pendingHint"));
+    return;
+  }
+  if (hintOnly.has(code)) {
+    rollbackPendingVote();
+    refreshJoinSlideUi();
+    return;
+  }
+  if (code === "empty" || code === "stopword" || code === "max") {
+    const explained = explainError(code);
+    setJoinFeedback(explained.html, { html: true, state: "error" });
+    rollbackPendingVote();
+    refreshJoinSlideUi();
+    return;
+  }
+
+  const explained = explainError(code || msg);
+  setJoinFeedback(explained.html, { html: true, state: "error" });
+  rollbackPendingVote();
+  refreshJoinSlideUi();
 }
 
 /** Session-Stand nach Folienwechsel-Konflikt vom Server nachladen. */

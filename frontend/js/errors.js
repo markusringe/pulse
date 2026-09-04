@@ -136,6 +136,54 @@ export const ERRORS = {
     next: "Bitte erneut abstimmen. Bei anhaltenden Problemen WLAN prüfen.",
     help: "#/help/troubleshooting",
   },
+  interaction_not_started: {
+    title: "Abstimmung noch nicht gestartet",
+    cause: "Der Präsentator hat die Runde auf dieser Folie noch nicht freigegeben.",
+    next: "Bitte warten — sobald die Abstimmung läuft, können Sie antworten.",
+    help: "#/help/getting-started",
+  },
+  interaction_paused: {
+    title: "Abstimmung pausiert",
+    cause: "Der Präsentator hat die Runde vorübergehend angehalten.",
+    next: "Bitte warten, bis die Abstimmung fortgesetzt wird.",
+    help: "#/help/troubleshooting",
+  },
+  interaction_ended: {
+    title: "Abstimmung beendet",
+    cause: "Die Zeit ist abgelaufen oder der Präsentator hat die Runde beendet.",
+    next: "Auf der nächsten Folie können Sie ggf. erneut mitmachen.",
+    help: "#/help/troubleshooting",
+  },
+  not_interactive: {
+    title: "Keine Abstimmung auf dieser Folie",
+    cause: "Diese Folie nimmt gerade keine Eingaben entgegen.",
+    next: "Warten Sie auf den Folienwechsel durch den Präsentator.",
+    help: "#/help/getting-started",
+  },
+  empty: {
+    title: "Bitte Text eingeben",
+    cause: "Die Antwort war leer.",
+    next: "Geben Sie einen kurzen Text ein und senden Sie erneut.",
+    help: "#/help/getting-started",
+  },
+  stopword: {
+    title: "Wort nicht erlaubt",
+    cause: "Das eingegebene Wort ist für die Wortwolke nicht zugelassen.",
+    next: "Bitte ein anderes Wort wählen.",
+    help: "#/help/getting-started",
+  },
+  max: {
+    title: "Zu viele Auswahlen",
+    cause: "Sie haben mehr Optionen gewählt als erlaubt.",
+    next: "Reduzieren Sie Ihre Auswahl und senden Sie erneut.",
+    help: "#/help/getting-started",
+  },
+  already: {
+    title: "Bereits abgestimmt",
+    cause: "Ihre Stimme auf dieser Folie ist bereits beim Server angekommen.",
+    next: "Es ist keine weitere Aktion nötig.",
+    help: "#/help/getting-started",
+  },
   generic: {
     title: "Das hat nicht geklappt",
     cause: "Ein unerwarteter Fehler ist aufgetreten.",
@@ -177,6 +225,21 @@ export function resolveErrorKey(raw) {
   if (lower.includes("already_voted") || lower.includes("bereits abgestimmt")) return "already_voted";
   if (lower.includes("invalid_option")) return "invalid_option";
   if (lower.includes("vote_timeout") || lower.includes("nicht bestätigt")) return "vote_timeout";
+  if (lower === "already" || lower.includes("already_voted") || lower.includes("bereits abgestimmt")) {
+    return "already_voted";
+  }
+  if (lower.includes("interaction_not_started") || lower.includes("noch nicht gestartet")) {
+    return "interaction_not_started";
+  }
+  if (lower.includes("interaction_paused") || lower.includes("ist pausiert")) return "interaction_paused";
+  if (lower.includes("interaction_ended") || lower.includes("ist beendet")) return "interaction_ended";
+  if (lower.includes("not_interactive")) return "not_interactive";
+  if (lower.includes("session pausiert")) return "paused";
+  if (lower.includes("warten auf den start")) return "lobby";
+  if (lower === "empty" || lower.includes("leer")) return "empty";
+  if (lower === "stopword") return "stopword";
+  if (lower === "max") return "max";
+  if (lower.includes("no_slide")) return "wrong_slide";
   return "generic";
 }
 
