@@ -67,13 +67,28 @@ touch .env
 grep -q '^PULSE_OPERATION_MODE=' .env && sed -i 's/^PULSE_OPERATION_MODE=.*/PULSE_OPERATION_MODE=single/' .env || echo 'PULSE_OPERATION_MODE=single' >> .env
 grep -q '^PULSE_EXPECT_INSTANCES=' .env && sed -i 's/^PULSE_EXPECT_INSTANCES=.*/PULSE_EXPECT_INSTANCES=1/' .env || echo 'PULSE_EXPECT_INSTANCES=1' >> .env
 
-log "nginx: Upstream auf eine Instanz (pulse)…"
+COMPOSE_FILE="$INSTALL_DIR/docker-compose.yml"
 NGINX_CONF="$INSTALL_DIR/deploy/nginx.conf"
+
+log "docker-compose.yml: Single-Modus (Compose environment hat Vorrang vor .env)…"
+if [ -f "$COMPOSE_FILE" ]; then
+  cp -a "$COMPOSE_FILE" "${COMPOSE_FILE}.bak.$(date +%s)"
+  sed -i 's/PULSE_OPERATION_MODE: cluster/PULSE_OPERATION_MODE: single/' "$COMPOSE_FILE"
+  sed -i 's/PULSE_EXPECT_INSTANCES: "2"/PULSE_EXPECT_INSTANCES: "1"/' "$COMPOSE_FILE"
+  sed -i 's|REDIS_URL: redis://redis:6379|REDIS_URL: ""|' "$COMPOSE_FILE"
+  # pulse-b nur per Profil — verhindert Neustart durch nginx depends_on
+  if ! grep -q 'cluster-only' "$COMPOSE_FILE" 2>/dev/null; then
+    sed -i '/^  pulse-b:/a\    profiles:\n      - cluster-only' "$COMPOSE_FILE"
+  fi
+  sed -i '/- pulse-b/d' "$COMPOSE_FILE"
+  ok "docker-compose.yml angepasst"
+fi
+
+log "nginx: Upstream auf eine Instanz (pulse)…"
 if [ -f "$NGINX_CONF" ]; then
   cp -a "$NGINX_CONF" "${NGINX_CONF}.bak.$(date +%s)"
-  # pulse-b aus upstream entfernen — nur pulse:3000
   sed -i '/server pulse-b:3000/d' "$NGINX_CONF"
-  ok "nginx.conf angepasst (Backup: ${NGINX_CONF}.bak.*)"
+  ok "nginx.conf angepasst"
 fi
 
 log "Docker: pulse-b stoppen, Stack neu starten…"
@@ -83,13 +98,19 @@ docker compose version >/dev/null 2>&1 || die "docker compose fehlt."
 
 docker compose stop pulse-b 2>/dev/null || true
 docker compose rm -f pulse-b 2>/dev/null || true
-docker compose up -d --build pulse nginx redis
+docker compose up -d --build pulse nginx
 docker compose ps
 
-log "Readiness prüfen…"
+log "Readiness prüfen (direkt im pulse-Container — Port 80 liefert ggf. TLS-Redirect)…"
 for i in $(seq 1 30); do
-  if curl -fsS "http://127.0.0.1/api/health/ready" >/dev/null 2>&1; then
-    ok "Ready: $(curl -sS http://127.0.0.1/api/health/ready | head -c 200)"
+  ready_json="$(docker compose exec -T pulse node -e "
+    fetch('http://127.0.0.1:3000/api/health/ready')
+      .then((r) => r.text())
+      .then((t) => { process.stdout.write(t); process.exit(0); })
+      .catch((e) => { process.stderr.write(String(e)); process.exit(1); });
+  " 2>/dev/null || true)"
+  if echo "$ready_json" | grep -q '"ready":true'; then
+    ok "Ready: $(echo "$ready_json" | head -c 240)"
     exit 0
   fi
   sleep 2

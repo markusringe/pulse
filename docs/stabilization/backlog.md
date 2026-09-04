@@ -96,6 +96,6 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 1. **v1.5.7** deployen + `migrate-vps-single.sh --yes` (degraded beheben)
 2. Last-Baseline 300 TN dokumentieren
-4. Phase 2: stateVersion
-5. Phase 5: Content-Hash Assets
-6. Smoke-Checkliste + `smoke:remote --expect-version`
+3. Phase 2: stateVersion
+4. Phase 5: Content-Hash Assets
+5. Smoke-Checkliste manuell abhaken
