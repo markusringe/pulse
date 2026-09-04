@@ -14,7 +14,7 @@
   <p>Auf dem Server mit visualisiertem Fortschritt:</p>
   <pre><code>cd /opt/pulse
 sudo ./scripts/update-vps-ubuntu.sh</code></pre>
-  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.5</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
+  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.6</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
 
   <h3>Manuelles Update (Admin-UI)</h3>
   <ol>
@@ -39,9 +39,17 @@ sudo ./scripts/update-vps-ubuntu.sh</code></pre>
   <h3>Entwickler: Release erstellen</h3>
   <ul>
     <li>Semantische Version in <code>package.json</code> erhöhen</li>
-    <li>Git-Tag <code>v1.4.5</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
+    <li>Git-Tag <code>v1.4.6</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
     <li>Breaking Changes in den Release-Notes mit <strong>Breaking</strong> markieren</li>
     <li>SQL-Migrationen unter <code>migrations/*.sql</code> ablegen</li>
+  </ul>
+
+  <h3>Version 1.4.6 — Bootstrap-Login zuverlässig</h3>
+  <ul>
+    <li><strong>Fix:</strong> Installations-Kennwort aus <code>.env</code> wird bei Erstlogin mit DB synchronisiert (Abweichung nach Container-Start ohne <code>env_file</code>).</li>
+    <li><strong>Neu:</strong> <code>npm run auth:diagnose</code> — Auth-Status ohne Secrets; <code>npm run admin:reset</code> — Admin-Kennwort lokal zurücksetzen.</li>
+    <li><strong>Fix:</strong> <code>ADMIN_PASSWORD_HASH</code> wird ignoriert (Warnung) — nur <code>BOOTSTRAP_ADMIN_PASSWORD</code> (scrypt in DB).</li>
+    <li><strong>Geändert:</strong> VPS-Installer fragt Admin-Namen ab und führt Auth-Diagnose nach dem Start aus.</li>
   </ul>
 
   <h3>Version 1.4.5 — Admin-Login</h3>

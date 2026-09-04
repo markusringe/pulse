@@ -2,7 +2,7 @@
 
 Anleitung zum lokalen Testen und zum Produktivbetrieb. Voraussetzungen, Schnellstart per Skript, manuelle Schritte und Docker Compose.
 
-**Stand:** Programmversion **v1.4.5** · Ist-Zustand aus dem Repository (Node ≥ 22, npm, optional Docker Compose).
+**Stand:** Programmversion **v1.4.6** · Ist-Zustand aus dem Repository (Node ≥ 22, npm, optional Docker Compose).
 
 ---
 
@@ -99,6 +99,24 @@ AUTH_DEV_MAILBOX=1
 ```
 
 Das Installationsskript `./scripts/install.sh` fragt interaktiv ab, ob die Benutzerverwaltung aktiviert werden soll.
+
+**Wichtig — Bootstrap-Variablen (kein `ADMIN_PASSWORD_HASH`):**
+
+| Variable | Bedeutung |
+|---|---|
+| `BOOTSTRAP_ADMIN_NAME` | Anzeigename des ersten Administrators |
+| `BOOTSTRAP_ADMIN_EMAIL` | E-Mail für Erstlogin |
+| `BOOTSTRAP_ADMIN_PASSWORD` | Klartext-Kennwort — wird **serverseitig mit scrypt** gehasht (Salt pro Benutzer) |
+| `ADMIN_PASSWORD` | Legacy-Alias für `BOOTSTRAP_ADMIN_PASSWORD` |
+| `ADMIN_PASSWORD_HASH` | **Wird ignoriert** — nicht verwenden |
+
+Nach der Installation: Erstlogin unter `#/admin/login` mit E-Mail + Installations-Kennwort (siehe `INSTALL-CREDENTIALS.txt`). **Kein E-Mail-PIN**, solange kein SMTP/Sendmail konfiguriert ist.
+
+Diagnose ohne Secrets: `npm run auth:diagnose`  
+Notfall-Kennwort zurücksetzen (lokal auf dem Server): `npm run admin:reset`  
+Nach erfolgreichem Erstlogin: `BOOTSTRAP_ADMIN_PASSWORD` aus `.env` entfernen und Container neu starten.
+
+Unter Docker muss `.env` per `env_file` in `docker-compose.yml` an die App übergeben werden — nach `.env`-Änderung: `docker compose up -d --force-recreate`.
 
 Secret erzeugen (Beispiel):
 

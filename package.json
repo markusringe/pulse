@@ -1,6 +1,6 @@
 {
   "name": "pulse",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "private": true,
   "description": "Pulse — Live-Interaktion für Umfragen, Wortwolken, Q&A und Quiz (Vanilla JS + Node.js)",
   "main": "server.js",
@@ -28,6 +28,8 @@
     "test:qr": "node scripts/test-qr.js",
     "test:install-vps": "bash scripts/test-install-vps-path.sh",
     "bootstrap:admin": "node scripts/bootstrap-admin.js",
+    "admin:reset": "node scripts/admin-reset.js",
+    "auth:diagnose": "node scripts/diagnose-auth.js",
     "migrate:events": "node scripts/migrate-events.js",
     "docs:sync-version": "node scripts/sync-doc-version.js",
     "css:build": "sh scripts/build-css.sh",

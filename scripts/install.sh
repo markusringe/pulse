@@ -112,16 +112,18 @@ if [ -f .env ] && [ -t 0 ]; then
       printf 'Bootstrap-Admin E-Mail [admin@localhost]: '
       read -r admin_email
       admin_email="${admin_email:-admin@localhost}"
-      printf 'Bootstrap-Admin Kennwort (nur Kontoänderungen) [admin]: '
+      printf 'Initiales Admin-Kennwort (mind. 8 Zeichen, Eingabe verborgen): '
       read -r -s admin_pw
       echo ""
-      admin_pw="${admin_pw:-admin}"
+      if [ "${#admin_pw}" -lt 8 ]; then
+        admin_pw="${admin_pw:-admin}"
+      fi
       cat >> .env <<EOF
 BOOTSTRAP_ADMIN_NAME=${admin_name}
 BOOTSTRAP_ADMIN_EMAIL=${admin_email}
 BOOTSTRAP_ADMIN_PASSWORD=${admin_pw}
 EOF
-      log "Bootstrap-Admin in .env hinterlegt (Login erfolgt per PIN)"
+      log "Bootstrap-Admin in .env hinterlegt (Erstlogin per Kennwort unter #/admin/login)"
     fi
   fi
 fi

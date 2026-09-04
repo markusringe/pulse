@@ -66,6 +66,19 @@ assert(userDb.supported, "SQLite userDb verfügbar");
   assert(await userService.isPasswordLoginMode(userDb), "Passwort-Modus bei Bootstrap");
   assert(await userService.isBootstrapPasswordLogin(userDb), "Bootstrap-Flag gesetzt");
 
+  /* DB-Hash kann von .env abweichen (Container-Start ohne env_file) — Sync repariert das */
+  process.env.BOOTSTRAP_ADMIN_EMAIL = "admin@test.local";
+  process.env.BOOTSTRAP_ADMIN_PASSWORD = "InitPass123!";
+  const rowBeforeSync = await userDb.findUserByEmail("admin@test.local");
+  await userDb.updateUser(rowBeforeSync.id, {
+    ...rowBeforeSync,
+    passwordHash: userAuth.hashUserPassword("AltPasswort99!"),
+  });
+  const { syncInstallPasswordFromEnv } = require("../lib/bootstrapAdmin");
+  assert(await syncInstallPasswordFromEnv(userDb), "Installations-Kennwort aus .env synchronisiert");
+  const rowAfterSync = await userDb.findUserByEmail("admin@test.local");
+  assert(userAuth.verifyUserPassword("InitPass123!", rowAfterSync.passwordHash), "Hash nach Sync korrekt");
+
   let pinBlocked = false;
   const prevDev = process.env.AUTH_DEV_MAILBOX;
   process.env.AUTH_DEV_MAILBOX = "0";

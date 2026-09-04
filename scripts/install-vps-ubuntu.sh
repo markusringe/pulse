@@ -521,6 +521,11 @@ configure_interactive() {
 
   echo ""
   echo "Administrator-Konto (Erstlogin per Kennwort, kein E-Mail-Versand):"
+  printf 'Admin Anzeigename [%s]: ' "$INSTALL_ADMIN_NAME"
+  read_tty admin_name_input
+  if [ -n "$admin_name_input" ]; then
+    INSTALL_ADMIN_NAME="$admin_name_input"
+  fi
   if [ -z "$INSTALL_ADMIN_EMAIL" ]; then
     printf 'Admin E-Mail-Adresse: '
     read_tty INSTALL_ADMIN_EMAIL
@@ -968,6 +973,14 @@ start_docker_stack() {
   while [ "$i" -lt 45 ]; do
     if curl -fsS http://127.0.0.1/api/health >/dev/null 2>&1; then
       ok "Pulse antwortet auf /api/health"
+      if command -v node >/dev/null 2>&1 && [ -f "$dir/scripts/diagnose-auth.js" ]; then
+        log "Auth-Diagnose (ohne Secrets)…"
+        if (cd "$dir" && node scripts/diagnose-auth.js >/dev/null 2>&1); then
+          ok "Auth-Diagnose: Bootstrap/Login vorbereitet"
+        else
+          warn "Auth-Diagnose meldet Hinweise — auf dem Server: cd $dir && npm run auth:diagnose"
+        fi
+      fi
       return
     fi
     sleep 2
