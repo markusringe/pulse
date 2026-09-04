@@ -1,7 +1,7 @@
 # Pulse — Benutzerhilfe
 
 Zusammenfassung der In-App-Hilfe (`#/help`, `#/admin/help`) als druckbares Markdown-Dokument.  
-**Stand:** Programmversion **v1.4.4** · Hilfe-Katalog **Version 10** · **26 Artikel** · 2026-09-04.
+**Stand:** Programmversion **v1.4.5** · Hilfe-Katalog **Version 10** · **26 Artikel** · 2026-09-04.
 
 Die interaktive Hilfe mit Rollenfilter, Suche, Tour und Feedback liegt im Frontend unter `frontend/help/`. Dieses Dokument spiegelt die gleiche Struktur für Admins, Redaktion und Schulungsunterlagen.
 
@@ -405,7 +405,7 @@ Im Browser: Drucken → „Als PDF sichern“. Version und Datum im Guide-Kopf.
 | `docs/installation.md` | Installation |
 | `docs/projektdokumentation.md` | Technische Spezifikation |
 | `docs/verfahrensverzeichnis.md` | DSGVO Art. 30 |
-| `frontend/help/articles.json` | Hilfe-Katalog v10 · Programm v1.4.4 (26 Artikel) |
+| `frontend/help/articles.json` | Hilfe-Katalog v10 · Programm v1.4.5 (26 Artikel) |
 
 ---
 
