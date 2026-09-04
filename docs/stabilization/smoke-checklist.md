@@ -1,137 +1,189 @@
 # Manuelle Smoke-Checkliste — Stabilisierungsrelease
 
-Stand: **v1.5.10** · Prod `https://pulse.ringe.us` · geprüft **2026-09-04**
+Stand: **v1.5.11** · Prod `https://pulse.ringe.us` · **Deploy v1.5.11 ausstehend** (Prod noch v1.5.10)
 
-Browser: Chrome (Automatisierung) + API/VPS-Diagnose. Mobil: 320 / 375 / 430 px (Emulation).
+Browser: Chrome (Desktop) + iOS Safari / Android Chrome (Kernabläufe). Mobil-Emulation: 320 / 375 / 430 px.
 
-Legende: **✓** erledigt · **~** teilweise / Regression lokal · **✗** offen · **—** bewusst nicht auf Prod
+Legende: **✓** erledigt · **~** teilweise · **✗** offen · **—** bewusst nicht auf Prod
 
 ---
 
-## Automatisiert (Prod v1.5.10, 2026-09-04)
+## Automatisiert (nach jedem Deploy)
 
-Remote-Smoke `npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.10` — **16/16 OK**:
+```bash
+npm run smoke:remote -- --url https://pulse.ringe.us --expect-version X.Y.Z
+npm run test:update-rollback
+curl -fsS https://pulse.ringe.us/api/health/ready | jq '.ok, .checks[] | select(.id=="asset_manifest")'
+```
 
-- GET `/`, `/js/app.js?h=…`, `/api/health`, `/api/health/live`, `/api/health/ready`, `/api/auth/status`
-- Version **1.5.10**, Betriebsmodus **cluster**, Readiness **ready**, Check **asset_manifest** ok
-- Gehashtes JS: `Cache-Control: immutable`; `__PULSE_ASSET_H__` injiziert
+**Prod v1.5.10 (2026-09-04):** Remote-Smoke **16/16 OK** — Version, `asset_manifest`, gehashtes JS `immutable`, `__PULSE_ASSET_H__`.
+
+**Prod v1.5.11:** nach Deploy wiederholen (erwartet 16/16 + Version 1.5.11).
+
+---
+
+## Browser-Abnahme nach Update (Pilot-Gate)
+
+**Ziel:** Keine Mischversion (altes JS/CSS, fehlende dynamische Module, kaputte i18n/Hilfe) nach normalem Reload **ohne** Cache-Leeren.
+
+### Vorbereitung
+
+1. Bestehendes Browserfenster offen lassen (simuliert Nutzer nach Update).
+2. Update auf VPS ausführen: `sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.11 --yes`
+3. Seite **normal neu laden** (F5) — kein Hard-Reload, kein `?v=`, kein „Cache leeren“.
+
+### Konsole & Netzwerk (während aller Schritte)
+
+In DevTools prüfen — **keine** dieser Fehler:
+
+- `404` auf `/js/`, `/css/`, `/i18n/`, `/help/`
+- `Failed to fetch dynamically imported module`
+- falsche MIME-Types für JS/CSS
+- CORS-Fehler auf Same-Origin
+- Asset-URLs **ohne** `?h=` (lokale JS/CSS/i18n/help)
+- fehlgeschlagenes Laden von `articles.json` oder Hilfe-HTML
+
+### Pflicht-Klickpfad (Desktop)
+
+| # | Route / Aktion | Erwartung |
+|---|----------------|-----------|
+| 1 | `/` Startseite | Styles vollständig, Logo/Favicon |
+| 2 | Klick **Administration** | `#/admin` oder Login-Gate |
+| 3 | Admin-Login | Session/Cookie, Redirect zur Admin-Route |
+| 4 | `#/admin/events` | Eventliste lädt |
+| 5 | Event öffnen / Detail | Keine leeren Panels |
+| 6 | Deck-Editor `#/admin/sessions/:code` | Folienliste, Lazy-Module (picker, …) |
+| 7 | Folie bearbeiten | Speichern ohne Konsolenfehler |
+| 8 | `#/admin/users` | Nutzerverwaltung |
+| 9 | `#/admin/teams` | Teams |
+| 10 | `#/admin/privacy` | Datenschutz |
+| 11 | `#/admin/ssl` | SSL |
+| 12 | `#/admin/settings` | Einstellungen |
+| 13 | `#/admin/backups` | Backup-UI |
+| 14 | `#/admin/updates` | Update-Seite |
+| 15 | `#/admin/help` / `#/help` | Hilfe-Katalog, Suche, Artikel-HTML |
+| 16 | Join `#/join` oder `/j/XXXXXX` | Teilnehmer-UI |
+| 17 | `#/stage` / Presenter | Stage-Modul (`wordcloud`, …) |
+| 18 | Sprache DE → EN → FR | i18n ohne 404 |
+| 19 | Dark Mode umschalten | Theme ohne FOUC-Regression |
+
+### Mobil (320–430 px)
+
+- [ ] Startseite: kein horizontaler Scroll
+- [ ] Admin über Hamburger-Menü erreichbar
+- [ ] Join-Formular bedienbar (Daumenzone)
+- [ ] Gleiche Netzwerk-Checks wie Desktop
+
+### Inkognito (frischer Cache)
+
+- [ ] Login von Null
+- [ ] Join mit Test-Code (z. B. **200576** wenn aktiv)
+- [ ] Hilfe-Artikel einzeln öffnen (dynamisches `/help/*.html` via `assetUrl`)
+
+### Nach Update ohne Browser-Neustart
+
+- [ ] Schritt 1–3 in **bestehendem Tab** nach Reload
+- [ ] Kein „altes“ `app.js` ohne passenden Hash (Netzwerk-Tab: `app.js?h=`)
+
+---
+
+## Rollback-Drill (v1.5.11+, einmal pro Release-Zyklus)
+
+**Ziel:** Bei fehlgeschlagenem Update kehrt Prod automatisch zur vorherigen Version zurück.
+
+1. Vor Update: Version notieren (z. B. v1.5.10), `docker images | grep pulse-app`
+2. Update auf neue Version starten
+3. **Optional Staging:** absichtlich kaputtes Manifest simulieren → Build muss **abbrechen**, alte Container laufen
+4. Bei Readiness-Fail: Updater v1.1 führt Rollback aus → `pulse-app:<alte-version>` startet
+5. Prüfen: `curl …/api/health/ready` → `ok:true`, Version = alte Version
+6. Remote-Smoke gegen alte Version
 
 ---
 
 ## Startseite & Join
 
 - [x] Startseite lädt ohne ungestylte Links/Buttons (Prod 2026-09-04)
-- [x] Kein horizontaler Scroll (320–430 px) — Emulation 320/375/430, `scrollWidth === clientWidth`
-- [~] Join mit 6-stelligem Code funktioniert — Session **200576** per API angelegt, `GET /api/sessions/200576` OK; Join-UI in Automatisierung durch **Ersteinrichtungs-Overlay** blockiert → **manuell im Browser (Inkognito) mit Code 200576** nachholen
-- [~] Datenschutz-Hinweis blockiert keine Klicks dauerhaft — auf Startseite kein Banner; Join-Datenschutz **nach erfolgreichem Join** manuell prüfen
+- [x] Kein horizontaler Scroll (320–430 px)
+- [~] Join mit Code **200576** — API OK; UI manuell (Inkognito)
+- [~] Datenschutz-Hinweis blockiert keine Klicks dauerhaft
 
 ---
 
 ## Administration & Login
 
-- [~] Klick „Administration“ → `#/admin` (Desktop) — Navigation reagiert; **Login-Gate `#/admin/login` fehlt** wenn nicht angemeldet (Hash bleibt `#/admin` / `#/admin/events`)
-- [ ] Gleiches im mobilen Menü — Menü-Button sichtbar (375 px); Admin aus Drawer **manuell** prüfen
-- [ ] Bootstrap-/Admin-Login — Prod: **PIN per E-Mail** (`passwordLoginMode: false`, Sendmail). PIN-Anforderung OK, Zustellung **Postfix-Queue hängt** → Login derzeit nicht automatisierbar
-- [ ] Nach Login: Redirect zu `#/admin` / gespeicherte Route
-- [~] Deep Link `#/admin/events` ohne Session — Hash wird gesetzt, **kein Redirect zu Login** (s. o.)
-- [ ] Logout → `#/` Startseite
-- [ ] Abgelaufene Session → Login, keine Endlosschleife
-
-**Hinweis Prod:** Für Admin-Smoke entweder SMTP-Zustellung reparieren oder temporär Kennwort-Login (`passwordLoginMode`) in Testfenster — nicht dauerhaft ohne Absprache.
+- [~] Klick „Administration“ → `#/admin` — Login-Gate teils unklar ohne Session
+- [ ] Gleiches im mobilen Menü
+- [ ] Admin-Login — Prod: PIN per E-Mail; **Postfix-Queue** prüfen
+- [ ] Nach Login: Redirect zu gespeicherter Route
+- [ ] Deep Link `#/admin/events` ohne Session → Login
+- [ ] Logout → `#/`
+- [ ] Abgelaufene Session → Login, keine Schleife
 
 ---
 
-## Admin-Routen (angemeldet als Admin)
+## Admin-Routen (angemeldet)
 
-- [ ] `#/admin` — Sessions-Hub lädt < 3 s
-- [ ] `#/admin/events`, `#/admin/users`, `#/admin/teams`
+- [ ] `#/admin`, `#/admin/events`, `#/admin/users`, `#/admin/teams`
 - [ ] `#/admin/backups`, `#/admin/settings`, `#/admin/ssl`
 
-*(Blockiert durch fehlenden Admin-Login auf Prod — lokal: `test-auth-http`, `test-routes` OK)*
+*(Blockiert durch Admin-Login auf Prod — lokal: `test-auth-http`, `test-routes` OK)*
 
 ---
 
-## Rollen (je Rolle testen)
+## Rollen
 
-- [ ] Teamleader: nur eigenes Team
-- [ ] Teammember: kein Benutzer-Management
-- [ ] Viewer: Lesezugriff, kein Schreiben
-- [ ] 403-Ansicht bei verbotener Route
-
-*(Lokal: `test-permissions` / `test-api-permissions` OK — Prod mit Testkonten manuell)*
+- [ ] Teamleader / Teammember / Viewer / 403-Ansicht  
+*(Lokal: `test-permissions` OK)*
 
 ---
 
-## Live-Session (Kurztest)
+## Live-Session
 
-- [~] Presenter + Join — Session **200576** (Poll, Lobby) auf Prod vorhanden; Presenter-Flow **manuell** (Presenter-Tab + Join-Tab)
-- [~] Eingabe vor „Interaktion starten“ abgelehnt — **lokal:** `test-interaction-state` OK
-- [ ] Nach Start: Eingabe möglich
-- [ ] Pause / Ende blockiert Eingabe
-- [~] Reconnect stellt Zustand wieder her — **lokal:** `test-reconnect-sync`, `test-live` OK
+- [~] Presenter + Join (Session **200576**)
+- [~] Interaktion starten / Pause — lokal: `test-interaction-state` OK
+- [~] Reconnect — lokal: `test-reconnect-sync` OK
 
 ---
 
 ## Backup & Update
 
-- [ ] Backup erstellen und herunterladen — Admin-Login nötig
-- [—] Restore in Testinstanz (nicht Prod!)
-- [x] Update-Skript mit Backup; Version stimmt — Deploy **v1.5.9** via `update-vps-ubuntu.sh --tag v1.5.9`, Backup `vps-update-2026-09-04T18-49-46Z`, `/api/health` → **1.5.9**
+- [ ] Backup erstellen und herunterladen
+- [—] Restore nur in Testinstanz
+- [x] Deploy v1.5.10 — Backup `vps-update-2026-09-04T19-00-11Z`, Ready OK
+- [ ] Deploy v1.5.11 + Rollback-Drill
 
 ---
 
-## Barrierefreiheit (Kurz)
-
-- [~] Tab-Reihenfolge Login-Formular — **lokal:** `test-accessibility` OK; Prod Login manuell
-- [ ] Modal: Escape, Fokus-Rückgabe
-- [ ] Sichtbarer Fokus auf Buttons/Links
-
----
-
-## Diagnose (VPS, 2026-09-04)
+## Diagnose (VPS)
 
 ```bash
 docker exec pulse-pulse-1 npm run pulse:diagnose
 docker exec pulse-pulse-1 npm run auth:diagnose
+docker images | grep pulse-app
 ```
-
-- [x] **pulse:diagnose** — `ok`, Single-Modus, SQLite, Disk ~28 GB frei; Hinweis: kein Backup-Verzeichnis in Diagnose
-- [x] **auth:diagnose** — Auth aktiv, Sendmail konfiguriert, 1 Admin; keine Secrets in Ausgabe
 
 ---
 
-## Regression lokal (Ephemeral, 2026-09-04)
+## Regression lokal
 
 | Test | Ergebnis |
 |------|----------|
 | `test-smoke` | OK |
-| `test-auth-http` | OK |
-| `test-routes` | OK |
-| `test-live` | OK |
-| `test-interaction-state` | OK |
-| `test-reconnect-sync` | OK |
-| `test-permissions` | OK |
-| `test-accessibility` | OK |
+| `test-asset-manifest` | OK |
+| `test-update-rollback` | OK (v1.5.11) |
+| `test-auth-http` / `test-routes` | OK |
+| `test-live` / `test-reconnect-sync` | OK |
 
 ---
 
-## Offene Prod-Manualchecks (Priorität)
-
-1. **Postfix/SMTP:** PIN-Zustellung für Admin-Login (Queue prüfen: `postqueue -p` auf VPS)
-2. **Login-Gate:** `#/admin/*` ohne Session → `#/admin/login` (Verhalten prüfen / ggf. Bug)
-3. **Join UI:** Inkognito, Code **200576**, Lobby → Interaktion (Session ggf. vorher beenden)
-4. **Rollen:** Testuser Teamleader / Member / Viewer auf Prod
-5. **Backup-Download** nach Admin-Login
-
----
-
-## Freigabe
+## Freigabe Pilotbetrieb
 
 | Kriterium | Status |
 |-----------|--------|
-| Remote-Smoke 12/12 | ✓ |
-| Diagnose VPS | ✓ |
-| Mobil Layout 320–430 | ✓ |
-| Admin/Login/Rollen Prod | ✗ (SMTP + manuell) |
-| Live-Session Prod End-to-End | ~ |
-| Gesamt Freigabe Stabilisierung | **ausstehend** — Admin-/Rollen-Block |
+| Remote-Smoke 16/16 | ✓ (v1.5.10) |
+| `asset_manifest` Ready | ✓ |
+| Automatisierter Rollback (Code) | ✓ (v1.5.11) |
+| Rollback-Drill Prod | ✗ |
+| Browser-Pflichtpfad (19 Schritte) | ✗ |
+| Admin/Login/Rollen Prod | ✗ (SMTP) |
+| Gesamt Freigabe | **RC Pilot** — Browser + Rollback-Drill offen |

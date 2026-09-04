@@ -14,6 +14,7 @@ Messbare Kriterien vor Tag/Deploy. **Feature-Freeze:** nur Fixes, Tests, Ops —
 | Betriebsmodi | `npm run test:operation-mode` | Exit 0 |
 | Start-Blockade Cluster | `npm run test:operation-start-block` | Exit 0 |
 | Health Live/Ready | `npm run test:health-readiness` | Exit 0 |
+| Update/Rollback Helfer | `npm run test:update-rollback` | Exit 0 |
 | Remote-Smoke (Prod) | `npm run smoke:remote -- --expect-version X.Y.Z` | Exit 0 |
 
 ## Gate B — Lasttest (Staging, reproduzierbar)
@@ -58,6 +59,8 @@ Referenz-Baselines (v1.5.7, isolierter Single-Modus, lokal): `docs/stabilization
 
 Checkliste: `docs/stabilization/smoke-checklist.md`
 
+- **Browser-Pflichtpfad** (19 Schritte) nach Update ohne Cache-Leeren
+- **Rollback-Drill** einmal pro Release-Zyklus
 - Admin-Klick + Login (Desktop + Mobil 320–430 px)
 - Deep-Link `#/admin/backups`
 - Interaktionsstart Presenter
