@@ -1,6 +1,7 @@
 /**
  * Pulse — Einstieg, Routing, Session-Orchestrierung, QR-Code, Theme.
  * Cache-Bust-Marker: sessionSync-export-fix 2026-09-04T20:36Z
+ * Cache-Bust-Marker: dynamic-import-hash 2026-09-04T20:59Z
  *
  * Öffentliche Folien-API ( palettiert für späteres Backend ):
  *   initPoll / updatePollResults / initWordCloud / updateWordCloud
