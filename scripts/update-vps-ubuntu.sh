@@ -36,7 +36,7 @@ set -eo pipefail
 
 readonly DEFAULT_INSTALL_DIR="/opt/pulse"
 readonly DEFAULT_BRANCH="main"
-readonly PULSE_UPDATER_VER="1.0"
+readonly PULSE_UPDATER_VER="1.1"
 readonly PROGRESS_BAR_WIDTH=28
 readonly HEALTH_TIMEOUT_SEC=90
 
@@ -60,6 +60,8 @@ RESULT_FROM_VER=""
 RESULT_TO_VER=""
 RESULT_BACKUP=""
 RESULT_HEALTH="unknown"
+RESULT_ROLLBACK=0
+RESULT_GIT_REF_BEFORE=""
 RESULT_ELAPSED_MS=0
 
 START_TS=0
@@ -195,6 +197,10 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "Befehl '$1' fehlt."
 }
 
+# Rollback-/Image-Tag-Helfer (getestet via test-update-rollback-path.sh)
+# shellcheck source=scripts/update-vps-lib.sh
+. "${SCRIPT_DIR}/update-vps-lib.sh"
+
 # --- Banner (nur interaktiv) ---
 print_banner() {
   if [ "$OUTPUT_JSON" -eq 1 ]; then
@@ -268,9 +274,9 @@ run_with_spinner() {
   if [ "$rc" -eq 0 ]; then
     ok "$msg — fertig"
   else
-    die "$msg fehlgeschlagen (Exit $rc)"
+    warn "$msg fehlgeschlagen (Exit $rc)"
   fi
-  return 0
+  return "$rc"
 }
 
 usage() {
@@ -432,16 +438,33 @@ git_update() {
 
 update_docker() {
   local dir="$1"
+  local target_ver="$2"
+  local norm
   cd "$dir"
   need_cmd docker
   docker compose version >/dev/null 2>&1 || die "docker compose fehlt."
 
-  log "Docker: Images neu bauen…"
-  run_with_spinner "docker compose build" docker compose build
+  tag_running_release_image "$dir" "$RESULT_FROM_VER"
 
-  log "Docker: Stack neu starten…"
-  docker compose up -d || die "docker compose up fehlgeschlagen."
-  ok "Docker-Stack gestartet"
+  norm="$(normalize_version_tag "$target_ver")"
+  export PULSE_IMAGE_TAG="$norm"
+
+  log "Docker: Images neu bauen (Tag ${norm})…"
+  if ! run_with_spinner "docker compose build" docker compose build; then
+    rollback_git_ref "$dir" "$RESULT_GIT_REF_BEFORE" "$RESULT_FROM_VER" || true
+    die "docker compose build fehlgeschlagen — Git auf vorherigen Stand zurückgesetzt, alte Container unverändert."
+  fi
+
+  docker tag "pulse-app:${norm}" "pulse-app:latest" 2>/dev/null || true
+
+  log "Docker: Stack neu starten (pulse-app:${norm})…"
+  if ! PULSE_IMAGE_TAG="$norm" docker compose up -d; then
+    warn "docker compose up fehlgeschlagen — Rollback wird versucht…"
+    rollback_docker_release "$dir" "$RESULT_FROM_VER" "$RESULT_GIT_REF_BEFORE" "$RESULT_BACKUP"
+    RESULT_ROLLBACK=1
+    die "Deploy fehlgeschlagen — automatischer Rollback ausgeführt."
+  fi
+  ok "Docker-Stack gestartet (pulse-app:${norm})"
 }
 
 update_npm() {
@@ -455,10 +478,13 @@ update_npm() {
   [ "${major:-0}" -ge 22 ] || die "Node.js ≥ 22 erforderlich (aktuell: $(node -v))."
 
   log "npm: Abhängigkeiten installieren…"
-  run_with_spinner "npm install" npm install
+  run_with_spinner "npm install" npm install || die "npm install fehlgeschlagen."
 
   log "npm: Frontend-Build (CSS + Asset-Manifest)…"
-  npm run build || die "build fehlgeschlagen — kein Deployment ohne gültiges asset-manifest.json."
+  if ! npm run build; then
+    rollback_git_ref "$dir" "$RESULT_GIT_REF_BEFORE" "$RESULT_FROM_VER" || true
+    die "build fehlgeschlagen — Git auf vorherigen Stand zurückgesetzt, Dienst unverändert."
+  fi
   ok "build erfolgreich (css + asset-manifest)"
 
   log "npm: Dev-Abhängigkeiten entfernen…"
@@ -484,7 +510,6 @@ wait_for_health() {
   local dir="$1"
   local mode="$2"
   local url="http://127.0.0.1/api/health/ready"
-  local fallback="http://127.0.0.1/api/health"
   local i=0
   local max=$((HEALTH_TIMEOUT_SEC / 2))
 
@@ -494,27 +519,17 @@ wait_for_health() {
   fi
 
   need_cmd curl
-  log "Readiness: $url …"
+  log "Readiness: $url (strikt: ok=true)…"
 
   while [ "$i" -lt "$max" ]; do
-    if curl -fsS "$url" >/dev/null 2>&1; then
-      ok "Pulse bereit (/api/health/ready → 200)"
+    if curl_readiness_ok "$url"; then
+      ok "Pulse bereit (/api/health/ready → ok:true)"
       RESULT_HEALTH="ready"
       return 0
     fi
-    if curl -fsS "$fallback" >/dev/null 2>&1; then
-      ok "Pulse antwortet (/api/health — Ready noch 503 oder Legacy)"
-      RESULT_HEALTH="health_only"
-      return 0
-    fi
-    if [ "$mode" = "npm" ] && curl -fsS "http://127.0.0.1:3000/api/health/ready" >/dev/null 2>&1; then
-      ok "Pulse bereit auf Port 3000"
+    if [ "$mode" = "npm" ] && curl_readiness_ok "http://127.0.0.1:3000/api/health/ready"; then
+      ok "Pulse bereit auf Port 3000 (/api/health/ready → ok:true)"
       RESULT_HEALTH="ready"
-      return 0
-    fi
-    if [ "$mode" = "npm" ] && curl -fsS "http://127.0.0.1:3000/api/health" >/dev/null 2>&1; then
-      ok "Pulse antwortet auf Port 3000 (/api/health)"
-      RESULT_HEALTH="health_only"
       return 0
     fi
     sleep 2
@@ -525,7 +540,7 @@ wait_for_health() {
   done
 
   printf '\n' 2>/dev/null || true
-  warn "Healthcheck-Timeout — Logs prüfen."
+  warn "Readiness-Timeout — Logs prüfen."
   if [ "$mode" = "docker" ]; then
     warn "  docker compose -f $dir/docker-compose.yml logs pulse"
   else
@@ -548,8 +563,11 @@ print_summary() {
   progress_complete
 
   if [ "$OUTPUT_JSON" -eq 1 ]; then
-    printf '{"ok":true,"dir":"%s","mode":"%s","fromVersion":"%s","toVersion":"%s","backup":"%s","health":"%s","elapsedMs":%s,"host":"%s"}\n' \
-      "$dir" "$RESULT_MODE" "$RESULT_FROM_VER" "$RESULT_TO_VER" "$RESULT_BACKUP" "$RESULT_HEALTH" "$RESULT_ELAPSED_MS" "$host"
+    printf '{"ok":%s,"dir":"%s","mode":"%s","fromVersion":"%s","toVersion":"%s","backup":"%s","health":"%s","rollback":%s,"elapsedMs":%s,"host":"%s"}\n' \
+      "$([ "$RESULT_ROLLBACK" -eq 0 ] && echo true || echo false)" \
+      "$dir" "$RESULT_MODE" "$RESULT_FROM_VER" "$RESULT_TO_VER" "$RESULT_BACKUP" "$RESULT_HEALTH" \
+      "$([ "$RESULT_ROLLBACK" -eq 1 ] && echo true || echo false)" \
+      "$RESULT_ELAPSED_MS" "$host"
     return 0
   fi
 
@@ -561,6 +579,9 @@ print_summary() {
   printf '  \033[1mVersion:\033[0m     v%s → \033[1;32mv%s\033[0m\n' "$RESULT_FROM_VER" "$RESULT_TO_VER"
   printf '  \033[1mModus:\033[0m       %s\n' "$RESULT_MODE"
   printf '  \033[1mHealth:\033[0m      %s\n' "$RESULT_HEALTH"
+  if [ "$RESULT_ROLLBACK" -eq 1 ]; then
+    printf '  \033[1;33mRollback:\033[0m    automatisch auf v%s\n' "$RESULT_FROM_VER"
+  fi
   if [ -n "$RESULT_BACKUP" ]; then
     printf '  \033[1mBackup:\033[0m      %s\n' "$RESULT_BACKUP"
   fi
@@ -587,6 +608,9 @@ main() {
 
   confirm_update "$RESULT_DIR" "$RESULT_FROM_VER" "$RESULT_MODE"
 
+  RESULT_GIT_REF_BEFORE="$(git -C "$RESULT_DIR" rev-parse HEAD 2>/dev/null || echo "")"
+  save_deploy_state "$RESULT_DIR" "$RESULT_FROM_VER" "$RESULT_GIT_REF_BEFORE"
+
   if [ "$SKIP_BACKUP" -eq 0 ]; then
     log "Backup erstellen (data/, .env)…"
     RESULT_BACKUP="$(create_backup "$RESULT_DIR")"
@@ -605,7 +629,7 @@ main() {
   fi
 
   if [ "$RESULT_MODE" = "docker" ]; then
-    update_docker "$RESULT_DIR"
+    update_docker "$RESULT_DIR" "$RESULT_TO_VER"
   else
     update_npm "$RESULT_DIR"
   fi
@@ -613,11 +637,25 @@ main() {
   wait_for_health "$RESULT_DIR" "$RESULT_MODE"
 
   if [ "$RESULT_HEALTH" = "timeout" ]; then
-    if [ -n "$RESULT_BACKUP" ]; then
-      warn "Readiness-Timeout — Backup unter: $RESULT_BACKUP"
-      warn "Manuelles Rollback: git -C $RESULT_DIR checkout v$RESULT_FROM_VER && cp -a $RESULT_BACKUP/data $RESULT_DIR/data && cp -a $RESULT_BACKUP/.env $RESULT_DIR/.env && systemctl restart pulse.service"
+    local failed_ver="$RESULT_TO_VER"
+    warn "Readiness fehlgeschlagen — automatischer Rollback…"
+    if [ "$RESULT_MODE" = "docker" ]; then
+      rollback_docker_release "$RESULT_DIR" "$RESULT_FROM_VER" "$RESULT_GIT_REF_BEFORE" "$RESULT_BACKUP"
+    else
+      rollback_npm_release "$RESULT_DIR" "$RESULT_FROM_VER" "$RESULT_GIT_REF_BEFORE" "$RESULT_BACKUP"
     fi
-    die "Update abgeschlossen, aber Instanz nicht bereit (/api/health/ready)."
+    RESULT_ROLLBACK=1
+    RESULT_TO_VER="$RESULT_FROM_VER"
+
+    if [ "$SKIP_HEALTH" -eq 0 ]; then
+      log "Readiness nach Rollback prüfen…"
+      wait_for_health "$RESULT_DIR" "$RESULT_MODE"
+      if [ "$RESULT_HEALTH" = "ready" ]; then
+        warn "Rollback erfolgreich — Instanz wieder auf v${RESULT_FROM_VER} (ready)."
+        die "Update auf v${failed_ver} fehlgeschlagen — Rollback abgeschlossen, vorherige Version aktiv."
+      fi
+    fi
+    die "Update und Rollback fehlgeschlagen — manuell prüfen (Backup: ${RESULT_BACKUP:-keins})."
   fi
 
   local end_ts elapsed

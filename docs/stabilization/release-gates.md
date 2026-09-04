@@ -81,7 +81,7 @@ Messung: Browser DevTools + `scripts/test-performance.js` (Lib-Baseline).
 - ADR: `docs/stabilization/adr-state-version.md`
 - Tests: `npm run test:state-version`
 
-## Phase 5 — Asset Content-Hash (v1.5.9 ✓)
+## Phase 5 — Asset Content-Hash (v1.5.9 ✓, gehärtet v1.5.10 ✓)
 
 - SHA-256-Kurzhash pro JS/CSS/i18n/Artikel-JSON — `lib/assetManifest.js`
 - Server injiziert `?h=` in HTML und JS-Imports; `assetUrl()` für Fetch-Pfade
@@ -89,6 +89,16 @@ Messung: Browser DevTools + `scripts/test-performance.js` (Lib-Baseline).
 - ADR: `docs/stabilization/adr-asset-content-hash.md`
 - Tests: `npm run test:asset-manifest`
 - **Kein Service Worker** ohne Offline-Konzept
+
+## Phase 6 — Atomares Update/Rollback (v1.5.11)
+
+- Docker-Images versioniert: `pulse-app:${PULSE_IMAGE_TAG}` in `docker-compose.yml`
+- Vor Build: laufendes Image als `pulse-app:<alte-version>` taggen
+- Build-Fehler (Docker/npm): Git-Rollback, alte Container/Dienst unverändert
+- Readiness-Timeout: automatischer Docker-/npm-Rollback + erneute Ready-Prüfung
+- Strikt: `/api/health/ready` muss `"ok":true` liefern (kein `health_only`-Fallback)
+- Tests: `npm run test:update-rollback`, `bash scripts/test-update-vps-path.sh`
+- **Manuell auf Staging/VPS:** absichtlich fehlgeschlagenes Update → Rollback verifizieren
 
 ## Alerts (Prometheus — empfohlen)
 

@@ -1,6 +1,6 @@
 {
   "name": "pulse",
-  "version": "1.5.10",
+  "version": "1.5.11",
   "private": true,
   "description": "Pulse — Live-Interaktion für Umfragen, Wortwolken, Q&A und Quiz (Vanilla JS + Node.js)",
   "main": "server.js",
@@ -42,6 +42,7 @@
     "test:updates": "node scripts/test-updates.js",
     "test:state-version": "node scripts/test-state-version.js",
     "test:asset-manifest": "node scripts/test-asset-manifest.js",
+    "test:update-rollback": "bash scripts/test-update-rollback-path.sh",
     "test:qr": "node scripts/test-qr.js",
     "test:install-vps": "bash scripts/test-install-vps-path.sh",
     "bootstrap:admin": "node scripts/bootstrap-admin.js",
@@ -58,7 +59,7 @@
     "setup": "bash scripts/install.sh",
     "setup:vps": "bash scripts/install-vps-ubuntu.sh",
     "update:vps": "bash scripts/update-vps-ubuntu.sh",
-    "test": "node scripts/test-security.js && node scripts/test-deck.js && node scripts/test-live.js && node scripts/test-presenter.js && node scripts/test-ssl.js && node scripts/test-theme.js && node scripts/test-privacy.js && node scripts/test-help.js && node scripts/test-branding.js && node scripts/test-settings.js && node scripts/test-slides.js && node scripts/test-qa-timer.js && node scripts/test-interaction-state.js && node scripts/test-events.js && node scripts/test-event-team-access.js && node scripts/test-auth.js && node scripts/test-bootstrap.js && node scripts/test-cors.js && node scripts/test-reconnect-sync.js && node scripts/test-routes.js && node scripts/test-install-config.js && node scripts/test-accessibility.js && node scripts/test-mobile-layout.js && node scripts/test-email-config.js && node scripts/test-updates.js && node scripts/test-state-version.js && node scripts/test-asset-manifest.js && node scripts/test-backups.js && node scripts/test-qr.js && bash scripts/test-install-vps-path.sh && bash scripts/test-uninstall-vps-path.sh && bash scripts/test-update-vps-path.sh"
+    "test": "node scripts/test-security.js && node scripts/test-deck.js && node scripts/test-live.js && node scripts/test-presenter.js && node scripts/test-ssl.js && node scripts/test-theme.js && node scripts/test-privacy.js && node scripts/test-help.js && node scripts/test-branding.js && node scripts/test-settings.js && node scripts/test-slides.js && node scripts/test-qa-timer.js && node scripts/test-interaction-state.js && node scripts/test-events.js && node scripts/test-event-team-access.js && node scripts/test-auth.js && node scripts/test-bootstrap.js && node scripts/test-cors.js && node scripts/test-reconnect-sync.js && node scripts/test-routes.js && node scripts/test-install-config.js && node scripts/test-accessibility.js && node scripts/test-mobile-layout.js && node scripts/test-email-config.js && node scripts/test-updates.js && node scripts/test-state-version.js && node scripts/test-asset-manifest.js && bash scripts/test-update-rollback-path.sh && node scripts/test-backups.js && node scripts/test-qr.js && bash scripts/test-install-vps-path.sh && bash scripts/test-uninstall-vps-path.sh && bash scripts/test-update-vps-path.sh"
   },
   "engines": {
     "node": ">=22"

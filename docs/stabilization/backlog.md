@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.10 · Prod **v1.5.10** (cluster, ready) · Branch `main`
+Stand: v1.5.11 · Prod **v1.5.10** (cluster, ready) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -40,6 +40,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-011 | Live | Kein stateVersion — parallele Presenter-Konflikte | **behoben** | Phase 2: `lib/sessionVersion.js`, ADR, Tests |
 | C-012 | Ops | Kein reproduzierbarer Lasttest | **behoben** | v1.5.5: `load-test.js` + Gates + `--url` |
 | C-013 | Ops | Readiness ohne DB-R/W und Wartungs-Flags | **behoben** | v1.5.5 Audit: healthCheck, maintenance, restore |
+| C-014 | Ops | Update ohne atomaren Rollback bei Ready-Fail | **behoben** | v1.5.11: `pulse-app:`-Tags, auto-Rollback, `test:update-rollback` |
 
 ---
 

@@ -1,5 +1,6 @@
 x-pulse: &pulse
   build: .
+  image: pulse-app:${PULSE_IMAGE_TAG:-latest}
   restart: unless-stopped
   # Installations-Kennwort und Auth-Flags liegen in .env — ohne env_file kennt der Container sie nicht.
   env_file:

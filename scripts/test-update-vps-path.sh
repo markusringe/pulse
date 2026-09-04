@@ -24,5 +24,6 @@ echo "test-update-vps-path: Helfer vorhanden…"
 grep -q "render_progress_bar()" "$SCRIPT" || exit 1
 grep -q "run_with_spinner()" "$SCRIPT" || exit 1
 grep -q "read_package_version()" "$SCRIPT" || exit 1
+grep -q "update-vps-lib.sh" "$SCRIPT" || exit 1
 
 echo "test-update-vps-path: OK"
