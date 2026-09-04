@@ -1,6 +1,6 @@
 # ADR: Betriebsmodi Einzelinstanz vs. Cluster
 
-Stand: v1.5.4 · Status: **angenommen (Stabilisierung)** · Feature-Freeze aktiv
+Stand: v1.5.11 · Status: **angenommen (Stabilisierung)** · Feature-Freeze aktiv
 
 ## Kontext
 
@@ -62,7 +62,8 @@ Implementiert — siehe `docs/stabilization/adr-state-version.md` und `lib/sessi
 |----|--------|----------|
 | R-001 | Compose-Default noch SQLite+2 Container | Postgres-Service + Migration dokumentieren |
 | R-002 | Kein `stateVersion` — parallele Presenter-Tabs | **behoben** v1.5.8 |
-| R-003 | Asset-Cache-Busting manuell (`?v=`) | **behoben** v1.5.9 Content-Hash `?h=` |
+| R-003 | Asset-Cache-Busting manuell (`?v=`) | **behoben** v1.5.9–v1.5.10 Content-Hash `?h=` |
+| R-004 | Update ohne Rollback bei Ready-Fail | **behoben** v1.5.11 `pulse-app:`-Tags + auto-Rollback |
 
 ## Referenzen
 

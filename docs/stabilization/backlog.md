@@ -85,7 +85,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.5.9 · Prod: **1.5.9 live**, Single-Instanz, Ready ok
+- **Version:** `package.json` **1.5.11** · Prod: **1.5.11 live**, Cluster, Ready ok (`asset_manifest`)
 - **Last-Baseline:** `load-baseline-100.json`, `load-baseline-300.json` (lokal, Single, Gates grün)
 - **Betriebsmodi:** ADR `docs/stabilization/architecture-operation-modes.md`
 - **Lasttest:** `npm run load-test` · Gates in `release-gates.md`

@@ -2,7 +2,7 @@
 
 **Ist-Zustand / Spezifikation**
 
-**Stand:** Programmversion **v1.4.6** · Ist-Zustand aus dem Quellcode, 2026-09-04.
+**Stand:** Programmversion **v1.5.11** · Ist-Zustand aus dem Quellcode, 2026-09-04.
 **Kein Soll-Konzept:** Nur Funktionen und Technik, die im Repository tatsächlich vorhanden sind.  
 **Produktname:** Pulse. Technische Präfixe: `data/pulse.db`, `pulse:session:…`, Docker-Services `pulse` / `pulse-b`.
 
@@ -310,6 +310,16 @@ Serverseitige State-Machine in `lib/interactionState.js` für alle interaktiven 
 - Installation: Backup (`backups/update-{timestamp}/`), Git-Checkout oder Tarball-Download, `npm install`, Migrations-Hook, Graceful Shutdown, Prozessneustart (systemd/Docker).
 - WebSocket: `update_started`, `update_progress`, `update_completed`, `update_failed`, `update_rollback`, `server_shutdown`.
 - Nur Rolle `admin` darf installieren; Audit-Log-Einträge `update_*`.
+- **VPS-Shell:** `scripts/update-vps-ubuntu.sh` (Updater v1.1) — versionierte Docker-Images `pulse-app:<version>`, automatischer Rollback bei Build-/Readiness-Fehler; siehe `docs/installation.md` Abschnitt 6.
+
+### 3.21c Content-Hash-Assets (Frontend-Cache)
+
+- Build: `npm run build` → `frontend/asset-manifest.json` (SHA-256-Kurzhash pro Asset unter `/js`, `/css`, `/i18n`, `/help`, `/assets`).
+- Laufzeit: `lib/assetManifest.js` lädt Manifest beim Start (Production: **fail-fast** bei fehlendem/kaputtem Manifest).
+- Auslieferung: `index.html` und JS-`import`-Pfade erhalten `?h=<hash>`; dynamische Fetches über `frontend/js/assetUrl.js` und `window.__PULSE_ASSET_H__`.
+- Readiness: Check `asset_manifest` in `/api/health/ready` (nur Production).
+- Cache: gehashte URLs `Cache-Control: immutable`; Auth-/Admin-API `no-store`.
+- Tests: `npm run test:asset-manifest`; ADR: `docs/stabilization/adr-asset-content-hash.md`.
 
 ### 3.21b Instanz-Backups (ZIP)
 
@@ -334,7 +344,7 @@ Serverseitige State-Machine in `lib/interactionState.js` für alle interaktiven 
 ### 3.23 Hilfe / Tour
 
 - Hash `#/help`, `#/help/<slug>`, `#/admin/help`. Katalog `frontend/help/articles.json`, HTML-Artikel unter `frontend/help/`.
-- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**26 Artikel**, Stand Katalog **Version 10**, Programm **v1.4.6**).
+- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**26 Artikel**, Stand Katalog **Version 11**, Programm **v1.5.11**).
 - Suche (UND-Tokens, Kategorie) in `frontend/js/help.js` / `lib/helpIndex.js`.
 - Erstnutzer-Tour (nach Consent), Tooltips (`frontend/js/tooltips.js`), Mini-Hilfe, Tastaturhilfe, Feedback ja/nein nur in **localStorage** (`pulse:help-feedback`) — **kein** Server-Upload.
 - In den Hilfe-HTML-Dateien stehen **Platzhalter „Video folgt“**, keine eingebetteten Videos.
@@ -540,7 +550,7 @@ Die Datenschutzerklärung/Impressum-Vorlage verweist ausdrücklich auf BITV 2.0.
 - JSON-Body-Limit 64 KiB (`MAX_PAYLOAD`); Settings-Import bis 2 MiB (Bundle-Limit intern 4 MiB inkl. PEMs), Logo 256 KiB, einzelne PEM 32 KiB.
 - WS-Frames > 64 KiB werden verworfen.
 - Batching: Poll/Wortwolke/Teilnehmer/Quiz-Timer 100 ms; Q&A-Events 1 s.
-- Statische Antworten: gzip immer wenn `Accept-Encoding` gzip, Brotli wenn `br` (`lib/compress.js`). Bilder (PNG) unkomprimiert. Optional `ASSET_BASE` als URL-Prefix für `./css` `./js` `./assets` in `index.html`.
+- Statische Antworten: gzip/Brotli (`lib/compress.js`). Gehashte JS/CSS (`?h=` korrekt): `Cache-Control: public, max-age=31536000, immutable`. `index.html`: `no-cache, must-revalidate`. JSON-API Auth/Admin: `no-store, private`. Optional `ASSET_BASE` als URL-Prefix für `./css` `./js` `./assets` in `index.html`.
 
 ---
 
@@ -561,6 +571,7 @@ Die Datenschutzerklärung/Impressum-Vorlage verweist ausdrücklich auf BITV 2.0.
 | Schutz | `lib/rateLimiter.js`, `lib/wordFilter.js`, `lib/spamDetector.js`, `lib/auditLogger.js` |
 | Branding/Recht | `lib/branding.js`, `lib/privacy.js`, `lib/settings.js` |
 | Kompression | `lib/compress.js` (`node:zlib`, gzip + Brotli) |
+| Asset-Manifest | `lib/assetManifest.js`, `scripts/build-asset-manifest.js`, `frontend/js/assetUrl.js` |
 | SSL | `lib/ssl.js`, `lib/sslStore.js`, `lib/sslUtil.js` |
 | Hilfe-Index | `lib/helpIndex.js` |
 | Metriken | `lib/metrics.js` |

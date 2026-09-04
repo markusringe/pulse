@@ -1,9 +1,13 @@
 # Testmatrix — Feature-Freeze
 
+**Stand:** Programmversion **v1.5.11** · 2026-09-04
+
 | Bereich | Automatisiert | Skript | Manuell |
 |---------|---------------|--------|---------|
 | Installation | teilweise | `test:install`, `test-install-vps-path.sh` | VPS-Install |
-| Update | teilweise | `test-update-vps-path.sh` | VPS-Update |
+| Update | teilweise | `test-update-vps-path.sh`, `test:update-rollback` | VPS-Update + Rollback-Drill |
+| Asset-Manifest | ja | `test:asset-manifest`, `npm run build` | Readiness `asset_manifest` |
+| Remote-Smoke | ja | `smoke:remote` | Prod nach Deploy |
 | Bootstrap-Admin | ja | `test:auth` | Installer + Erstlogin |
 | Passwort-Login | ja | `test:auth` | `#/admin/login` |
 | PIN-Login | ja | `test:auth`, `test:email-config` | SMTP + PIN |

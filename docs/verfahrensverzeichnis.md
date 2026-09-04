@@ -2,11 +2,11 @@
 
 **Anwendung:** Pulse  
 **Verantwortliche Stelle:** Landeshauptstadt Saarbrücken  
-**Stand:** 2026-09-04 · **Programmversion:** v1.4.6
+**Stand:** 2026-09-04 · **Programmversion:** v1.5.11
 **Fassung:** 5 (Entwurf)
 
 > **Entwurf für die/den Datenschutzbeauftragte/n — keine Rechtsberatung.**  
-> Dieses Verzeichnis beschreibt den **Ist-Zustand der Software** (Quellcode Stand 2026-09-03) und die **geplante** Auftragsverarbeitung beim Hosting. Es ersetzt nicht die Prüfung, Freigabe und Fortschreibung durch die/den DSB der Landeshauptstadt Saarbrücken. Angaben zu Personen, Anschriften und Aufsicht stammen aus den öffentlichen Defaults in `lib/privacy.js` / `data/privacy.json` (Abruf Stadtwebsite / UDIS, Stand 2026-09-02). Es werden **keine** Vertragsnummern, Server-IPs, Ticket-IDs oder DPIA-Scores erfunden.  
+> Dieses Verzeichnis beschreibt den **Ist-Zustand der Software** (Quellcode Stand 2026-09-04) und die **geplante** Auftragsverarbeitung beim Hosting. Es ersetzt nicht die Prüfung, Freigabe und Fortschreibung durch die/den DSB der Landeshauptstadt Saarbrücken. Angaben zu Personen, Anschriften und Aufsicht stammen aus den öffentlichen Defaults in `lib/privacy.js` / `data/privacy.json` (Abruf Stadtwebsite / UDIS, Stand 2026-09-02). Es werden **keine** Vertragsnummern, Server-IPs, Ticket-IDs oder DPIA-Scores erfunden.  
 > Die öffentliche Datenschutzerklärung der Anwendung (`data/privacy.json`, `hostingText`) beschreibt derzeit noch ein Hosting im Rechenzentrum der verantwortlichen Stelle. **Dieses Verzeichnis dokumentiert abweichend das geplante Hosting bei Hetzner** (Art. 28). Vor Produktivbetrieb müssen Privacy-Text, AV-Vertrag und dieses Verzeichnis vom DSB in Einklang gebracht werden.
 
 Quellen (Ist-Software): `docs/projektdokumentation.md`, `docs/installation.md`, `docs/hilfe.md`, `README.md`, `lib/privacy.js`, `data/privacy.json`, `lib/auditLogger.js`, `lib/rateLimiter.js`, `lib/settings.js`, `lib/branding.js`, `lib/auth.js`, `lib/userDb.js`, `lib/userAuth.js`, `lib/userService.js`, `lib/emailService.js`, `lib/events.js`, `docker-compose.yml`, `scripts/install-vps-ubuntu.sh`, `scripts/install.sh`, `scripts/seed-data.sh`.
@@ -226,7 +226,7 @@ Es gelten DSGVO, BDSG und für öffentliche Stellen des Saarlandes das **Saarlä
 |---|---|
 | Bezeichnung | Hilfe, Tour, Druck-Guides |
 | Zwecke | Nutzerführung (Presenter, Teilnehmende, Admins); keine Verarbeitung personenbezogener Daten auf dem Server |
-| Datenkategorien | Hilfe-Inhalte in `frontend/help/` (HTML, Katalog `articles.json`, **Version 10**, Programm **v1.4.6**; u. a. Auth/Login, Picker, Interaktionssteuerung, Backups). Markdown-Spiegel: `docs/hilfe.md` (Programmversion im Kopf). Feedback ja/nein nur in `localStorage` (`pulse:help-feedback`, s. 5.3). Erstnutzer-Tour: `pulse:tour-done` / `pulse:tour-later`. |
+| Datenkategorien | Hilfe-Inhalte in `frontend/help/` (HTML, Katalog `articles.json`, **Version 11**, Programm **v1.5.11**; u. a. Auth/Login, Picker, Interaktionssteuerung, Backups, Updates/Rollback). Markdown-Spiegel: `docs/hilfe.md` (Programmversion im Kopf). Feedback ja/nein nur in `localStorage` (`pulse:help-feedback`, s. 5.3). Erstnutzer-Tour: `pulse:tour-done` / `pulse:tour-later`. |
 | Empfänger | Keine Übermittlung an Dritte; statische Dateien vom gleichen Server |
 | Löschung | Lokal auf dem Endgerät |
 

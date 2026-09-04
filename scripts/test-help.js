@@ -16,7 +16,8 @@ const catalog = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 const articles = catalog.articles;
 
 assert(catalog.app === "Pulse", "App-Name im Katalog");
-assert(catalog.version >= 10, "Artikelkatalog Version 10");
+assert(catalog.version >= 10, "Artikelkatalog Version mindestens 10");
+assert(typeof catalog.appVersion === "string" && catalog.appVersion.length >= 5, "appVersion in articles.json");
 
 const requiredIds = [
   "welcome",
@@ -106,11 +107,12 @@ assert(fs.existsSync(docPath), "docs/projektdokumentation.md vorhanden");
 
 const hilfePath = path.join(__dirname, "../docs/hilfe.md");
 assert(fs.existsSync(hilfePath), "docs/hilfe.md vorhanden");
-const hilfeHead = fs.readFileSync(hilfePath, "utf8").slice(0, 200);
+const hilfeHead = fs.readFileSync(hilfePath, "utf8").slice(0, 400);
 assert(
-  hilfeHead.includes("Version 10") || hilfeHead.includes("version 10"),
-  "docs/hilfe.md Version 10"
+  hilfeHead.includes(`Version ${catalog.version}`) || hilfeHead.includes(`version ${catalog.version}`),
+  `docs/hilfe.md Katalog-Version ${catalog.version}`,
 );
+assert(hilfeHead.includes(catalog.appVersion), `docs/hilfe.md Programmversion ${catalog.appVersion}`);
 
 const pickerHit = filterArticles(articles, { query: "picker kategorien" });
 assert(pickerHit.some((a) => a.id === "picker"), "Suche Picker trifft Picker-Artikel");

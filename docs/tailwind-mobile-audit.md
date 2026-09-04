@@ -1,6 +1,6 @@
 # Tailwind CSS v4 — Mobile-Audit und Prüfbericht
 
-Stand: 2026-09-03 · Pulse v1.3.0
+Stand: 2026-09-04 · Pulse v1.5.11
 
 ## Fehleranalyse (Ausgangslage)
 

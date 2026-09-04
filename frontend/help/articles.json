@@ -1,5 +1,5 @@
 {
-  "version": 10,
+  "version": 11,
   "app": "Pulse",
   "categories": [
     {
@@ -659,5 +659,5 @@
       "bodyText": "docs hilfe.md installation.md projektdokumentation.md verfahrensverzeichnis README INSTALL-CREDENTIALS"
     }
   ],
-  "appVersion": "1.4.9"
+  "appVersion": "1.5.11"
 }

@@ -2,8 +2,8 @@
 
 **Status:** aktiv  
 **Branch:** `main` (Stabilisierung) · `stabilization/feature-freeze` (Referenz)  
-**Basisversion:** 1.5.3  
-**Ziel:** Stabilitätsrelease v1.5.x
+**Basisversion:** 1.5.11  
+**Ziel:** Stabilitätsrelease v1.5.11 (Stabilisierungszyklus)
 
 ## Ziel des Zyklus
 
@@ -104,11 +104,12 @@ npm run test:backup
 
 Details: `docs/stabilization/backlog.md`, `docs/stabilization/smoke-checklist.md`, `docs/stabilization/test-matrix.md`.
 
-## Prod-Update (v1.5.3)
+## Prod-Update (v1.5.11)
 
 ```bash
 cd /opt/pulse
-sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.3 --yes
+sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.11 --yes
+npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.11
 ```
 
-Erwartung nach Hard-Reload: `app.js?v=nav63`, `/api/health` → `"version":"1.5.3"`.
+Erwartung: `/api/health` → `"version":"1.5.11"`, Ready-Check `asset_manifest` ok, Frontend-Assets mit `?h=` (normaler Reload nach Update).

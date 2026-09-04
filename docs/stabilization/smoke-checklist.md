@@ -89,7 +89,7 @@ In DevTools prüfen — **keine** dieser Fehler:
 
 **Ziel:** Bei fehlgeschlagenem Update kehrt Prod automatisch zur vorherigen Version zurück.
 
-1. Vor Update: Version notieren (z. B. v1.5.10), `docker images | grep pulse-app`
+1. Vor Update: Version notieren (z. B. v1.5.11), `docker images | grep pulse-app`
 2. Update auf neue Version starten
 3. **Optional Staging:** absichtlich kaputtes Manifest simulieren → Build muss **abbrechen**, alte Container laufen
 4. Bei Readiness-Fail: Updater v1.1 führt Rollback aus → `pulse-app:<alte-version>` startet

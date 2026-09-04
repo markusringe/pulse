@@ -14,7 +14,8 @@
   <p>Auf dem Server mit visualisiertem Fortschritt:</p>
   <pre><code>cd /opt/pulse
 sudo ./scripts/update-vps-ubuntu.sh</code></pre>
-  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.4.6</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
+  <p>Remote: <code>curl -fsSL …/update-vps-ubuntu.sh | sudo bash</code> — Optionen <code>--tag v1.5.11</code>, <code>--yes</code>, <code>--docker</code>, <code>--npm</code>.</p>
+  <p><strong>Updater v1.1:</strong> Docker-Images als <code>pulse-app:&lt;version&gt;</code>, automatischer Rollback bei Build- oder Readiness-Fehler, strikte Prüfung <code>/api/health/ready</code> mit <code>ok:true</code>.</p>
 
   <h3>Manuelles Update (Admin-UI)</h3>
   <ol>
@@ -22,26 +23,56 @@ sudo ./scripts/update-vps-ubuntu.sh</code></pre>
     <li><strong>Jetzt prüfen</strong> — lädt das neueste GitHub-Release</li>
     <li>Release-Notes lesen (Breaking Changes rot markiert)</li>
     <li><strong>Update jetzt installieren</strong> — Backup wird automatisch erstellt</li>
-    <li>Server startet neu; danach Health-Check unter <code>/api/health</code></li>
+    <li>Server startet neu; danach <code>/api/health/ready</code> mit <code>ok:true</code> und Check <code>asset_manifest</code></li>
   </ol>
 
   <h3>Rollback</h3>
-  <p>In der Update-Historie kann für erfolgreiche Installationen der letzten 7 Tage ein Backup wiederhergestellt werden.</p>
+  <p>In der Update-Historie kann für erfolgreiche Installationen der letzten 7 Tage ein Backup wiederhergestellt werden. Auf dem VPS führt <code>update-vps-ubuntu.sh</code> bei Readiness-Timeout zusätzlich einen automatischen Git- und Docker-Rollback auf die vorherige Version aus (Image <code>pulse-app:&lt;alte-version&gt;</code>).</p>
 
   <h3>Update fehlgeschlagen?</h3>
   <ul>
     <li>GitHub nicht erreichbar — später erneut prüfen</li>
-    <li><code>npm install</code> schlägt fehl — Node-Version prüfen (≥ 22), Logs im Server-Output</li>
-    <li>Bei Installationsfehler wird automatisch das Backup eingespielt</li>
-    <li>Manuelles Rollback über die Historie-Tabelle</li>
+    <li><code>npm run build</code> schlägt fehl — fehlendes <code>asset-manifest.json</code> oder referenzierte Assets; Logs prüfen</li>
+    <li>Node-Version prüfen (≥ 22), Docker-Build-Logs (<code>docker compose build</code>)</li>
+    <li>Bei Installationsfehler in der Admin-UI wird automatisch das Backup eingespielt</li>
+    <li>VPS: automatischer Rollback bei Readiness-Timeout; sonst manuelle Historie-Tabelle</li>
   </ul>
 
   <h3>Entwickler: Release erstellen</h3>
   <ul>
     <li>Semantische Version in <code>package.json</code> erhöhen</li>
-    <li>Git-Tag <code>v1.4.6</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
+    <li><code>npm run build</code> und <code>npm run test:asset-manifest</code> — Manifest muss vollständig sein</li>
+    <li>Git-Tag <code>v1.5.11</code> setzen und GitHub-Release veröffentlichen (kein Draft)</li>
+    <li><code>npm run docs:sync-version</code> — Hilfe und Doku angleichen</li>
     <li>Breaking Changes in den Release-Notes mit <strong>Breaking</strong> markieren</li>
     <li>SQL-Migrationen unter <code>migrations/*.sql</code> ablegen</li>
+  </ul>
+
+  <h3>Version 1.5.11 — Atomares Update/Rollback</h3>
+  <ul>
+    <li><strong>Neu:</strong> Docker-Images <code>pulse-app:${PULSE_IMAGE_TAG}</code>; vor Build Rollback-Image der laufenden Version taggen.</li>
+    <li><strong>Neu:</strong> Automatischer Rollback bei Readiness-Timeout (Git + <code>docker compose up --no-build</code>).</li>
+    <li><strong>Fix:</strong> Build-Fehler brechen Deploy ab — alte Container bleiben aktiv.</li>
+    <li><strong>Tests:</strong> <code>npm run test:update-rollback</code>.</li>
+  </ul>
+
+  <h3>Version 1.5.10 — Content-Hash gehärtet</h3>
+  <ul>
+    <li><strong>Fix:</strong> Production startet nicht ohne gültiges <code>asset-manifest.json</code> (Readiness <code>asset_manifest</code>).</li>
+    <li><strong>Fix:</strong> Build validiert alle referenzierten lokalen Assets; gehashte URLs <code>Cache-Control: immutable</code>.</li>
+    <li><strong>Fix:</strong> Sicheres Import-Rewrite nur für <code>/js</code>, <code>/css</code>, <code>/i18n</code>, <code>/help</code>, <code>/assets</code>.</li>
+  </ul>
+
+  <h3>Version 1.5.9 — Content-Hash Assets</h3>
+  <ul>
+    <li><strong>Neu:</strong> SHA-256-Kurzhash <code>?h=</code> statt manuellem <code>?v=navXX</code>; <code>assetUrl()</code> für i18n und Hilfe.</li>
+    <li><strong>Geändert:</strong> <code>npm run build</code> = CSS + Manifest; Docker baut Manifest im Image.</li>
+  </ul>
+
+  <h3>Version 1.5.8 — Live stateVersion</h3>
+  <ul>
+    <li><strong>Neu:</strong> Monotone <code>stateVersion</code> pro Session; parallele Presenter-Tabs erhalten HTTP 409 bei Konflikt.</li>
+    <li><strong>Tests:</strong> <code>npm run test:state-version</code>.</li>
   </ul>
 
   <h3>Version 1.4.6 — Bootstrap-Login zuverlässig</h3>

@@ -8,7 +8,8 @@
     <li><code>chmod +x scripts/install.sh</code> (einmalig)</li>
     <li><code>./scripts/install.sh</code> oder <code>npm run setup</code> — installiert Abhängigkeiten, legt <code>.env</code> an, setzt <code>ADMIN_SECRET</code></li>
     <li><code>npm start</code> → <a href="#/">http://localhost:3000</a></li>
-    <li>Healthcheck: <code>/api/health</code></li>
+    <li>Production-Build: <code>npm run build</code> (CSS + <code>asset-manifest.json</code>)</li>
+    <li>Healthcheck: <code>/api/health</code>, Readiness: <code>/api/health/ready</code></li>
   </ul>
   <p>Ohne exportierte <code>.env</code>-Variablen startet der Server nur mit einem Entwicklungs-Pepper — in Produktion immer <code>ADMIN_SECRET</code> setzen.</p>
 
@@ -35,6 +36,9 @@ sudo ./scripts/install-vps-ubuntu.sh</code></pre>
 
   <h3>HTTPS nach der Installation</h3>
   <p>DNS auf den Server zeigen lassen, Port 80 von außen erreichbar, dann in der Admin-Oberfläche <a href="#/admin/ssl">SSL</a> (Let’s Encrypt HTTP-01). Details: <a href="#/help/ssl">SSL-Hilfe</a>.</p>
+
+  <h3>Updates (VPS)</h3>
+  <p><code>sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.11 --yes</code> — Backup, Git-Pull, Docker-Build mit <code>pulse-app:&lt;version&gt;</code>, Readiness-Check, automatischer Rollback bei Fehler. Details: <a href="#/help/updates">Updates-Hilfe</a>.</p>
 
   <h3>Instanz-Admin vs. Session-Admin</h3>
   <ul>

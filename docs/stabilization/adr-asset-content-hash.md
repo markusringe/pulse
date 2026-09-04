@@ -1,6 +1,6 @@
 # ADR: Content-Hash für Frontend-Assets (Phase 5)
 
-**Status:** umgesetzt (v1.5.9), gehärtet (v1.5.10)  
+**Status:** umgesetzt (v1.5.9), gehärtet (v1.5.10), Prod **v1.5.11**  
 **Kontext:** C-010 — JS/CSS mit langem Cache ohne zuverlässiges Cache-Busting; Mischversionen nach Deploy vermeiden.
 
 ## Entscheidung

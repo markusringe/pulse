@@ -2,7 +2,7 @@
 
 Anleitung zum lokalen Testen und zum Produktivbetrieb. Voraussetzungen, Schnellstart per Skript, manuelle Schritte und Docker Compose.
 
-**Stand:** Programmversion **v1.4.7** · Ist-Zustand aus dem Repository (Node ≥ 22, npm, optional Docker Compose).
+**Stand:** Programmversion **v1.5.11** · Ist-Zustand aus dem Repository (Node ≥ 22, npm, optional Docker Compose).
 
 ---
 
@@ -65,10 +65,10 @@ Healthcheck: [http://localhost:3000/api/health](http://localhost:3000/api/health
 ```bash
 cd /pfad/zum/pulse
 npm install
-npm run css:build
+npm run build
 ```
 
-Das erzeugt `frontend/css/pulse.css` (Tailwind CSS v4, minified). Für Entwicklung mit Live-Rebuild: `npm run css:watch`.
+`npm run build` erzeugt `frontend/css/pulse.css` (Tailwind v4) und **`frontend/asset-manifest.json`** (Content-Hash für JS/CSS/i18n/Hilfe — Pflicht in Production). Für CSS-Live-Rebuild: `npm run css:watch`.
 
 ### 3.2 Umgebung
 
@@ -300,15 +300,21 @@ Remote One-Liner:
 curl -fsSL https://raw.githubusercontent.com/markusringe/pulse/main/scripts/update-vps-ubuntu.sh | sudo bash
 ```
 
-Optionen: `--tag v1.4.7` (festes Release), `--npm` / `--docker`, `--yes`, `--skip-backup`, `--json`.  
-Erkennt automatisch Docker-Stack (Standard) oder npm-Modus.
+Optionen: `--tag v1.5.11` (festes Release), `--npm` / `--docker`, `--yes`, `--skip-backup`, `--json`.  
+Erkennt automatisch Docker-Stack (Standard) oder npm-Modus. **Updater v1.1:** versionierte Images (`pulse-app:<version>`), automatischer Rollback bei Build- oder Readiness-Fehler, strikte Ready-Prüfung (`ok:true`).
+
+```bash
+# Beispiel Produktion
+sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.11 --yes
+npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.11
+```
 
 ### Lokal (Git + npm)
 
 ```bash
 git pull
 npm install
-npm run css:build
+npm run build
 npm test          # optional
 # Server neu starten
 ```
@@ -317,8 +323,8 @@ npm test          # optional
 
 ```bash
 git pull
-docker compose build
-docker compose up -d
+PULSE_IMAGE_TAG=1.5.11 docker compose build
+PULSE_IMAGE_TAG=1.5.11 docker compose up -d
 ```
 
 Alternativ: In-App-Update unter `#/admin/updates` (npm-Installation mit Git-Repo).
@@ -335,7 +341,9 @@ Daten in `data/` bzw. im Volume `pulse-data` bleiben erhalten.
 | Admin-API antwortet 401 | `ADMIN_SECRET` prüfen oder bei Benutzerverwaltung unter `#/admin/login` anmelden. Nach `.env`-Änderung neu starten. |
 | PIN kommt nicht an | `SMTP_*` in `.env` prüfen; lokal `AUTH_DEV_MAILBOX=1` und Dev-Mailbox auf der Login-Seite. |
 | Live-Updates zwischen Tabs fehlen (mehrere Prozesse) | `REDIS_URL` setzen oder nur einen Prozess betreiben. |
-| WebSocket bricht hinter Proxy ab | Sticky Sessions (`ip_hash` in `deploy/nginx.conf`) und WebSocket-Upgrade-Header prüfen. |
+| WebSocket bricht hinter Proxy ab | Sticky Sessions (`ip_hash` in `deploy/nginx.conf`); Query-String `?h=` darf **nicht** entfernt werden. |
+| Nach Update altes Frontend im Browser | Normal reload (F5); Assets nutzen Content-Hash `?h=` — Hard-Reload nur bei Fehlern. |
+| App startet in Production nicht | `asset-manifest.json` fehlt → `npm run build` und neu deployen; Logs: `[asset-manifest]`. |
 | Let’s Encrypt schlägt fehl | Port 80 von außen erreichbar; Pfad `/.well-known/acme-challenge/` nicht umleiten/blockieren. |
 | Node-Version zu alt | `node -v` muss ≥ 22 sein (`engines` in `package.json`). |
 
