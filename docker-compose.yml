@@ -17,6 +17,8 @@ x-pulse: &pulse
     BATCH_INTERVAL_MS: "100"
     SSL_DIR: /app/data/ssl
     HTTPS_PORT: ${HTTPS_PORT:-3443}
+    # nginx-TLS: fullchain.pem read-only einbinden (./deploy/certs → /proxy-certs)
+    PROXY_SSL_CERT: ${PROXY_SSL_CERT:-/proxy-certs/fullchain.pem}
     USER_AUTH_ENABLED: ${USER_AUTH_ENABLED:-1}
     BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-admin}
     BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@localhost}
@@ -28,6 +30,8 @@ x-pulse: &pulse
   volumes:
     # Host-./data: Branding, Events, SQLite und SSL persistent und backup-freundlich
     - ./data:/app/data
+    # Öffentliches Zertifikat für Admin-Anzeige (nginx terminiert HTTPS)
+    - ./deploy/certs:/proxy-certs:ro
   expose:
     - "3000"
   depends_on:

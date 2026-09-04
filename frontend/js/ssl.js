@@ -31,7 +31,19 @@ const DE = {
   "ssl.https.off": "HTTPS wartet auf ein gültiges Zertifikat (Port {port}).",
   "ssl.hint.port80":
     "Let’s Encrypt prüft HTTP-01 immer auf Port 80. Hinter einem Reverse-Proxy diesen Pfad weiterleiten: /.well-known/acme-challenge/",
+  "ssl.proxy.active": "Öffentliches HTTPS wird von nginx bereitgestellt (Port 443).",
+  "ssl.proxy.detail":
+    "Das gültige Let’s-Encrypt-Zertifikat liegt auf dem Server unter deploy/certs/. Ein zweiter Antrag in Pulse ist nicht erforderlich.",
+  "ssl.proxy.renewHint": "Erneuerung: Zertifikate in deploy/certs/ aktualisieren und nginx neu laden (z. B. certbot).",
+  "ssl.issueHeading": "Neues Zertifikat beantragen",
+  "ssl.issueHint": "Nur nötig, wenn Pulse HTTPS direkt bereitstellt — nicht hinter nginx.",
+  "ssl.managedBy.nginx": "Reverse-Proxy (nginx)",
+  "ssl.managedBy.pulse": "Pulse (integriert)",
+  "ssl.issuer": "Aussteller",
   "ssl.empty": "Noch kein Zertifikat beantragt.",
+  "ssl.intro":
+    "HTTPS-Zertifikate für diese Instanz — bei VPS-Betrieb mit nginx wird das öffentliche Zertifikat automatisch angezeigt.",
+  "ssl.domain": "Domain",
   "ssl.staging": "Staging",
   "ssl.expires": "Gültig bis",
   "ssl.renew": "Erneuern",
@@ -97,15 +109,43 @@ async function refreshSsl() {
   const data = await api.sslList();
   const https = data?.https || {};
   const certs = data?.certificates || [];
-  renderHttpsMeta(https);
+  renderHttpsMeta(https, certs);
+  renderIssueSection(https, certs);
   renderList(certs);
-  const pending = certs.some((c) => c.status === "pending");
+  const pending = certs.some((c) => c.status === "pending" && !c.readOnly);
   schedulePoll(pending);
 }
 
-function renderHttpsMeta(https) {
+function hasActiveProxyCert(certs, https) {
+  if (https?.terminator === "nginx" && https?.publicTls?.active) return true;
+  return certs.some((c) => c.readOnly && c.managedBy === "nginx" && c.status === "active");
+}
+
+function renderIssueSection(https, certs) {
+  const section = $("ssl-issue-section");
+  if (!section) return;
+  const hide = hasActiveProxyCert(certs, https);
+  section.hidden = hide;
+  const intro = $("ssl-intro");
+  if (intro && hide) {
+    intro.textContent = tx("ssl.proxy.detail");
+  } else if (intro) {
+    const got = t("ssl.intro");
+    intro.textContent = got && got !== "ssl.intro" ? got : tx("ssl.intro");
+  }
+}
+
+function renderHttpsMeta(https, certs) {
   const box = $("ssl-https-meta");
   if (!box) return;
+  if (hasActiveProxyCert(certs, https)) {
+    const domain = https?.publicTls?.domain || certs.find((c) => c.managedBy === "nginx")?.domain || "";
+    box.innerHTML = `<p><strong>${escapeHtml(tx("ssl.proxy.active"))}</strong></p>
+      <p class="muted">${escapeHtml(tx("ssl.proxy.detail"))}</p>
+      ${domain ? `<p class="muted">${escapeHtml(tx("ssl.domain"))}: <code>${escapeHtml(domain)}</code></p>` : ""}
+      <p class="muted ssl-proxy-renew">${escapeHtml(tx("ssl.proxy.renewHint"))}</p>`;
+    return;
+  }
   const acme = https.acmeReady ? tx("ssl.acme.ready") : tx("ssl.acme.missing");
   const listen = https.listening
     ? tx("ssl.https.on", { port: String(https.port || "") })
@@ -113,6 +153,12 @@ function renderHttpsMeta(https) {
   const portHint =
     Number(https.httpPort) === 80 ? "" : `<p class="muted">${escapeHtml(tx("ssl.hint.port80"))}</p>`;
   box.innerHTML = `<p>${escapeHtml(listen)}</p><p class="muted">${escapeHtml(acme)}</p>${portHint}`;
+}
+
+function managedByLabel(c) {
+  if (c.managedBy === "nginx") return tx("ssl.managedBy.nginx");
+  if (c.managedBy === "pulse") return tx("ssl.managedBy.pulse");
+  return "";
 }
 
 function renderList(certs) {
@@ -126,19 +172,27 @@ function renderList(certs) {
     .map((c) => {
       const err = c.error ? `<p class="ssl-error">${escapeHtml(c.error)}</p>` : "";
       const staging = c.staging ? ` <span class="ssl-pill">${escapeHtml(tx("ssl.staging"))}</span>` : "";
-      return `<article class="ssl-card" data-domain="${escapeHtml(c.domain)}">
+      const managed = managedByLabel(c);
+      const managedBadge = managed ? ` <span class="ssl-pill ssl-pill-managed">${escapeHtml(managed)}</span>` : "";
+      const issuer = c.issuer
+        ? `<p class="muted">${escapeHtml(tx("ssl.issuer"))}: ${escapeHtml(c.issuer)}</p>`
+        : "";
+      const email = c.email ? `<p class="muted">${escapeHtml(c.email)}</p>` : "";
+      const actions = c.readOnly
+        ? `<p class="muted ssl-readonly-hint">${escapeHtml(tx("ssl.proxy.renewHint"))}</p>`
+        : `<div class="ssl-actions">
+          <button type="button" class="btn ghost" data-ssl="renew">${escapeHtml(tx("ssl.renew"))}</button>
+          <button type="button" class="btn ghost" data-ssl="delete">${escapeHtml(tx("ssl.delete"))}</button>
+        </div>`;
+      return `<article class="ssl-card" data-domain="${escapeHtml(c.domain)}"${c.readOnly ? ' data-readonly="1"' : ""}>
         <header class="ssl-card-head">
           <strong>${escapeHtml(c.domain)}</strong>
           <span class="ssl-status" data-status="${escapeHtml(c.status)}">${escapeHtml(statusLabel(c.status))}</span>
-          ${staging}
+          ${staging}${managedBadge}
         </header>
         <p class="muted">${escapeHtml(tx("ssl.expires"))}: ${escapeHtml(formatDate(c.expiresAt))}</p>
-        <p class="muted">${escapeHtml(c.email || "")}</p>
-        ${err}
-        <div class="ssl-actions">
-          <button type="button" class="btn ghost" data-ssl="renew">${escapeHtml(tx("ssl.renew"))}</button>
-          <button type="button" class="btn ghost" data-ssl="delete">${escapeHtml(tx("ssl.delete"))}</button>
-        </div>
+        ${issuer}${email}${err}
+        ${actions}
       </article>`;
     })
     .join("");
@@ -181,6 +235,7 @@ async function onListClick(ev) {
   const btn = ev.target.closest("[data-ssl]");
   if (!btn) return;
   const card = btn.closest("[data-domain]");
+  if (card?.dataset.readonly === "1") return;
   const domain = card?.dataset.domain;
   if (!domain) return;
   if (btn.dataset.ssl === "renew") {

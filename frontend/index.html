@@ -797,11 +797,14 @@
             <h1 data-i18n="ssl.title">SSL-Zertifikate</h1>
           </div>
         </header>
-        <p class="muted" data-i18n="ssl.intro">Kostenlose HTTPS-Zertifikate von Let’s Encrypt. Die Domain muss per DNS auf diesen Server zeigen, Port 80 muss aus dem Internet erreichbar sein.</p>
+        <p id="ssl-intro" class="muted" data-i18n="ssl.intro">HTTPS-Zertifikate für diese Instanz — entweder über nginx (empfohlen auf dem VPS) oder direkt in Pulse.</p>
         <div id="ssl-https-meta" class="ssl-meta pulse-card panel">
           <p>HTTPS wartet auf ein gültiges Zertifikat.</p>
           <p class="muted">Let’s-Encrypt-Client ist bereit.</p>
         </div>
+        <div id="ssl-issue-section">
+        <h2 class="ssl-section-title" data-i18n="ssl.issueHeading">Neues Zertifikat beantragen</h2>
+        <p id="ssl-issue-hint" class="muted" data-i18n="ssl.issueHint">Nur nötig, wenn Pulse HTTPS direkt bereitstellt — nicht hinter nginx.</p>
         <form id="ssl-form" class="panel pulse-card pulse-admin-form">
           <label class="field">
             <span data-i18n="ssl.domain">Domain</span>
@@ -828,6 +831,7 @@
           <button type="submit" class="btn primary pulse-btn-primary" data-i18n="ssl.issue">Zertifikat beantragen</button>
           </div>
         </form>
+        </div>
         <h2 data-i18n="ssl.list">Vorhandene Zertifikate</h2>
         <div id="ssl-list" class="ssl-list"></div>
       </section>

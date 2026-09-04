@@ -6,6 +6,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const http = require("http");
+const { execSync } = require("child_process");
 const {
   normalizeDomain,
   isValidEmail,
@@ -16,6 +17,7 @@ const {
 } = require("../lib/sslUtil");
 const { createSslStore } = require("../lib/sslStore");
 const ssl = require("../lib/ssl");
+const proxyCert = require("../lib/sslProxyCert");
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -97,9 +99,46 @@ const healthUrl = new URL("http://x/api/health/ready");
 assert(!ssl.shouldRedirectHttp(healthUrl), "Readiness nicht redirecten");
 ssl._challenges.delete("test-token");
 
+/** Reverse-Proxy-Zertifikat (nginx fullchain.pem) — Metadaten für Admin-Anzeige. */
+const proxyDir = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-proxy-cert-"));
+const proxyPem = path.join(proxyDir, "fullchain.pem");
+const proxyKey = path.join(proxyDir, "privkey.pem");
+let proxyTestsOk = false;
+try {
+  execSync(
+    `openssl req -x509 -newkey rsa:2048 -keyout "${proxyKey}" -out "${proxyPem}" -days 365 -nodes -subj "/CN=pulse.ringe.us" -addext "subjectAltName=DNS:pulse.ringe.us"`,
+    { stdio: "ignore" }
+  );
+  proxyTestsOk = fs.existsSync(proxyPem);
+} catch {
+  console.log("Proxy-Zertifikat-Tests übersprungen (openssl nicht verfügbar)");
+}
+if (proxyTestsOk) {
+  const prevProxyCert = process.env.PROXY_SSL_CERT;
+  process.env.PROXY_SSL_CERT = proxyPem;
+  const meta = proxyCert.readProxyCertificate();
+  assert(meta && meta.domain === "pulse.ringe.us", "Proxy-Domain aus PEM");
+  assert(meta.source === "nginx", "Proxy-Quelle nginx");
+  assert(meta.expiresAt > Date.now(), "Proxy-Zertifikat gültig");
+  assert(meta.issuer.length > 0, "Proxy-Aussteller gesetzt");
+  const infoProxy = ssl.httpsInfo();
+  assert(infoProxy.terminator === "nginx", "HTTPS-Terminator nginx");
+  assert(infoProxy.publicTls && infoProxy.publicTls.active, "öffentliches TLS aktiv");
+  assert(infoProxy.publicTls.domain === "pulse.ringe.us", "öffentliche TLS-Domain");
+  const listed = ssl.listCertificates();
+  assert(listed.length >= 1, "Proxy-Zertifikat in Liste");
+  assert(listed[0].managedBy === "nginx", "erstes Zertifikat von nginx");
+  assert(listed[0].readOnly === true, "nginx-Zertifikat read-only");
+  assert(listed[0].status === "active", "nginx-Zertifikat aktiv");
+  if (prevProxyCert === undefined) delete process.env.PROXY_SSL_CERT;
+  else process.env.PROXY_SSL_CERT = prevProxyCert;
+}
+
 const info = ssl.httpsInfo();
 assert(typeof info.port === "number", "HTTPS-Port");
 assert(typeof info.acmeReady === "boolean", "acmeReady Flag");
+assert(typeof info.terminator === "string", "terminator gesetzt");
+assert(info.publicTls && typeof info.publicTls.active === "boolean", "publicTls gesetzt");
 assert(!String(JSON.stringify(ssl.listCertificates())).includes("BEGIN PRIVATE"), "keine Private Keys in der Liste");
 
 function request(method, pathname, body) {

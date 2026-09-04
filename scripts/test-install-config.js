@@ -36,6 +36,8 @@ for (const key of required) {
 const compose = fs.readFileSync(path.join(ROOT, "docker-compose.yml"), "utf8");
 assert(compose.includes("env_file:"), "docker-compose env_file");
 assert(compose.includes("./data:/app/data"), "gemeinsames data-Volume");
+assert(compose.includes("./deploy/certs:/proxy-certs:ro"), "nginx-Zertifikat für Admin-Anzeige");
+assert(compose.includes("PROXY_SSL_CERT"), "PROXY_SSL_CERT in Compose");
 assert(compose.includes("pulse-b:"), "pulse-b Service");
 
 const diagnose = fs.readFileSync(path.join(ROOT, "scripts/diagnose-auth.js"), "utf8");
