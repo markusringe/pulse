@@ -1,5 +1,6 @@
 /**
  * Pulse — Einstieg, Routing, Session-Orchestrierung, QR-Code, Theme.
+ * Cache-Bust-Marker: asset-import-fix 2026-09-04
  *
  * Öffentliche Folien-API ( palettiert für späteres Backend ):
  *   initPoll / updatePollResults / initWordCloud / updateWordCloud
@@ -269,6 +270,13 @@ const ctx = {
 /** @type {{ stop: () => void, refresh?: () => void } | null} */
 let presentCountdownCtl = null;
 
+/** Hash-Pfad ohne führendes # und ohne ?query-Anhängsel im Hash. */
+function hashRoutePath(forced) {
+  const raw =
+    typeof forced === "string" ? forced.replace(/^#/, "") : location.hash.replace(/^#/, "") || "/";
+  return raw.split("?")[0] || "/";
+}
+
 /* Darstellung: localStorage-Key „pulse-theme“, Light-Default — siehe theme.js. */
 initTheme();
 ensureClientId();
@@ -288,7 +296,7 @@ try {
   try {
     absorbPathJoinRoute();
     await loadAuth();
-    const hash = location.hash.replace(/^#/, "") || "/";
+    const hash = hashRoutePath();
     const needsAuth =
       isAuthEnabled() && hash.startsWith("/admin") && hash !== "/admin/login" && !hasAdminAccess();
     if (needsAuth) {
@@ -393,7 +401,7 @@ async function bootUi() {
 
 /** Welche View der aktuelle Hash verlangt — zum Abgleich nach asynchronem Boot. */
 function expectedViewFromHash() {
-  const hash = location.hash.replace(/^#/, "") || "/";
+  const hash = hashRoutePath();
   if (hash === "/privacy") return "privacy";
   if (hash === "/impressum") return "impressum";
   if (hash === "/admin/privacy") return "adminPrivacy";
@@ -536,7 +544,7 @@ function showForbiddenView(routeHash) {
 function route(forcedHash) {
   /* hashchange liefert ein Event — nur echte Strings (z. B. "/admin") gelten als Vorgabe. */
   const override = typeof forcedHash === "string" ? forcedHash.replace(/^#/, "") : "";
-  const hash = override || location.hash.replace(/^#/, "") || "/";
+  const hash = hashRoutePath(override || undefined);
 
   if (hash === "/admin/login") {
     teardownRealtime();
@@ -767,8 +775,7 @@ function showView(name, routeHash) {
     el.inert = !active;
   }
   ctx.role = name;
-  const hashForNav =
-    routeHash ?? (typeof location.hash === "string" ? location.hash.replace(/^#/, "") || "/" : "/");
+  const hashForNav = routeHash ?? hashRoutePath();
   syncAdminNav(name, hashForNav);
   applyAdminNavVisibility();
   document.getElementById("btn-auth-logout")?.toggleAttribute("hidden", !getAuthUser());

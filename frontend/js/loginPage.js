@@ -42,6 +42,6 @@ export async function showLoginPage() {
 export async function initAuthOnBoot() {
   await loadAuth();
   if (!isAuthEnabled()) return false;
-  const hash = location.hash.replace(/^#/, "") || "/";
+  const hash = hashRoutePath();
   return hash.startsWith("/admin") && hash !== "/admin/login" && !hasAdminAccess();
 }
