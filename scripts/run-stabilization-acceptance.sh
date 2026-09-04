@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NODE="${NODE:-node}"
 URL="${PULSE_SMOKE_URL:-https://pulse.ringe.us}"
-VER="${PULSE_EXPECT_VERSION:-1.5.15}"
+VER="${PULSE_EXPECT_VERSION:-1.5.16}"
 
 cd "$ROOT"
 echo "=== Stabilisierungs-Abnahme v${VER} ==="

@@ -1,6 +1,6 @@
 /**
  * Admin-UI für vollständige Instanz-Backups (#/admin/backups).
- * ZIP-Erstellung, Download, Upload und gruppenweise Wiederherstellung.
+ * ZIP-Erstellung, Download, Upload, Löschen und gruppenweise Wiederherstellung.
  */
 
 import { api } from "./websocket.js";
