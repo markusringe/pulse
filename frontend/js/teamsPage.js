@@ -11,8 +11,8 @@ import {
   canCreateTeam,
   canManageTeamMembers,
   roleLabel,
-} from "./authClient.js?v=nav62";
-import { syncAdminNav } from "./adminNav.js?v=nav43";
+} from "./authClient.js";
+import { syncAdminNav } from "./adminNav.js";
 
 /** Aktuell bearbeitetes Team (Modal). */
 let activeTeamId = null;

@@ -13,3 +13,4 @@ node_modules/
 credentials.json
 .tmp/
 *.ppk
+frontend/asset-manifest.json

@@ -3,7 +3,7 @@
  * Sendet WS-Typ „interaction“; Server ist autoritativ.
  */
 
-import { t } from "./i18n.js?v=nav55";
+import { t } from "./i18n.js";
 
 /** Beschriftung für Start-Button je Folientyp. */
 const START_LABEL_KEYS = {

@@ -49,10 +49,13 @@ const { corsHeadersForRequest, corsHeaders } = require("./lib/cors");
 const teamService = require("./lib/teamService");
 const autoBackup = require("./lib/autoBackup");
 const operationMode = require("./lib/operationMode");
+const assetManifestLib = require("./lib/assetManifest");
 
 const PORT = Number(process.env.PORT) || 3000;
 const BATCH_INTERVAL = Number(process.env.BATCH_INTERVAL_MS) || 100;
 const FRONTEND = path.join(__dirname, "frontend");
+/** Content-Hash-Map für Frontend-Assets (?h= statt manuellem ?v=) — beim Start neu berechnet. */
+let pulseAssetHashes = assetManifestLib.buildManifest(FRONTEND).assets;
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 const MAX_PAYLOAD = 512 * 1024;
 
@@ -3767,8 +3770,16 @@ function serveStatic(pathname, req, res) {
     }
     const ext = path.extname(file);
     let body = data;
-    /* Optionaler CDN-Prefix nur für css/js/assets — i18n bleibt auf diesem Host. */
-    if (path.basename(file) === "index.html") body = applyAssetBase(data);
+    const webPath = rel.startsWith("/") ? rel : `/${rel}`;
+    /* Optionaler CDN-Prefix + Content-Hash für HTML; JS-Imports werden zur Laufzeit umgeschrieben. */
+    if (path.basename(file) === "index.html") {
+      body = assetManifestLib.injectHtmlAssetHashes(applyAssetBase(data), pulseAssetHashes);
+    } else if (ext === ".js") {
+      body = Buffer.from(
+        assetManifestLib.rewriteJsImports(data.toString("utf8"), webPath, pulseAssetHashes),
+        "utf8",
+      );
+    }
     const type = MIME[ext] || "application/octet-stream";
     compress.writeEncoded(res, 200, body, type, req, {
       "Cache-Control": cacheControlFor(ext),

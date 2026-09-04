@@ -6,10 +6,10 @@
  * Branding (Logo), Rechtstexte und SSL-Zertifikate neu geladen — Sessions bleiben.
  */
 
-import { api } from "./websocket.js?v=nav8";
-import { t, applyDom, onLang } from "./i18n.js?v=nav13";
-import { ensureStepUp, withStepUp } from "./stepUp.js?v=nav35";
-import { getAuthSettings, updateAuthSettings, getAuthUser } from "./authClient.js?v=nav62";
+import { api } from "./websocket.js";
+import { t, applyDom, onLang } from "./i18n.js";
+import { ensureStepUp, withStepUp } from "./stepUp.js";
+import { getAuthSettings, updateAuthSettings, getAuthUser } from "./authClient.js";
 
 /** Dateiname analog Server Content-Disposition. */
 const DOWNLOAD_NAME = "pulse-settings.json";

@@ -3,6 +3,8 @@
  * Browser-Sprache als Startwert, danach sessionStorage (kein Cookie).
  */
 
+import { assetUrl } from "./assetUrl.js";
+
 const KEY = "tt:lang";
 const SUPPORTED = ["de", "en", "fr"];
 
@@ -73,7 +75,7 @@ export async function setLang(next) {
 }
 
 async function fetchDict(code) {
-  const res = await fetch(`/i18n/${encodeURIComponent(code)}.json?v=nav16`);
+  const res = await fetch(assetUrl(`/i18n/${encodeURIComponent(code)}.json`));
   if (!res.ok) throw new Error(String(res.status));
   const parsed = await res.json();
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};

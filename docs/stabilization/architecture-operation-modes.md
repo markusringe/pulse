@@ -62,7 +62,7 @@ Implementiert — siehe `docs/stabilization/adr-state-version.md` und `lib/sessi
 |----|--------|----------|
 | R-001 | Compose-Default noch SQLite+2 Container | Postgres-Service + Migration dokumentieren |
 | R-002 | Kein `stateVersion` — parallele Presenter-Tabs | **behoben** v1.5.8 |
-| R-003 | Asset-Cache-Busting manuell (`?v=`) | Phase 5 Content-Hash-Build |
+| R-003 | Asset-Cache-Busting manuell (`?v=`) | **behoben** v1.5.9 Content-Hash `?h=` |
 
 ## Referenzen
 

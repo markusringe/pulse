@@ -6,9 +6,9 @@
  * oder ssl.https.off als Rohschlüssel auf der Seite stehen.
  */
 
-import { api } from "./websocket.js?v=nav8";
-import { t, applyDom, onLang, i18nReady } from "./i18n.js?v=nav13";
-import { ensureStepUp } from "./stepUp.js?v=nav35";
+import { api } from "./websocket.js";
+import { t, applyDom, onLang, i18nReady } from "./i18n.js";
+import { ensureStepUp } from "./stepUp.js";
 
 let pollTimer = 0;
 

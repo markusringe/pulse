@@ -7,7 +7,9 @@ COPY frontend/index.html ./frontend/index.html
 COPY frontend/js ./frontend/js
 COPY frontend/help ./frontend/help
 COPY scripts/build-css.sh ./scripts/build-css.sh
-RUN npm run css:build
+COPY scripts/build-asset-manifest.js ./scripts/build-asset-manifest.js
+COPY lib/assetManifest.js ./lib/assetManifest.js
+RUN npm run build
 
 FROM node:22-alpine
 WORKDIR /app
@@ -24,6 +26,7 @@ RUN npm ci --omit=dev
 COPY lib ./lib
 COPY frontend ./frontend
 COPY --from=css-builder /app/frontend/css/pulse.css ./frontend/css/pulse.css
+COPY --from=css-builder /app/frontend/asset-manifest.json ./frontend/asset-manifest.json
 COPY server.js ./
 # Diagnose und Bootstrap-Tests im Container (npm run pulse:diagnose / auth:diagnose / test:bootstrap)
 COPY scripts/diagnose-pulse.js scripts/diagnose-auth.js scripts/test-bootstrap.js scripts/test-reconnect-sync.js scripts/bootstrap-admin.js scripts/sync-install-password.js ./scripts/

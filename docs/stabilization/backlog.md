@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.7 · Prod **v1.5.7** (single, ready, nicht degraded) · Branch `main`
+Stand: v1.5.9 · Prod **v1.5.8** (single, ready) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -36,7 +36,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-007 | Mobile | Overlays blockieren Klicks | teilweise |
 | C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | **teilweise** | v1.5.0 Mock-Reconnect + WS-Integrationstest |
 | C-009 | Security | CORS `*` bei Cookie-Auth | **behoben** | v1.4.9 |
-| C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust | OBS — Phase 5 Content-Hash |
+| C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust | **behoben** | Phase 5: Content-Hash `?h=`, ADR, `test:asset-manifest` |
 | C-011 | Live | Kein stateVersion — parallele Presenter-Konflikte | **behoben** | Phase 2: `lib/sessionVersion.js`, ADR, Tests |
 | C-012 | Ops | Kein reproduzierbarer Lasttest | **behoben** | v1.5.5: `load-test.js` + Gates + `--url` |
 | C-013 | Ops | Readiness ohne DB-R/W und Wartungs-Flags | **behoben** | v1.5.5 Audit: healthCheck, maintenance, restore |
@@ -84,7 +84,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.5.7 · Prod: **1.5.7 live**, Single-Instanz, Ready ok
+- **Version:** `package.json` 1.5.9 · Prod: **1.5.8 live**, Single-Instanz, Ready ok
 - **Last-Baseline:** `load-baseline-100.json`, `load-baseline-300.json` (lokal, Single, Gates grün)
 - **Betriebsmodi:** ADR `docs/stabilization/architecture-operation-modes.md`
 - **Lasttest:** `npm run load-test` · Gates in `release-gates.md`
@@ -98,6 +98,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 1. ~~**v1.5.7** deployen + `migrate-vps-single.sh --yes`~~ — **erledigt** (Prod single, 2026-09-04)
 2. ~~Last-Baseline 300 TN dokumentieren~~ — **erledigt** (`load-baseline-300.json`)
 3. ~~Phase 2: stateVersion (C-011)~~ — **erledigt** (v1.5.8, ADR `adr-state-version.md`)
-4. Phase 5: Content-Hash Assets (C-010)
+4. ~~Phase 5: Content-Hash Assets (C-010)~~ — **erledigt** (v1.5.9, ADR `adr-asset-content-hash.md`)
 5. Smoke-Checkliste manuell abhaken (`smoke-checklist.md`)
-6. SSH-Key auf VPS rotieren (Key im Chat exponiert)
+6. v1.5.9 deployen + Remote-Smoke
+7. SSH-Key auf VPS rotieren (Key im Chat exponiert)

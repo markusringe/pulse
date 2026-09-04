@@ -81,11 +81,13 @@ Messung: Browser DevTools + `scripts/test-performance.js` (Lib-Baseline).
 - ADR: `docs/stabilization/adr-state-version.md`
 - Tests: `npm run test:state-version`
 
-## Phase 5 (nicht Gate v1.5.4) — Asset Content-Hash
+## Phase 5 — Asset Content-Hash (v1.5.9 ✓)
 
-- Webpack/Vite-ähnlicher Hash-Build für JS/CSS
-- HTML referenziert gehashte Dateien
-- Kein manuelles `?v=nav63`
+- SHA-256-Kurzhash pro JS/CSS/i18n/Artikel-JSON — `lib/assetManifest.js`
+- Server injiziert `?h=` in HTML und JS-Imports; `assetUrl()` für Fetch-Pfade
+- Kein manuelles `?v=navXX` in Quellcode
+- ADR: `docs/stabilization/adr-asset-content-hash.md`
+- Tests: `npm run test:asset-manifest`
 - **Kein Service Worker** ohne Offline-Konzept
 
 ## Alerts (Prometheus — empfohlen)

@@ -3,12 +3,12 @@
  * Routing: #/admin/events, #/admin/events/new, #/admin/events/:id, #/admin/sessions/:code
  */
 
-import { api } from "./websocket.js?v=nav20";
-import { t, applyDom, onLang, i18nReady } from "./i18n.js?v=nav13";
-import { syncAdminNav } from "./adminNav.js?v=nav42";
-import { canCreateEvents, isAdminUser, isUserAuthEnabled } from "./authClient.js?v=nav62";
+import { api } from "./websocket.js";
+import { t, applyDom, onLang, i18nReady } from "./i18n.js";
+import { syncAdminNav } from "./adminNav.js";
+import { canCreateEvents, isAdminUser, isUserAuthEnabled } from "./authClient.js";
 import { typeIcon, typeLabel } from "./deck.js";
-import { scaleEventImageFile, mountCountdown, remainingMs } from "./eventCountdown.js?v=nav49";
+import { scaleEventImageFile, mountCountdown, remainingMs } from "./eventCountdown.js";
 import {
   mountCategoryEditor,
   collectCategoriesFromHost,

@@ -10,11 +10,12 @@
 
 import { bindTooltips } from "./tooltips.js";
 import { explainError } from "./errors.js";
+import { assetUrl } from "./assetUrl.js";
 
 const TOUR_DONE_KEY = "pulse:tour-done";
 const TOUR_LATER_KEY = "pulse:tour-later";
 const FEEDBACK_KEY = "pulse:help-feedback";
-const ARTICLES_URL = "/help/articles.json?v=help8";
+const ARTICLES_URL = assetUrl("/help/articles.json");
 
 /** @type {string|null} */
 let appVersionLabel = null;

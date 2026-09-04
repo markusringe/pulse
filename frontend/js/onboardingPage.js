@@ -3,14 +3,14 @@
  * Route: #/admin/onboarding
  */
 
-import { api } from "./websocket.js?v=nav45";
+import { api } from "./websocket.js";
 import {
   loadAuth,
   isAdminUser,
   refreshAuthMe,
   completeOnboardingBackup,
-} from "./authClient.js?v=nav62";
-import { consumeAdminRedirect } from "./adminLoginModal.js?v=nav62";
+} from "./authClient.js";
+import { consumeAdminRedirect } from "./adminLoginModal.js";
 
 function $(id) {
   return document.getElementById(id);

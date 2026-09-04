@@ -5,7 +5,7 @@
  *   initPoll / updatePollResults / initWordCloud / updateWordCloud
  */
 
-import { RealtimeClient, api } from "./websocket.js?v=nav61";
+import { RealtimeClient, api } from "./websocket.js";
 import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRatingResults, renderRatingInput } from "./poll.js";
 import { initQA, updateQA, destroyQA } from "./qa.js";
 import {
@@ -16,25 +16,25 @@ import {
   qaTimerLimitSec,
   currentQaTimerSnapshot,
 } from "./qaTimerUi.js";
-import { enterStage, leaveStage } from "./stage.js?v=nav19";
+import { enterStage, leaveStage } from "./stage.js";
 import {
   mountCountdown,
   shouldShowCountdown,
   remainingMs,
-} from "./eventCountdown.js?v=nav1";
+} from "./eventCountdown.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
-import { initI18n, setLang, t, applyDom, currentLang, onLang } from "./i18n.js?v=nav13";
+import { initI18n, setLang, t, applyDom, currentLang, onLang } from "./i18n.js";
 import { showEmergencyBanner, bindPanic, setPanicState } from "./emergency.js";
 import { renderModeration } from "./moderation.js";
 import { introQuiz, knowledgeCheck, icebreakerQuiz } from "./templates.js";
 import { questionsToCsv, downloadText, printQuestionsPdf, simpleMarkdown } from "./export.js";
 import { mountReactionBar, burstReaction } from "./reactions.js";
-import { bindSslPage, showSslPage } from "./ssl.js?v=nav13";
-import { bindHelp, showHelpPage, explainError } from "./help.js?v=help9";
-import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
-import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
-import { syncAdminNav } from "./adminNav.js?v=nav43";
+import { bindSslPage, showSslPage } from "./ssl.js";
+import { bindHelp, showHelpPage, explainError } from "./help.js";
+import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js";
+import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js";
+import { syncAdminNav } from "./adminNav.js";
 import {
   loadAuth,
   applyAdminNavVisibility,
@@ -45,15 +45,15 @@ import {
   canAccessAdminHash,
   logout,
   takeSessionExpiredNotice,
-} from "./authClient.js?v=nav62";
-import { showLoginPage } from "./loginPage.js?v=nav63";
-import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav62";
-import { showUsersPage } from "./usersAdmin.js?v=nav43";
-import { showTeamsPage } from "./teamsPage.js?v=nav43";
-import { showProfilePage } from "./profilePage.js?v=nav30";
-import { ensureStepUp } from "./stepUp.js?v=nav47";
-import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js?v=nav56";
-import { drawQrCode, joinUrlFromLocation, absorbPathJoinRoute } from "./qrRender.js?v=nav48";
+} from "./authClient.js";
+import { showLoginPage } from "./loginPage.js";
+import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js";
+import { showUsersPage } from "./usersAdmin.js";
+import { showTeamsPage } from "./teamsPage.js";
+import { showProfilePage } from "./profilePage.js";
+import { ensureStepUp } from "./stepUp.js";
+import { bindEvents, showEventsPage, scheduleLoadHomeEvents, cancelHomeEventsWork, isEventsHash, isLegacyEventJoinHash, redirectLegacyEventJoin } from "./events.js";
+import { drawQrCode, joinUrlFromLocation, absorbPathJoinRoute } from "./qrRender.js";
 import {
   initTheme,
   toggleDocumentTheme,
@@ -71,7 +71,7 @@ import {
   renderPresentStrip,
   applyMockDeck,
 } from "./deck.js";
-import { normalizeSessionSlides, acceptIncoming, applyIncoming } from "./sessionSync.js?v=nav62";
+import { normalizeSessionSlides, acceptIncoming, applyIncoming } from "./sessionSync.js";
 import {
   mountPresenterStats,
   refreshPresenterStats,
@@ -81,9 +81,9 @@ import {
   destroyPresenterStats,
 } from "./presenterStats.js";
 import { bindJoinGestures, hapticSuccess } from "./joinMobile.js";
-import { bindPresentMobileUi } from "./presentMobile.js?v=nav54";
-import { bindInteractionBar, joinInputsBlocked, joinStatusMessage, computeRemainingMs, formatCountdown, resetJoinTimerAnnouncements, tickJoinTimerA11y, applyJoinTimerUrgency, joinTimerTypeHint } from "./interactionPresenter.js?v=nav55";
-import { bindAdminMobileNav, bindPublicMobileMenu, closeHomeMenuDrawer } from "./mobileNav.js?v=nav60";
+import { bindPresentMobileUi } from "./presentMobile.js";
+import { bindInteractionBar, joinInputsBlocked, joinStatusMessage, computeRemainingMs, formatCountdown, resetJoinTimerAnnouncements, tickJoinTimerA11y, applyJoinTimerUrgency, joinTimerTypeHint } from "./interactionPresenter.js";
+import { bindAdminMobileNav, bindPublicMobileMenu, closeHomeMenuDrawer } from "./mobileNav.js";
 import {
   renderRankingInput,
   renderPointsInput,
@@ -547,7 +547,7 @@ function route(forcedHash) {
   if (hash === "/admin/onboarding") {
     teardownRealtime();
     showView("onboarding", hash);
-    import("./onboardingPage.js?v=nav45")
+    import("./onboardingPage.js")
       .then((m) => m.showOnboardingPage())
       .catch((err) => console.error("[onboarding-page]", err));
     return;
@@ -629,7 +629,7 @@ function route(forcedHash) {
   if (hash === "/admin/email") {
     teardownRealtime();
     showView("email");
-    import("./emailPage.js?v=nav36")
+    import("./emailPage.js")
       .then((m) => m.showEmailPage())
       .catch((err) => {
         console.error("[email-page]", err);
@@ -646,7 +646,7 @@ function route(forcedHash) {
   if (hash === "/admin/updates") {
     teardownRealtime();
     showView("updates");
-    import("./updatesPage.js?v=nav44")
+    import("./updatesPage.js")
       .then((m) => m.showUpdatesPage())
       .catch((err) => {
         console.error("[updates-page]", err);
@@ -658,7 +658,7 @@ function route(forcedHash) {
   if (hash === "/admin/backups") {
     teardownRealtime();
     showView("backups", hash);
-    import("./backupsPage.js?v=nav47")
+    import("./backupsPage.js")
       .then((m) => m.showBackupsPage())
       .catch((err) => {
         console.error("[backups-page]", err);
@@ -1372,7 +1372,7 @@ function connectRealtime(role) {
     }
   });
   /* Update-Fortschritt optional anbinden (Modul darf Admin-Start nicht blockieren). */
-  import("./updatesPage.js?v=nav44")
+  import("./updatesPage.js")
     .then((m) => m.bindUpdateWsEvents(rt))
     .catch(() => {});
   rt.on("pong", (payload) => {

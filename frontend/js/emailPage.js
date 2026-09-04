@@ -3,8 +3,8 @@
  * Route: #/admin/email
  */
 
-import { getEmailConfig, saveEmailConfig, sendTestEmail, getAuthUser } from "./authClient.js?v=nav62";
-import { ensureStepUp, withStepUp } from "./stepUp.js?v=nav35";
+import { getEmailConfig, saveEmailConfig, sendTestEmail, getAuthUser } from "./authClient.js";
+import { ensureStepUp, withStepUp } from "./stepUp.js";
 
 let bound = false;
 

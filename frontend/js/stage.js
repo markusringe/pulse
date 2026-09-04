@@ -7,14 +7,14 @@
  * Notizen kommen serverseitig nicht an (revealNotes: false).
  */
 
-import { RealtimeClient, api } from "./websocket.js?v=nav61";
-import { t } from "./i18n.js?v=nav13";
+import { RealtimeClient, api } from "./websocket.js";
+import { t } from "./i18n.js";
 import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRatingResults } from "./poll.js";
 import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
-import { normalizeSessionSlides, acceptIncoming, applyIncoming } from "./sessionSync.js?v=nav62";
-import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js?v=nav1";
-import { stageStatusMessage } from "./interactionPresenter.js?v=nav55";
+import { normalizeSessionSlides, acceptIncoming, applyIncoming } from "./sessionSync.js";
+import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js";
+import { stageStatusMessage } from "./interactionPresenter.js";
 
 /** @type {RealtimeClient | null} */
 let rt = null;

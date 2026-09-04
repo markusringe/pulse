@@ -16,7 +16,7 @@ import {
   isPinLoginAvailable,
   needsAuthBootstrap,
   getDevMailbox,
-} from "./authClient.js?v=nav62";
+} from "./authClient.js";
 
 /** Laufender Formularzustand pro Container-Instanz. */
 const instances = new WeakMap();

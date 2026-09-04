@@ -3,10 +3,10 @@
  * ZIP-Erstellung, Download, Upload und gruppenweise Wiederherstellung.
  */
 
-import { api } from "./websocket.js?v=nav44";
-import { withStepUp } from "./stepUp.js?v=nav47";
-import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav62";
-import { syncAdminNav } from "./adminNav.js?v=nav44";
+import { api } from "./websocket.js";
+import { withStepUp } from "./stepUp.js";
+import { loadAuth, applyAdminNavVisibility } from "./authClient.js";
+import { syncAdminNav } from "./adminNav.js";
 
 function $(id) {
   return document.getElementById(id);

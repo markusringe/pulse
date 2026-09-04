@@ -449,7 +449,7 @@ export async function fetchWithAuth(path, opts = {}) {
   const r = await fetchJson(path, opts);
   if (r.status === 401 && state.enabled) {
     markSessionExpired();
-    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav62");
+    const { showAdminLoginModal } = await import("./adminLoginModal.js");
     await showAdminLoginModal("/admin");
     throw new Error("Session abgelaufen");
   }

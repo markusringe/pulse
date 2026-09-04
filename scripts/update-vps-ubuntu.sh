@@ -457,11 +457,11 @@ update_npm() {
   log "npm: Abhängigkeiten installieren…"
   run_with_spinner "npm install" npm install
 
-  log "npm: Tailwind CSS kompilieren…"
-  if npm run css:build; then
-    ok "css:build erfolgreich"
+  log "npm: Frontend-Build (CSS + Asset-Manifest)…"
+  if npm run build; then
+    ok "build erfolgreich (css + asset-manifest)"
   else
-    warn "css:build fehlgeschlagen — Fallback pulse.css bleibt aktiv."
+    warn "build fehlgeschlagen — Fallback pulse.css / Laufzeit-Manifest bleibt aktiv."
   fi
 
   log "npm: Dev-Abhängigkeiten entfernen…"

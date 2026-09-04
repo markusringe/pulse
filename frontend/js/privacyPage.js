@@ -6,10 +6,10 @@
  * Theme-CSS und SSL-Module werden nicht angefasst.
  */
 
-import { api } from "./websocket.js?v=nav8";
-import { t, applyDom, currentLang, onLang } from "./i18n.js?v=nav13";
+import { api } from "./websocket.js";
+import { t, applyDom, currentLang, onLang } from "./i18n.js";
 import { downloadText, simpleMarkdown } from "./export.js";
-import { ensureStepUp } from "./stepUp.js?v=nav35";
+import { ensureStepUp } from "./stepUp.js";
 
 /**
  * Fallback, wenn /api/privacy nicht erreichbar ist (reiner Datei-Modus).

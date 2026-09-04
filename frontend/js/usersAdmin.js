@@ -14,9 +14,9 @@ import {
   loadAuth,
   canManageUsers,
   applyAdminNavVisibility,
-} from "./authClient.js?v=nav62";
-import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav43";
-import { syncAdminNav } from "./adminNav.js?v=nav43";
+} from "./authClient.js";
+import { withStepUp, ensureStepUp } from "./stepUp.js";
+import { syncAdminNav } from "./adminNav.js";
 
 /** Benutzerliste rendern. */
 export async function showUsersPage() {

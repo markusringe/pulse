@@ -3,9 +3,9 @@
  * Fortschritt inline auf der Seite — kein Voll-Reload, Toast verschwindet automatisch.
  */
 
-import { api } from "./websocket.js?v=nav20";
-import { simpleMarkdown } from "./export.js?v=nav1";
-import { ensureStepUp } from "./stepUp.js?v=nav43";
+import { api } from "./websocket.js";
+import { simpleMarkdown } from "./export.js";
+import { ensureStepUp } from "./stepUp.js";
 
 /** Polling während Installation oder Neustart (ms). */
 const POLL_MS = 2000;
