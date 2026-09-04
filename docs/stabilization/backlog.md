@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.9 · Prod **v1.5.8** (single, ready) · Branch `main`
+Stand: v1.5.9 · Prod **v1.5.9** (single, ready) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -84,7 +84,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.5.9 · Prod: **1.5.8 live**, Single-Instanz, Ready ok
+- **Version:** `package.json` 1.5.9 · Prod: **1.5.9 live**, Single-Instanz, Ready ok
 - **Last-Baseline:** `load-baseline-100.json`, `load-baseline-300.json` (lokal, Single, Gates grün)
 - **Betriebsmodi:** ADR `docs/stabilization/architecture-operation-modes.md`
 - **Lasttest:** `npm run load-test` · Gates in `release-gates.md`
@@ -100,5 +100,5 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 3. ~~Phase 2: stateVersion (C-011)~~ — **erledigt** (v1.5.8, ADR `adr-state-version.md`)
 4. ~~Phase 5: Content-Hash Assets (C-010)~~ — **erledigt** (v1.5.9, ADR `adr-asset-content-hash.md`)
 5. Smoke-Checkliste manuell abhaken (`smoke-checklist.md`)
-6. v1.5.9 deployen + Remote-Smoke
+6. ~~v1.5.9 deployen + Remote-Smoke~~ — **erledigt** (2026-09-04)
 7. SSH-Key auf VPS rotieren (Key im Chat exponiert)
