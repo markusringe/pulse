@@ -296,7 +296,7 @@ async function onVerifyPin(container, state) {
   setError(container, state, "");
   await loadAuth();
   disposeLoginForm(container);
-  state.options.onSuccess?.("#/admin/events");
+  state.options.onSuccess?.();
 }
 
 /** Kennwort- oder Bootstrap-Anmeldung. */
@@ -352,7 +352,7 @@ async function onPasswordLogin(container, state) {
     state.options.onSuccess?.("#/admin/email");
     return;
   }
-  state.options.onSuccess?.("#/admin/events");
+  state.options.onSuccess?.();
 }
 
 /** Self-Service-Registrierung (nur PIN-Modus). */

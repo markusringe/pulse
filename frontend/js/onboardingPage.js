@@ -10,6 +10,7 @@ import {
   refreshAuthMe,
   completeOnboardingBackup,
 } from "./authClient.js?v=nav62";
+import { consumeAdminRedirect } from "./adminLoginModal.js?v=nav62";
 
 function $(id) {
   return document.getElementById(id);
@@ -110,7 +111,7 @@ async function onSkipClick() {
   await completeOnboardingBackup();
   const pin = sessionStorage.getItem("pulse:requires-pin-setup");
   sessionStorage.removeItem("pulse:requires-pin-setup");
-  location.hash = pin ? "#/admin/email" : "#/admin/events";
+  location.hash = pin ? "#/admin/email" : consumeAdminRedirect("#/admin/events");
 }
 
 let bound = false;
@@ -125,7 +126,7 @@ export async function showOnboardingPage() {
   }
   const me = await fetch("/api/auth/me", { credentials: "include" }).then((r) => r.json()).catch(() => ({}));
   if (!me.onboardingBackupPending) {
-    location.hash = "#/admin/events";
+    location.hash = consumeAdminRedirect("#/admin/events");
     return;
   }
 

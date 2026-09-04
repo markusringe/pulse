@@ -46,7 +46,7 @@ import {
   logout,
   takeSessionExpiredNotice,
 } from "./authClient.js?v=nav62";
-import { showLoginPage } from "./loginPage.js?v=nav62";
+import { showLoginPage } from "./loginPage.js?v=nav63";
 import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav62";
 import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
@@ -1616,16 +1616,16 @@ function connectRealtime(role) {
   });
 
   rt.on("open", () => {
-    void loadAuth().then(() => {
-      if (isEventLinkedSession(ctx.session)) api.setAdminKey("");
-      rt.send("join", {
-        code: ctx.session?.code,
-        role,
-        adminKey: api.adminKey,
-        clientId: api.clientId,
-        teamName: readTeamName(),
-      });
+    if (isEventLinkedSession(ctx.session)) api.setAdminKey("");
+    rt.send("join", {
+      code: ctx.session?.code,
+      role,
+      adminKey: api.adminKey,
+      clientId: api.clientId,
+      teamName: readTeamName(),
     });
+    /* Auth parallel — Reconnect soll join nicht verzögern (B-006). */
+    void loadAuth();
   });
 
   rt.connect();
