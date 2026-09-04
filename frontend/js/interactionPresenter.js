@@ -109,14 +109,26 @@ export function bindInteractionBar(opts) {
   return { render };
 }
 
-export function joinInputsBlocked(slide) {
+export function joinInputsBlocked(slide, session) {
+  const eventStatus = session?.eventMeta?.status;
+  if (eventStatus === "planned" || eventStatus === "archived") return true;
   if (!slide?.interaction) return false;
   if (slide.interaction.manualStart === false) return false;
   return effectiveInteractionState(slide) !== "running";
 }
 
-export function joinStatusMessage(slide) {
-  if (!slide?.interaction || !joinInputsBlocked(slide)) return "";
+/** Wartetext wenn Event noch nicht für Teilnahme freigegeben ist. */
+export function joinEventStatusMessage(session) {
+  const status = session?.eventMeta?.status;
+  if (status === "planned") return t("events.joinClosed");
+  if (status === "archived") return t("join.eventArchived");
+  return "";
+}
+
+export function joinStatusMessage(slide, session) {
+  const eventMsg = joinEventStatusMessage(session);
+  if (eventMsg) return eventMsg;
+  if (!slide?.interaction || !joinInputsBlocked(slide, session)) return "";
   const state = effectiveInteractionState(slide);
   if (state === "active") return t("interaction.join.waiting");
   if (state === "paused") return t("interaction.join.paused");

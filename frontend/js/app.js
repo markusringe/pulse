@@ -34,7 +34,7 @@ import { introQuiz, knowledgeCheck, icebreakerQuiz } from "./templates.js";
 import { questionsToCsv, downloadText, printQuestionsPdf, simpleMarkdown } from "./export.js";
 import { mountReactionBar, burstReaction } from "./reactions.js";
 import { bindSslPage, showSslPage } from "./ssl.js";
-import { bindHelp, showHelpPage, explainError } from "./help.js";
+import { bindHelp, showHelpPage, explainError, explainServerError } from "./help.js";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js";
 import { syncAdminNav } from "./adminNav.js";
@@ -1845,12 +1845,12 @@ function renderJoinSlide(opts = {}) {
     return;
   }
   els.joinQuestion.textContent = slide.question;
-  if (!opts.preserveFeedback && joinInputsBlocked(slide)) {
+  if (!opts.preserveFeedback && joinInputsBlocked(slide, s)) {
     /* Interaktionsstatus nur in #join-interaction-hint — nicht doppelt in #join-feedback. */
     setJoinFeedback("");
   }
   resetJoinTimerAnnouncements(slide.id);
-  const inputBlocked = joinInputsBlocked(slide) || Boolean(s.paused);
+  const inputBlocked = joinInputsBlocked(slide, s) || Boolean(s.paused);
   updateJoinInteractionHint(slide);
   const voted = ctx.votedSlide.has(slide.id) || ctx.pendingVoteSlideId === slide.id;
   els.joinChoice.hidden = slide.type !== "choice";
@@ -1940,7 +1940,7 @@ function renderJoinSlide(opts = {}) {
 function submitTypedVote(payload) {
   const slide = currentSlide();
   if (!slide || ctx.votedSlide.has(slide.id) || ctx.pendingVoteSlideId === slide.id || ctx.session?.paused) return;
-  if (joinInputsBlocked(slide)) {
+  if (joinInputsBlocked(slide, ctx.session)) {
     /* Status steht in #join-interaction-hint — kein doppeltes Feedback. */
     return;
   }
@@ -1959,7 +1959,7 @@ function submitTypedVote(payload) {
 
 function submitVote(optionId, btn) {
   const slide = currentSlide();
-  if (!slide || ctx.votedSlide.has(slide.id) || ctx.pendingVoteSlideId === slide.id || ctx.session?.paused || joinInputsBlocked(slide)) {
+  if (!slide || ctx.votedSlide.has(slide.id) || ctx.pendingVoteSlideId === slide.id || ctx.session?.paused || joinInputsBlocked(slide, ctx.session)) {
     return;
   }
   ctx.pendingVoteSlideId = slide.id;
@@ -2001,7 +2001,7 @@ function scheduleVoteConfirmRetry(payload, immediateReconnect) {
     if (!ctx.pendingVoteSlideId || ctx.pendingVoteSlideId !== payload.slideId) return;
     const slide = currentSlide();
     /* Kein Retry solange Interaktion lokal noch gesperrt ist (Abstimmung nicht gestartet). */
-    if (!slide || joinInputsBlocked(slide)) {
+    if (!slide || joinInputsBlocked(slide, ctx.session)) {
       rollbackPendingVote();
       refreshJoinSlideUi();
       return;
@@ -2049,6 +2049,8 @@ function handleJoinParticipantError(payload) {
     "lobby",
     "not_interactive",
     "no_slide",
+    "event_planned",
+    "event_archived",
   ]);
 
   if (code === "blocked") {
@@ -2108,18 +2110,26 @@ function handleJoinParticipantError(payload) {
   }
   if (hintOnly.has(code)) {
     rollbackPendingVote();
+    setJoinFeedback("");
     refreshJoinSlideUi();
+    updateJoinInteractionHint(currentSlide());
     return;
   }
-  if (code === "empty" || code === "stopword" || code === "max") {
+  if (code === "empty" || code === "stopword" || code === "max" || code === "type") {
     const explained = explainError(code);
     setJoinFeedback(explained.html, { html: true, state: "error" });
     rollbackPendingVote();
     refreshJoinSlideUi();
     return;
   }
+  if (code === "emoji-limit" || code === "emoji_limit") {
+    const explained = explainError("emoji_limit");
+    setJoinFeedback(explained.html, { html: true, state: "error" });
+    rollbackPendingVote();
+    return;
+  }
 
-  const explained = explainError(code || msg);
+  const explained = explainServerError({ error: code, code, message: String(msg || "") });
   setJoinFeedback(explained.html, { html: true, state: "error" });
   rollbackPendingVote();
   refreshJoinSlideUi();
@@ -2185,7 +2195,7 @@ function onWordSubmit(ev) {
   const text = (els.wordInput.value || "").trim();
   if (!text) return;
   const slide = currentSlide();
-  if (!slide || joinInputsBlocked(slide) || ctx.session?.paused) return;
+  if (!slide || joinInputsBlocked(slide, ctx.session) || ctx.session?.paused) return;
   ctx.rt?.send("word", { code: ctx.session.code, text, slideId: slide.id });
   els.wordInput.value = "";
   hapticSuccess();
@@ -2631,7 +2641,7 @@ function updateJoinInteractionHint(slide) {
   const srLive = document.getElementById("join-interaction-sr");
   const typeHint = document.getElementById("join-timer-type-hint");
   if (!slide) return;
-  const msg = joinStatusMessage(slide);
+  const msg = joinStatusMessage(slide, ctx.session);
   let text = msg;
   let remSec = 0;
   if (slide.interaction?.timerEnabled && slide.interaction.state === "running") {

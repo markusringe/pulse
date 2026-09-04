@@ -114,6 +114,7 @@
   "join.error.alreadyVoted": "Votre vote est déjà comptabilisé.",
   "join.error.invalidOption": "Cette option est invalide — veuillez réessayer.",
   "join.error.voteTimeout": "Le vote n’a pas pu être confirmé. Veuillez réessayer.",
+  "join.eventArchived": "Cet événement est archivé — la participation n’est plus possible.",
   "join.wordSent": "Mot envoyé.",
   "qa.yours": "Votre question",
   "qa.send": "Envoyer la question",

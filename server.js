@@ -1989,6 +1989,11 @@ async function onWsMessage(client, data) {
     schedulePersist(session);
     announceResults(session, slide);
   } else if (type === "submit_question" || type === "new_question") {
+    const eventGate = participantEventGate(session);
+    if (eventGate) {
+      client.send({ type: "error", payload: eventGate });
+      return;
+    }
     const qSlide = interactive.findQaSlide(session, payload.slideId);
     const gate = qSlide ? interactionState.canAcceptInput(session, qSlide) : { ok: false, error: "lobby" };
     if (!gate.ok) {
@@ -1999,7 +2004,7 @@ async function onWsMessage(client, data) {
       return;
     }
     if (session.paused) {
-      client.send({ type: "error", payload: { message: "Session pausiert" } });
+      client.send({ type: "error", payload: { error: "paused", message: "Session pausiert" } });
       return;
     }
     const out = intake.intakeQuestion(session, client, payload, brandingStore.load());
@@ -2192,19 +2197,10 @@ async function joinSession(client, payload = {}) {
   const role = payload.role;
   const adminKey = payload.adminKey;
   const ev = eventByJoinCode(code);
-  if (ev) {
-    const isStaff = role === "presenter" || role === "stage";
-    if (ev.status === "planned" && !isStaff) {
-      client.send({ type: "error", payload: { message: "Dieses Event nimmt noch keine Teilnahmen an." } });
-      return;
-    }
-    if (ev.status === "archived" && !isStaff) {
-      client.send({ type: "error", payload: { message: "Dieses Event ist archiviert." } });
-      return;
-    }
-    if (isStaff || ev.status === "active" || ev.status === "ended") {
-      await ensureEventSession(ev);
-    }
+  const isStaff = role === "presenter" || role === "stage";
+  /* Geplante/archivierte Events: WS-Join erlauben (Warteraum), Eingaben per participantEventGate. */
+  if (ev && (isStaff || ev.status === "active" || ev.status === "ended" || ev.status === "planned" || ev.status === "archived")) {
+    await ensureEventSession(ev);
   }
   const session = await getSession(code);
   if (!session) {
@@ -2274,6 +2270,11 @@ function leaveSession(client) {
 function applyVote(session, client, payload) {
   const slide = session.slides.find((s) => s.id === payload.slideId) || session.slides[session.activeSlideIndex];
   if (!slide) return;
+  const eventGate = participantEventGate(session);
+  if (eventGate) {
+    client.send({ type: "error", payload: eventGate });
+    return;
+  }
   const gate = interactionState.canAcceptInput(session, slide);
   if (!gate.ok) {
     client.send({ type: "error", payload: { error: gate.error, message: gate.message } });
@@ -2303,7 +2304,25 @@ function applyVote(session, client, payload) {
     return;
   }
   const typed = ["ranking", "points100", "open_text", "image_choice", "datetime", "picker"];
-  if (!typed.includes(slide.type)) return;
+  if (!typed.includes(slide.type)) {
+    if (slide.type === "wordcloud") {
+      client.send({
+        type: "error",
+        payload: { error: "not_interactive", message: "Bitte nutzen Sie das Wortfeld für die Wortwolke." },
+      });
+    } else if (slide.type === "quiz") {
+      client.send({
+        type: "error",
+        payload: { error: "interaction_not_started", message: "Das Quiz wurde noch nicht gestartet" },
+      });
+    } else if (slide.type === "qa") {
+      client.send({
+        type: "error",
+        payload: { error: "not_interactive", message: "Bitte nutzen Sie das Fragenfeld." },
+      });
+    }
+    return;
+  }
   const out = slideVotes.applyTypedVote(session, client, payload, slide, brandingStore.load());
   if (out.error) {
     client.send({ type: "error", payload: out });
@@ -2318,6 +2337,11 @@ function applyVote(session, client, payload) {
 function applyWord(session, client, payload) {
   const slide = session.slides.find((s) => s.id === payload.slideId) || session.slides[session.activeSlideIndex];
   if (!slide || slide.type !== "wordcloud") return;
+  const eventGate = participantEventGate(session);
+  if (eventGate) {
+    client.send({ type: "error", payload: eventGate });
+    return;
+  }
   const gate = interactionState.canAcceptInput(session, slide);
   if (!gate.ok) {
     client.send({ type: "error", payload: { error: gate.error, message: gate.message } });
@@ -2984,6 +3008,32 @@ function enrichPublicEvent(ev, origin) {
 
 function eventByJoinCode(code) {
   return eventStore.bySessionCode(code);
+}
+
+/**
+ * Event-Status: Teilnehmer dürfen verbinden und warten, Eingaben erst bei „active“.
+ * @param {object} session
+ * @returns {{ ok: false, error: string, message: string } | null}
+ */
+function participantEventGate(session) {
+  if (!session) return null;
+  const ev = session.eventId ? eventStore.get(session.eventId) : eventByJoinCode(session.code);
+  if (!ev) return null;
+  if (ev.status === "planned") {
+    return {
+      ok: false,
+      error: "event_planned",
+      message: "Dieses Event nimmt noch keine Teilnahmen an.",
+    };
+  }
+  if (ev.status === "archived") {
+    return {
+      ok: false,
+      error: "event_archived",
+      message: "Dieses Event ist archiviert.",
+    };
+  }
+  return null;
 }
 
 function eventBrandingFor(eventId) {

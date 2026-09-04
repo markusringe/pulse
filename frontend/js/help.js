@@ -9,7 +9,7 @@
  */
 
 import { bindTooltips } from "./tooltips.js";
-import { explainError } from "./errors.js";
+import { explainError, explainServerError } from "./errors.js";
 import { assetUrl } from "./assetUrl.js";
 
 const TOUR_DONE_KEY = "pulse:tour-done";
@@ -844,7 +844,7 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
-export { explainError, TOUR_DONE_KEY, FEEDBACK_KEY, installHelp };
+export { explainError, explainServerError, TOUR_DONE_KEY, FEEDBACK_KEY, installHelp };
 
 if (typeof window !== "undefined") {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", installHelp);

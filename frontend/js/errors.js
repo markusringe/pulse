@@ -178,6 +178,48 @@ export const ERRORS = {
     next: "Reduzieren Sie Ihre Auswahl und senden Sie erneut.",
     help: "#/help/getting-started",
   },
+  paused: {
+    title: "Session pausiert",
+    cause: "Der Präsentator hat die Session vorübergehend angehalten.",
+    next: "Bitte warten, bis die Präsentation fortgesetzt wird.",
+    help: "#/help/troubleshooting",
+  },
+  lobby: {
+    title: "Warten auf den Start",
+    cause: "Die Session hat noch nicht begonnen.",
+    next: "Sobald der Präsentator startet, können Sie mitmachen.",
+    help: "#/help/getting-started",
+  },
+  no_slide: {
+    title: "Keine Folie aktiv",
+    cause: "Auf dieser Session ist gerade keine Folie ausgewählt.",
+    next: "Bitte warten Sie auf den nächsten Folienwechsel.",
+    help: "#/help/troubleshooting",
+  },
+  event_planned: {
+    title: "Event noch nicht gestartet",
+    cause: "Dieses Event nimmt noch keine Teilnahmen an.",
+    next: "Bitte warten Sie, bis der Veranstalter das Event freigibt.",
+    help: "#/help/events",
+  },
+  event_archived: {
+    title: "Event beendet",
+    cause: "Dieses Event ist archiviert und nimmt keine Teilnahmen mehr an.",
+    next: "Wenden Sie sich an den Veranstalter, falls Sie Fragen haben.",
+    help: "#/help/events",
+  },
+  emoji_limit: {
+    title: "Zu viele Emojis",
+    cause: "Die Frage enthält zu viele Emojis.",
+    next: "Formulieren Sie die Frage in normalen Worten und senden Sie erneut.",
+    help: "#/help/qa",
+  },
+  type: {
+    title: "Eingabe passt nicht zur Folie",
+    cause: "Diese Antwort kann auf der aktuellen Folie nicht verarbeitet werden.",
+    next: "Warten Sie kurz auf die Anzeige der Folie oder laden Sie die Seite neu.",
+    help: "#/help/troubleshooting",
+  },
   already: {
     title: "Bereits abgestimmt",
     cause: "Ihre Stimme auf dieser Folie ist bereits beim Server angekommen.",
@@ -235,22 +277,57 @@ export function resolveErrorKey(raw) {
   if (lower.includes("interaction_ended") || lower.includes("ist beendet")) return "interaction_ended";
   if (lower.includes("not_interactive")) return "not_interactive";
   if (lower.includes("session pausiert")) return "paused";
+  if (lower === "paused") return "paused";
   if (lower.includes("warten auf den start")) return "lobby";
+  if (lower === "lobby") return "lobby";
+  if (lower.includes("nimmt noch keine teilnahmen")) return "event_planned";
+  if (lower.includes("event ist archiviert") || lower.includes("ist archiviert")) return "event_archived";
+  if (lower.includes("emoji") && lower.includes("limit")) return "emoji_limit";
+  if (lower === "emoji-limit" || lower === "emoji_limit") return "emoji_limit";
+  if (lower === "type") return "type";
   if (lower === "empty" || lower.includes("leer")) return "empty";
   if (lower === "stopword") return "stopword";
   if (lower === "max") return "max";
-  if (lower.includes("no_slide")) return "wrong_slide";
+  if (lower.includes("no_slide") || lower.includes("keine folie")) return "no_slide";
+  if (lower.includes("zeit ist abgelaufen")) return "interaction_ended";
+  if (lower.includes("abstimmung ist beendet")) return "interaction_ended";
+  if (lower.includes("quiz wurde noch nicht")) return "interaction_not_started";
+  if (lower.includes("abstimmung wurde noch nicht")) return "interaction_not_started";
   return "generic";
 }
 
 /**
- * Vollständigen Fehlertext für die UI liefern.
- * @param {unknown} raw
+ * Server-Fehler (Code + Nachricht) für die Teilnehmer-UI auflösen.
+ * Zeigt bei unbekanntem Code die Server-Nachricht statt „Ein unerwarteter Fehler …“.
+ * @param {{ error?: string, code?: string, message?: string }} payload
  * @returns {ErrorInfo & { key: string, html: string }}
  */
-export function explainError(raw) {
-  const key = resolveErrorKey(raw);
-  const info = ERRORS[key] || ERRORS.generic;
+export function explainServerError(payload = {}) {
+  const code = String(payload.error || payload.code || "").trim();
+  const message = String(payload.message || "").trim();
+  const primary = code || message;
+  const explained = explainError(primary);
+  if (explained.key !== "generic") return explained;
+  if (message && message !== code) {
+    const fromMsg = explainError(message);
+    if (fromMsg.key !== "generic") return fromMsg;
+  }
+  if (message && message.length > 3) {
+    return buildErrorHtml("server_message", {
+      title: "Hinweis vom Server",
+      cause: message,
+      next: ERRORS.generic.next,
+      help: ERRORS.generic.help,
+    });
+  }
+  return explained;
+}
+
+/**
+ * @param {string} key
+ * @param {ErrorInfo} info
+ */
+function buildErrorHtml(key, info) {
   const helpLink = info.help
     ? `<a class="help-error-link" href="${info.help}">Hilfe öffnen</a>`
     : "";
@@ -262,6 +339,35 @@ export function explainError(raw) {
     helpLink +
     `</span>`;
   return { key, ...info, html };
+}
+
+/**
+ * Vollständigen Fehlertext für die UI liefern.
+ * @param {unknown} raw
+ * @returns {ErrorInfo & { key: string, html: string }}
+ */
+export function explainError(raw) {
+  const key = resolveErrorKey(raw);
+  let info = ERRORS[key];
+  const text = String(raw || "").trim();
+  /* Gemappter Schlüssel ohne Katalogeintrag: Server-Text als Ursache nutzen. */
+  if (!info && key !== "generic" && text) {
+    info = {
+      title: ERRORS.generic.title,
+      cause: text,
+      next: ERRORS.generic.next,
+      help: ERRORS.generic.help,
+    };
+  }
+  if (!info && text.length > 3 && key === "generic") {
+    info = {
+      title: "Hinweis",
+      cause: text,
+      next: ERRORS.generic.next,
+      help: ERRORS.generic.help,
+    };
+  }
+  return buildErrorHtml(key, info || ERRORS.generic);
 }
 
 /**
