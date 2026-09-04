@@ -6,6 +6,10 @@ x-pulse: &pulse
     - .env
   environment:
     PORT: "3000"
+    PULSE_OPERATION_MODE: cluster
+    PULSE_EXPECT_INSTANCES: "2"
+    # Bis DATABASE_URL (PostgreSQL) produktiv ist — dann entfernen:
+    PULSE_ALLOW_SQLITE_CLUSTER: "1"
     ADMIN_SECRET: ${ADMIN_SECRET:-bitte-in-produktion-setzen}
     SQLITE_PATH: /app/data/pulse.db
     REDIS_URL: redis://redis:6379

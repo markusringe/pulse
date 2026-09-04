@@ -1,0 +1,23 @@
+# Einzelinstanz — ein App-Container, SQLite, kein Redis zwingend.
+# Start: docker compose -f docker-compose.single.yml up -d
+
+services:
+  pulse:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: "3000"
+      PULSE_OPERATION_MODE: single
+      PULSE_EXPECT_INSTANCES: "1"
+      REDIS_URL: ""
+      SQLITE_PATH: /app/data/pulse.db
+      ADMIN_SECRET: ${ADMIN_SECRET:-bitte-in-produktion-setzen}
+      USER_AUTH_ENABLED: ${USER_AUTH_ENABLED:-1}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@localhost}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "3000:3000"

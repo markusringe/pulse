@@ -47,6 +47,7 @@ const teamApi = require("./lib/teamApi");
 const { corsHeadersForRequest, corsHeaders } = require("./lib/cors");
 const teamService = require("./lib/teamService");
 const autoBackup = require("./lib/autoBackup");
+const operationMode = require("./lib/operationMode");
 
 const PORT = Number(process.env.PORT) || 3000;
 const BATCH_INTERVAL = Number(process.env.BATCH_INTERVAL_MS) || 100;
@@ -215,6 +216,78 @@ bus.onRemote((code, envelope) => {
   enqueueBroadcast(code, envelope, { skipBus: true });
 });
 
+/** Letzte Betriebsmodus-Bewertung (nach Start). */
+let pulseOperationAssessment = null;
+
+/** Eventloop-Lag-Schätzung (ms) für Health/Monitoring. */
+let pulseEventLoopLagMs = 0;
+(function watchEventLoopLag() {
+  let last = process.hrtime.bigint();
+  setInterval(() => {
+    const now = process.hrtime.bigint();
+    const driftMs = Number(now - last - BigInt(500_000_000)) / 1e6;
+    pulseEventLoopLagMs = Math.max(0, Math.round(driftMs));
+    last = now;
+  }, 500).unref();
+})();
+
+/**
+ * Health-Payload für /api/health und /api/health/ready.
+ * @param {boolean} [full=true] Vollständige Felder für /api/health
+ */
+async function buildHealthPayload(full = true) {
+  const redis = await bus.ping();
+  const authSettings = userDb.supported ? await userService.getSettings(userDb) : { userManagementEnabled: false };
+  const { getAppVersion, getAppVersionLabel } = require("./lib/appVersion");
+  const assessment =
+    pulseOperationAssessment ||
+    operationMode.assessOperationConfig({
+      dbKind: db.kind,
+      userDbKind: userDb.kind,
+      redisOk: redis?.ok !== false,
+      instanceId: bus.instanceId,
+      bootstrapComplete: true,
+    });
+  const mem = process.memoryUsage();
+  const readiness = {
+    ready: assessment.ready,
+    degraded: assessment.degraded,
+    checks: assessment.checks.map((c) => ({ id: c.id, ok: c.ok, message: c.message })),
+  };
+  const base = {
+    ok: assessment.ready,
+    version: getAppVersion(),
+    versionLabel: getAppVersionLabel(),
+    operation: operationMode.publicSummary(assessment),
+    readiness,
+    liveness: { ok: true },
+    instanceId: bus.instanceId,
+    eventLoopLagMs: pulseEventLoopLagMs,
+    memory: {
+      rssMb: Math.round(mem.rss / 1024 / 1024),
+      heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+    },
+  };
+  if (!full) return base;
+  return {
+    ...base,
+    app: { name: "Pulse", version: getAppVersion() },
+    sessions: sessions.size,
+    persisted: await Promise.resolve(db.count()),
+    db: db.kind,
+    userDb: userDb.kind,
+    redis,
+    ipBlock: rateLimiter.isIpBlockEnabled(),
+    https: ssl.httpsInfo(),
+    auth: {
+      enabled: userService.isUserManagementEnabled(userDb),
+      email: emailService.healthInfo(),
+      pinLimiter: pinLimiter.metrics(),
+    },
+    authSettings,
+  };
+}
+
 /** Server erst starten, wenn Bootstrap-Admin bereit ist (Erstlogin sonst zu früh). */
 (async function startPulseServer() {
   if (userDb.supported) {
@@ -233,6 +306,31 @@ bus.onRemote((code, envelope) => {
       console.error("[bootstrap]", err);
     }
   }
+
+  const redisPing = await bus.ping();
+  pulseOperationAssessment = operationMode.assessOperationConfig({
+    dbKind: db.kind,
+    userDbKind: userDb.kind,
+    redisOk: redisPing?.ok !== false,
+    instanceId: bus.instanceId,
+    bootstrapComplete: true,
+  });
+  try {
+    operationMode.assertStartupAllowed(pulseOperationAssessment);
+  } catch (err) {
+    console.error("[operation-mode]", err.message);
+    process.exit(1);
+  }
+  if (pulseOperationAssessment.degraded) {
+    for (const c of pulseOperationAssessment.checks.filter((x) => !x.ok && !x.critical)) {
+      console.warn("[operation-mode]", c.message);
+    }
+  }
+  console.log(
+    `[operation-mode] ${pulseOperationAssessment.mode} · Instanz ${bus.instanceId} · DB ${db.kind}/${userDb.kind} · Redis ${
+      bus.redisEnabled ? "an" : "aus"
+    }`
+  );
 
   server.listen(PORT, "0.0.0.0", () => {
   console.log(`Pulse läuft auf http://localhost:${PORT}`);
@@ -279,28 +377,24 @@ async function handleApi(req, res, url) {
   }
   const parts = url.pathname.split("/").filter(Boolean);
   if (req.method === "GET" && parts[1] === "health") {
-    const redis = await bus.ping();
-    const authSettings = userDb.supported ? await userService.getSettings(userDb) : { userManagementEnabled: false };
-    const { getAppVersion, getAppVersionLabel } = require("./lib/appVersion");
-    send(res, 200, {
-      ok: true,
-      version: getAppVersion(),
-      versionLabel: getAppVersionLabel(),
-      app: { name: "Pulse", version: getAppVersion() },
-      sessions: sessions.size,
-      persisted: await Promise.resolve(db.count()),
-      db: db.kind,
-      userDb: userDb.kind,
-      redis,
-      ipBlock: rateLimiter.isIpBlockEnabled(),
-      https: ssl.httpsInfo(),
-      auth: {
-        enabled: userService.isUserManagementEnabled(userDb),
-        email: emailService.healthInfo(),
-        pinLimiter: pinLimiter.metrics(),
-      },
-      authSettings,
-    });
+    const sub = parts[2];
+    if (sub === "live") {
+      send(res, 200, { ok: true, live: true, instanceId: bus.instanceId });
+      return;
+    }
+    if (sub === "ready") {
+      const payload = await buildHealthPayload(false);
+      send(res, payload.readiness.ready ? 200 : 503, {
+        ok: payload.readiness.ready,
+        degraded: payload.readiness.degraded,
+        operation: payload.operation,
+        checks: payload.readiness.checks,
+        instanceId: payload.instanceId,
+        eventLoopLagMs: payload.eventLoopLagMs,
+      });
+      return;
+    }
+    send(res, 200, await buildHealthPayload(true));
     return;
   }
   if (parts[1] === "auth" || parts[1] === "users") {

@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.3 · Prod noch v1.5.1 (Deploy v1.5.2+ ausstehend) · Branch `main`
+Stand: v1.5.4 · Prod Deploy v1.5.4 ausstehend · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -18,6 +18,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-006 | Live | Falsche aktive Folie bei Reconnect | **teilweise** | v1.5.0 clamp + v1.5.2 join; `test-ws-reconnect.js` |
 | B-007 | Live | „Interaktion starten“ ohne serverseitige Wirkung | **behoben** | v1.5.3: stale ix nach normalizeSlide |
 | B-008 | Update | loadState/effectiveRepo Endlosrekursion | **behoben** | v1.5.3: readStoredRepo + emptyConfig |
+| B-009 | Ops | SQLite + 2 Container ohne Startwarnung | **teilweise** | v1.5.4: operationMode block/warn + Compose-Flags |
 
 ---
 
@@ -34,7 +35,9 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-007 | Mobile | Overlays blockieren Klicks | teilweise |
 | C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | **teilweise** | v1.5.0 Mock-Reconnect + WS-Integrationstest |
 | C-009 | Security | CORS `*` bei Cookie-Auth | **behoben** | v1.4.9 |
-| C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust | OBS — `?v=` in index.html |
+| C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust | OBS — Phase 5 Content-Hash |
+| C-011 | Live | Kein stateVersion — parallele Presenter-Konflikte | **offen** | Phase 2 (ADR, nicht v1.5.4) |
+| C-012 | Ops | Kein reproduzierbarer Lasttest | **teilweise** | v1.5.4: `scripts/load-test.js` |
 
 ---
 
@@ -71,6 +74,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-002 | v1.5.1 | test-bootstrap, auth-http |
 | B-003 | v1.4.5 | test-routes |
 | B-005, B-007, B-008 | **v1.5.3** | test-interaction-state.js, test-updates.js |
+| B-009, C-012 | **v1.5.4** | test-operation-mode.js, load-test.js |
 | C-009 | v1.4.9 | test-cors.js |
 | H-002 | v1.4.7 | test-routes |
 
@@ -78,7 +82,9 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.5.3 · Prod `1.5.1` / Deploy v1.5.2+ ausstehend
+- **Version:** `package.json` 1.5.4 · Prod Deploy ausstehend
+- **Betriebsmodi:** ADR `docs/stabilization/architecture-operation-modes.md`
+- **Lasttest:** `npm run load-test` · Gates in `release-gates.md`
 - **Docker:** `pulse` + `pulse-b` teilen `./data`, `.env`, `REDIS_URL` ✓
 - **Diagnose:** `docker exec pulse-pulse-1 npm run pulse:diagnose` (Skripte im Image ab v1.5.0)
 
@@ -86,8 +92,8 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## Nächste Schritte (priorisiert)
 
-1. **v1.5.3** committen + **v1.5.2/1.5.3 auf Prod deployen**
-2. `npm test` lokal (Node 22) — siehe `docs/stabilization/test-audit-v1.5.3.md`
-3. Smoke-Checkliste Live-Reconnect + Interaktionsstart manuell
-4. Mobile Smoke 320–430 px
-5. Freeze-Abschluss: Tag v1.5.3 nach grüner Suite
+1. **v1.5.4** deployen + Betriebsmodus in `.env` setzen
+2. Last-Baseline 100/300 TN (`load-test.js --report=`)
+3. Postgres-Migration für Cluster-Compose (R-001)
+4. Phase 2: stateVersion (separates Release, Freeze-Freigabe nötig)
+5. Smoke-Checkliste + `/api/health/ready` auf Prod
