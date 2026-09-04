@@ -71,7 +71,7 @@ import {
   renderPresentStrip,
   applyMockDeck,
 } from "./deck.js";
-import { normalizeSessionSlides } from "./sessionSync.js?v=nav61";
+import { normalizeSessionSlides, acceptIncoming, applyIncoming } from "./sessionSync.js?v=nav62";
 import {
   mountPresenterStats,
   refreshPresenterStats,
@@ -1404,18 +1404,26 @@ function connectRealtime(role) {
   });
   rt.on("slide", (payload) => {
     if (!ctx.session) return;
+    if (!acceptIncoming(ctx.session, payload)) return;
     ctx.session.activeSlideIndex = payload.index;
     normalizeSessionSlides(ctx.session);
     if (payload.slide) {
       const incoming = ctx.role === "join" ? stripSlideSecrets(payload.slide) : payload.slide;
       ctx.session.slides[payload.index] = { ...ctx.session.slides[payload.index], ...incoming };
     }
+    applyIncoming(ctx.session, payload);
     if (ctx.role === "present") renderActiveSlide();
     else renderJoinSlide();
   });
-  rt.on("deck", (payload) => applyDeckEvent(payload));
+  rt.on("deck", (payload) => {
+    if (!ctx.session) return;
+    if (!acceptIncoming(ctx.session, payload)) return;
+    applyDeckEvent(payload);
+    applyIncoming(ctx.session, payload);
+  });
   rt.on("slide_updated", (payload) => {
     if (!ctx.session || !payload?.slide) return;
+    if (!acceptIncoming(ctx.session, payload)) return;
     const idx = (ctx.session.slides || []).findIndex((s) => s.id === payload.slide.id);
     if (idx < 0) return;
     const prev = ctx.session.slides[idx] || {};
@@ -1428,16 +1436,20 @@ function connectRealtime(role) {
       if (ctx.role === "present") renderActiveSlide();
       else if (ctx.role === "join") renderJoinSlide();
     }
+    applyIncoming(ctx.session, payload);
   });
   rt.on("lobby", (payload) => {
     if (!ctx.session) return;
+    if (!acceptIncoming(ctx.session, payload)) return;
     ctx.session.lobby = Boolean(payload.lobby);
+    applyIncoming(ctx.session, payload);
     persistLocal(ctx.session);
     if (ctx.role === "present") renderLobby();
     else renderJoinSlide();
   });
   rt.on("interaction", (payload) => {
     if (!ctx.session || !payload?.slideId) return;
+    if (!acceptIncoming(ctx.session, payload)) return;
     const slide = ctx.session.slides.find((s) => s.id === payload.slideId);
     if (slide && payload.interaction) {
       slide.interaction = { ...slide.interaction, ...payload.interaction };
@@ -1452,6 +1464,7 @@ function connectRealtime(role) {
     } else if (ctx.role === "join") {
       renderJoinSlide();
     }
+    applyIncoming(ctx.session, payload);
   });
   rt.on("event_meta", (payload) => {
     if (!ctx.session || !payload?.eventMeta) return;
@@ -1485,9 +1498,11 @@ function connectRealtime(role) {
   rt.on("word", (payload) => {
     if (ctx.role === "present" && rt.mock) applyLocalWord(payload);
   });
-  rt.on("reset", () => {
+  rt.on("reset", (payload) => {
     if (!ctx.session) return;
+    if (payload && !acceptIncoming(ctx.session, payload)) return;
     for (const slide of ctx.session.slides) resetSlideData(slide);
+    if (payload) applyIncoming(ctx.session, payload);
     if (ctx.role === "present") renderActiveSlide();
     else renderJoinSlide();
   });
@@ -1562,6 +1577,10 @@ function connectRealtime(role) {
     }
   });
   rt.on("error", (payload) => {
+    if (payload?.code === "STATE_VERSION_CONFLICT" && ctx.role === "present") {
+      reloadSessionAfterVersionConflict();
+      return;
+    }
     const msg = payload?.message || payload?.error || "Verbindungsfehler";
     if (ctx.role === "join") {
       if (payload?.error === "blocked") setJoinFeedback(t("qa.blocked"), { state: "error" });
@@ -1651,6 +1670,7 @@ function applySession(payload) {
   const clientRole = payload?.clientRole;
   if (!session) return;
   normalizeSessionSlides(session);
+  if (session.stateVersion == null) session.stateVersion = 0;
   if (session.serverNow) ctx.eventClockSkew = session.serverNow - Date.now();
   if (session.eventMeta?.countdownDismissed) ctx.eventCountdownSkipped = true;
   if (clientRole) {
@@ -1680,6 +1700,7 @@ function applySession(payload) {
     });
     ctx.session = { ...ctx.session, ...session };
   }
+  applyIncoming(ctx.session, session);
   persistLocal(ctx.session);
   applyEventBrandingOverlay(session);
   showEmergencyBanner(Boolean(session.paused));
@@ -2090,8 +2111,12 @@ function shiftSlide(delta) {
   ctx.session.activeSlideIndex = next;
   persistLocal(ctx.session);
   renderActiveSlide();
-  ctx.rt?.send("slide", { code: ctx.session.code, index: next, slide: currentSlide() });
-  if (isLiveServer()) api.setSlide(ctx.session.code, next);
+  ctx.rt?.send("slide", {
+    code: ctx.session.code,
+    index: next,
+    slide: currentSlide(),
+    expectedVersion: ctx.session.stateVersion ?? 0,
+  });
 }
 
 function resetResults() {
@@ -2099,8 +2124,7 @@ function resetResults() {
   for (const slide of ctx.session.slides) resetSlideData(slide);
   persistLocal(ctx.session);
   renderActiveSlide();
-  ctx.rt?.send("reset", { code: ctx.session.code });
-  if (isLiveServer()) api.resetSession(ctx.session.code);
+  ctx.rt?.send("reset", { code: ctx.session.code, expectedVersion: ctx.session.stateVersion ?? 0 });
 }
 
 function resetSlideData(slide) {
@@ -2287,7 +2311,12 @@ function patchCurrentSlide(fields) {
   }
   persistLocal(ctx.session);
   if (isLiveServer()) {
-    api.updateDeck(ctx.session.code, "patch", { id: slide.id, notes: slide.notes, plannedMinutes: slide.plannedMinutes });
+    api.updateDeck(ctx.session.code, "patch", {
+      id: slide.id,
+      notes: slide.notes,
+      plannedMinutes: slide.plannedMinutes,
+      expectedVersion: ctx.session?.stateVersion ?? 0,
+    });
   }
 }
 
@@ -2687,7 +2716,29 @@ function mountQuiz(root, role, slide) {
 
 /** Nur WebSocket — REST würde dieselbe Aktion ein zweites Mal auslösen. */
 function emitLive(type, payload) {
-  ctx.rt?.send(type, payload);
+  ctx.rt?.send(type, {
+    ...payload,
+    expectedVersion: ctx.session?.stateVersion ?? 0,
+  });
+}
+
+/** Versionskonflikt: Session vom Server neu laden (paralleler Presenter-Tab). */
+async function reloadSessionAfterVersionConflict() {
+  const code = ctx.session?.code;
+  if (!code || !isLiveServer()) return;
+  try {
+    const data = await api.getSession(code);
+    if (data?.session) applySession({ session: data.session });
+    const msg = document.getElementById("present-msg");
+    if (msg) {
+      msg.textContent = "Session wurde in einem anderen Tab geändert — Stand aktualisiert.";
+      window.setTimeout(() => {
+        if (msg.textContent?.includes("anderen Tab")) msg.textContent = "";
+      }, 8000);
+    }
+  } catch {
+    /* Netzwerk kurz weg */
+  }
 }
 
 /**

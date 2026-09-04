@@ -37,7 +37,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | **teilweise** | v1.5.0 Mock-Reconnect + WS-Integrationstest |
 | C-009 | Security | CORS `*` bei Cookie-Auth | **behoben** | v1.4.9 |
 | C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust | OBS — Phase 5 Content-Hash |
-| C-011 | Live | Kein stateVersion — parallele Presenter-Konflikte | **offen** | Phase 2 (ADR, nicht v1.5.4) |
+| C-011 | Live | Kein stateVersion — parallele Presenter-Konflikte | **behoben** | Phase 2: `lib/sessionVersion.js`, ADR, Tests |
 | C-012 | Ops | Kein reproduzierbarer Lasttest | **behoben** | v1.5.5: `load-test.js` + Gates + `--url` |
 | C-013 | Ops | Readiness ohne DB-R/W und Wartungs-Flags | **behoben** | v1.5.5 Audit: healthCheck, maintenance, restore |
 
@@ -97,7 +97,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 1. ~~**v1.5.7** deployen + `migrate-vps-single.sh --yes`~~ — **erledigt** (Prod single, 2026-09-04)
 2. ~~Last-Baseline 300 TN dokumentieren~~ — **erledigt** (`load-baseline-300.json`)
-3. Phase 2: stateVersion (C-011, separates Release)
+3. ~~Phase 2: stateVersion (C-011)~~ — **erledigt** (v1.5.8, ADR `adr-state-version.md`)
 4. Phase 5: Content-Hash Assets (C-010)
 5. Smoke-Checkliste manuell abhaken (`smoke-checklist.md`)
 6. SSH-Key auf VPS rotieren (Key im Chat exponiert)

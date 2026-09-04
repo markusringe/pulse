@@ -12,7 +12,7 @@ import { t } from "./i18n.js?v=nav13";
 import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRatingResults } from "./poll.js";
 import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
-import { normalizeSessionSlides } from "./sessionSync.js?v=nav61";
+import { normalizeSessionSlides, acceptIncoming, applyIncoming } from "./sessionSync.js?v=nav62";
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js?v=nav1";
 import { stageStatusMessage } from "./interactionPresenter.js?v=nav55";
 
@@ -90,6 +90,8 @@ function connectStage(code) {
   rt.on("session", (payload) => {
     session = payload.session || payload;
     normalizeSessionSlides(session);
+    if (session.stateVersion == null) session.stateVersion = 0;
+    applyIncoming(session, session);
     if (payload.serverNow != null) clockSkew = payload.serverNow - Date.now();
     else if (session?.serverNow) clockSkew = session.serverNow - Date.now();
     renderStage();
@@ -100,22 +102,28 @@ function connectStage(code) {
   });
   rt.on("slide", (payload) => {
     if (!session) return;
+    if (!acceptIncoming(session, payload)) return;
     session.activeSlideIndex = payload.index;
     normalizeSessionSlides(session);
     if (payload.slide) {
       session.slides[payload.index] = { ...session.slides[payload.index], ...payload.slide };
     }
+    applyIncoming(session, payload);
     renderStage();
   });
   rt.on("deck", (payload) => {
     if (!session || !payload.slides) return;
+    if (!acceptIncoming(session, payload)) return;
     session.slides = payload.slides;
     if (payload.activeSlideIndex != null) session.activeSlideIndex = payload.activeSlideIndex;
+    applyIncoming(session, payload);
     renderStage();
   });
   rt.on("lobby", (payload) => {
     if (!session) return;
+    if (!acceptIncoming(session, payload)) return;
     session.lobby = Boolean(payload.lobby);
+    applyIncoming(session, payload);
     renderStage();
   });
   rt.on("event_meta", (payload) => {

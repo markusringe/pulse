@@ -31,6 +31,7 @@ const compress = require("./lib/compress");
 const qaTimer = require("./lib/qaTimer");
 const interactionState = require("./lib/interactionState");
 const { normalizeSessionSlides } = require("./lib/sessionSync");
+const sessionVersion = require("./lib/sessionVersion");
 const { createUserDb } = require("./lib/userDb");
 const authApi = require("./lib/authApi");
 const permissions = require("./lib/permissions");
@@ -704,23 +705,40 @@ async function handleApi(req, res, url) {
     return;
   }
   if (req.method === "POST" && parts[3] === "reset") {
+    const conflict = ensurePresenterVersion(session, body);
+    if (conflict) {
+      send(res, 409, conflict);
+      return;
+    }
     for (const slide of session.slides) resetSlide(slide);
     session.votes.clear();
     clearQaEndTimers(session.code);
     clearAllInteractionEndTimers(session.code);
+    commitPresenterVersion(session);
     schedulePersist(session);
     announceSession(session);
     send(res, 200, { session: publicSession(session, { reveal: true }) });
     return;
   }
   if (req.method === "POST" && parts[3] === "lobby") {
+    const conflict = ensurePresenterVersion(session, body);
+    if (conflict) {
+      send(res, 409, conflict);
+      return;
+    }
     session.lobby = body.lobby !== false;
+    commitPresenterVersion(session);
     schedulePersist(session);
     announce(code, { type: "lobby", payload: { lobby: session.lobby } });
     send(res, 200, { session: publicSession(session, { reveal: true }) });
     return;
   }
   if (req.method === "POST" && parts[3] === "results") {
+    const conflict = ensurePresenterVersion(session, body);
+    if (conflict) {
+      send(res, 409, conflict);
+      return;
+    }
     const slide =
       session.slides.find((s) => s.id === body.slideId) || session.slides[session.activeSlideIndex];
     if (!slide) {
@@ -728,6 +746,7 @@ async function handleApi(req, res, url) {
       return;
     }
     slide.resultsVisible = body.visible !== false;
+    commitPresenterVersion(session);
     schedulePersist(session);
     announceResults(session, slide);
     send(res, 200, { session: publicSession(session, { reveal: true }) });
@@ -775,6 +794,11 @@ async function handleApi(req, res, url) {
     return;
   }
   if (req.method === "POST" && parts[3] === "copy-from") {
+    const conflict = ensurePresenterVersion(session, body);
+    if (conflict) {
+      send(res, 409, conflict);
+      return;
+    }
     const sourceCode = String(body.sourceCode || "").replace(/\D/g, "").slice(0, 6);
     const source = await getSession(sourceCode);
     if (!source) {
@@ -786,6 +810,7 @@ async function handleApi(req, res, url) {
       send(res, 400, out);
       return;
     }
+    commitPresenterVersion(session);
     schedulePersist(session);
     audit.log("deck_updated", { roomId: session.code, action: "copy-from", userId: "presenter" });
     announceDeck(session);
@@ -793,6 +818,11 @@ async function handleApi(req, res, url) {
     return;
   }
   if (req.method === "POST" && parts[3] === "slide") {
+    const conflict = ensurePresenterVersion(session, body);
+    if (conflict) {
+      send(res, 409, conflict);
+      return;
+    }
     const prevSlide = session.slides[session.activeSlideIndex];
     const index = clamp(Number(body.index) || 0, 0, session.slides.length - 1);
     session.activeSlideIndex = index;
@@ -802,6 +832,7 @@ async function handleApi(req, res, url) {
       interactionState.onSlideActivated(session, slide, prevSlide);
       scheduleInteractionEnd(session, slide);
     }
+    commitPresenterVersion(session);
     schedulePersist(session);
     announceSlide(session);
     send(res, 200, { session: publicSession(session, { reveal: true }) });
@@ -1007,6 +1038,7 @@ async function createSession(body) {
     teams: {},
     eventId: String(body.eventId || "").slice(0, 40),
     ownerUserId: String(body.ownerUserId || "").slice(0, 40),
+    stateVersion: 0,
   };
   sessions.set(code, session);
   await persistNow(session);
@@ -1048,6 +1080,7 @@ function hydrate(row) {
     teams: payload.teams || {},
     eventId: payload.eventId || "",
     ownerUserId: payload.ownerUserId || "",
+    stateVersion: Number(payload.stateVersion) || 0,
   };
 }
 
@@ -1084,6 +1117,7 @@ async function persistNow(session) {
         teams: session.teams || {},
         eventId: session.eventId || "",
         ownerUserId: session.ownerUserId || "",
+        stateVersion: sessionVersion.getVersion(session),
       },
     })
   );
@@ -1343,6 +1377,7 @@ function publicSession(session, opts = {}) {
     eventBranding: eventBrandingFor(session.eventId),
     eventMeta: eventStore.eventMetaFor(session.eventId),
     serverNow: Date.now(),
+    stateVersion: sessionVersion.getVersion(session),
   };
 }
 
@@ -1447,8 +1482,11 @@ function publicSlide(slide, opts = {}) {
  * Präsentatoren bekommen Quiz-Lösungen (reveal), Teilnehmende nicht.
  */
 function mutateDeck(session, action, payload) {
+  const conflict = ensurePresenterVersion(session, payload);
+  if (conflict) return conflict;
   const out = applyDeckAction(session, action, payload, { normalizeSlide });
   if (out.error) return out;
+  commitPresenterVersion(session);
   schedulePersist(session);
   audit.log("deck_updated", { roomId: session.code, action, userId: "presenter" });
   /* Patch nur Notizen/Zeit: nicht an Teilnehmende funken, Cursor im Panel bleibt. */
@@ -1479,6 +1517,7 @@ function announceSlideUpdated(session, slide) {
       payload: {
         slide: publicSlide(slide, publicOptsForClient(client)),
         activeSlideIndex: session.activeSlideIndex,
+        stateVersion: sessionVersion.getVersion(session),
       },
     });
     metrics.incWs("out", "slide_updated");
@@ -1493,6 +1532,7 @@ function announceDeck(session, { skipBus } = {}) {
       payload: {
         slides: session.slides.map((s) => publicSlide(s, publicOptsForClient(client))),
         activeSlideIndex: session.activeSlideIndex,
+        stateVersion: sessionVersion.getVersion(session),
       },
     });
     metrics.incWs("out", "deck");
@@ -1500,7 +1540,13 @@ function announceDeck(session, { skipBus } = {}) {
   if (!skipBus) {
     bus.publish(session.code, {
       type: "deck",
-      payload: { slides: session.slides, activeSlideIndex: session.activeSlideIndex, internal: true },
+      payload: {
+        slides: session.slides,
+        activeSlideIndex: session.activeSlideIndex,
+        internal: true,
+        stateVersion: sessionVersion.getVersion(session),
+      },
+      stateVersion: sessionVersion.getVersion(session),
     });
   }
 }
@@ -1537,6 +1583,8 @@ function announceResults(session, slide) {
  * @param {object} payload
  */
 function applyQaTimerControl(session, payload = {}) {
+  const conflict = ensurePresenterVersion(session, payload);
+  if (conflict) return conflict;
   const slide = interactive.findQaSlide(session, payload.slideId);
   if (!slide) return { error: "Keine Q&A-Folie" };
   const action = String(payload.action || "");
@@ -1546,6 +1594,7 @@ function applyQaTimerControl(session, payload = {}) {
     seconds: payload.seconds,
   });
   scheduleQaEnd(session, slide);
+  commitPresenterVersion(session);
   schedulePersist(session);
   const snap = qaTimer.snapshot(slide.qaTimer);
   announceQaTimer(session, slide, snap);
@@ -1764,6 +1813,8 @@ function applyEventCountdownStart(session, payload = {}, client = {}) {
  * @param {object} payload
  */
 function applyInteractionControl(session, payload = {}) {
+  const conflict = ensurePresenterVersion(session, payload);
+  if (conflict) return conflict;
   const slide =
     session.slides.find((s) => s.id === payload.slideId) ||
     session.slides[session.activeSlideIndex];
@@ -1789,6 +1840,7 @@ function applyInteractionControl(session, payload = {}) {
     audit.log(out.audit.action, { roomId: session.code, ...out.audit });
   }
   scheduleInteractionEnd(session, slide);
+  commitPresenterVersion(session);
   schedulePersist(session);
   announceInteraction(session, slide, out.interaction);
   return { slideId: slide.id, interaction: out.interaction, serverNow: Date.now() };
@@ -1825,6 +1877,11 @@ async function onWsMessage(client, data) {
   else if (type === "reaction") applyReaction(session, client, payload);
   else if (type === "lobby") {
     if (client.role !== "presenter") return;
+    const conflict = ensurePresenterVersion(session, payload);
+    if (conflict) {
+      client.send({ type: "error", payload: conflict });
+      return;
+    }
     session.lobby = payload.lobby !== false;
     if (!session.lobby) {
       const slide = session.slides[session.activeSlideIndex];
@@ -1839,6 +1896,7 @@ async function onWsMessage(client, data) {
         }
       }
     }
+    commitPresenterVersion(session);
     schedulePersist(session);
     announce(session.code, { type: "lobby", payload: { lobby: session.lobby } });
   } else if (type === "event_countdown") {
@@ -1848,10 +1906,16 @@ async function onWsMessage(client, data) {
     }
   } else if (type === "results") {
     if (client.role !== "presenter") return;
+    const conflict = ensurePresenterVersion(session, payload);
+    if (conflict) {
+      client.send({ type: "error", payload: conflict });
+      return;
+    }
     const slide =
       session.slides.find((s) => s.id === payload.slideId) || session.slides[session.activeSlideIndex];
     if (!slide || !liveState.canHideResults(slide)) return;
     slide.resultsVisible = payload.visible !== false;
+    commitPresenterVersion(session);
     schedulePersist(session);
     announceResults(session, slide);
   } else if (type === "submit_question" || type === "new_question") {
@@ -1942,19 +2006,30 @@ async function onWsMessage(client, data) {
     }
   } else if (type === "emergency") {
     if (client.role !== "presenter") return;
+    const conflict = ensurePresenterVersion(session, payload);
+    if (conflict) {
+      client.send({ type: "error", payload: conflict });
+      return;
+    }
     if (payload.action === "resume") intake.resumeEmergency(session);
     else intake.activateEmergency(session);
+    commitPresenterVersion(session);
     schedulePersist(session);
     audit.log("emergency", { roomId: session.code, action: payload.action || "activate", userId: client.id });
     announceEmergency(session);
   } else if (type === "deck") {
     if (client.role !== "presenter") return;
     const out = mutateDeck(session, payload.action || "add", payload);
-    if (out.error) {
-      client.send({ type: "error", payload: { error: out.error, message: out.error } });
+    if (out.error || out.code) {
+      client.send({ type: "error", payload: out.code ? out : { error: out.error, message: out.error } });
     }
   } else if (type === "slide") {
     if (client.role !== "presenter") return;
+    const conflict = ensurePresenterVersion(session, payload);
+    if (conflict) {
+      client.send({ type: "error", payload: conflict });
+      return;
+    }
     const prevSlide = session.slides[session.activeSlideIndex];
     session.activeSlideIndex = clamp(Number(payload.index) || 0, 0, session.slides.length - 1);
     const slide = session.slides[session.activeSlideIndex];
@@ -1963,25 +2038,35 @@ async function onWsMessage(client, data) {
       interactionState.onSlideActivated(session, slide, prevSlide);
       scheduleInteractionEnd(session, slide);
     }
+    commitPresenterVersion(session);
     schedulePersist(session);
     announceSlide(session);
   } else if (type === "interaction") {
     if (client.role !== "presenter") return;
     const out = applyInteractionControl(session, payload);
-    if (out.error) {
-      client.send({ type: "error", payload: { error: out.error, message: out.error } });
+    if (out.error || out.code) {
+      client.send({ type: "error", payload: out.code ? out : { error: out.error, message: out.error } });
     }
   } else if (type === "reset") {
     if (client.role !== "presenter") return;
+    const conflict = ensurePresenterVersion(session, payload);
+    if (conflict) {
+      client.send({ type: "error", payload: conflict });
+      return;
+    }
     for (const slide of session.slides) resetSlide(slide);
     session.votes.clear();
     clearQaEndTimers(session.code);
     clearAllInteractionEndTimers(session.code);
+    commitPresenterVersion(session);
     schedulePersist(session);
     announceSession(session);
   } else if (type === "qa_timer") {
     if (client.role !== "presenter") return;
-    applyQaTimerControl(session, payload);
+    const out = applyQaTimerControl(session, payload);
+    if (out.error || out.code) {
+      client.send({ type: "error", payload: out.code ? out : { error: out.error, message: out.error } });
+    }
   }
 }
 
@@ -2013,13 +2098,18 @@ function announceSlide(session) {
     if (client.sessionCode !== session.code) continue;
     client.send({
       type: "slide",
-      payload: { index, slide: publicSlide(slide, publicOptsForClient(client)) },
+      payload: {
+        index,
+        slide: publicSlide(slide, publicOptsForClient(client)),
+        stateVersion: sessionVersion.getVersion(session),
+      },
     });
     metrics.incWs("out", "slide");
   }
   bus.publish(session.code, {
     type: "slide",
-    payload: { index, slide, internal: true },
+    payload: { index, slide, internal: true, stateVersion: sessionVersion.getVersion(session) },
+    stateVersion: sessionVersion.getVersion(session),
   });
 }
 
@@ -2175,7 +2265,21 @@ function applyReaction(session, client, payload) {
 
 function applyRemoteEnvelope(code, envelope) {
   const session = sessions.get(code);
+  if (!session) return;
+  if (envelope?.stateVersion != null) sessionVersion.mergeRemote(session, envelope.stateVersion);
   liveState.applyFanoutEnvelope(session, envelope);
+}
+
+/** Presenter-Versionsprüfung — null wenn ok, sonst Konflikt-Payload. */
+function ensurePresenterVersion(session, source) {
+  const check = sessionVersion.checkExpected(session, sessionVersion.readExpected(source));
+  if (!check.ok) return sessionVersion.conflictPayload(session, check);
+  return null;
+}
+
+/** Nach erfolgreicher Presenter-Mutation aufrufen. */
+function commitPresenterVersion(session) {
+  return sessionVersion.bump(session);
 }
 
 /**
@@ -2184,6 +2288,10 @@ function applyRemoteEnvelope(code, envelope) {
  * Redis-Fanout (bus.publish) trägt volle Zählwerte; sendToRoom strippt für Join.
  */
 function announce(code, envelope) {
+  const session = sessions.get(code);
+  if (session && sessionVersion.isStructuralType(envelope?.type)) {
+    envelope = sessionVersion.withEnvelopeVersion(envelope, session);
+  }
   enqueueBroadcast(code, envelope, { skipBus: false });
 }
 

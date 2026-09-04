@@ -73,12 +73,13 @@ Checkliste: `docs/stabilization/smoke-checklist.md`
 
 Messung: Browser DevTools + `scripts/test-performance.js` (Lib-Baseline).
 
-## Phase 2 (nicht Gate v1.5.4) — Live stateVersion
+## Phase 2 — Live stateVersion (v1.5.8 ✓)
 
-- Monotone `stateVersion` pro Session
-- Optimistic concurrency auf Presenter-Aktionen
-- Clients ignorieren stale Broadcasts
-- **Blockiert Freeze-Abschluss v1.6** — separates ADR + Migration
+- Monotone `stateVersion` pro Session — `lib/sessionVersion.js`
+- Optimistic concurrency auf Presenter-Aktionen (`expectedVersion`, HTTP 409)
+- Clients ignorieren stale Broadcasts — `sessionSync.js` / `app.js`
+- ADR: `docs/stabilization/adr-state-version.md`
+- Tests: `npm run test:state-version`
 
 ## Phase 5 (nicht Gate v1.5.4) — Asset Content-Hash
 

@@ -48,16 +48,20 @@ Env: `PULSE_OPERATION_MODE=cluster`, `PULSE_EXPECT_INSTANCES=2`, `DATABASE_URL`,
 - **Degraded** (Start OK, Warnung): Cluster + SQLite mit `PULSE_ALLOW_SQLITE_CLUSTER=1`.
 - **Readiness** (`GET /api/health/ready`): HTTP 503 wenn kritische Checks fehlschlagen.
 
-## Nicht in v1.5.4 (Phase 2 — stateVersion)
+## Phase 2 — Live stateVersion (v1.5.8)
 
-Ein zentral versioniertes Live-State-Modell (`stateVersion`, optimistische Concurrency) ist **geplant**, aber **kein Teil dieses Releases** (Architekturänderung, Migration, Client-Anpassung). Siehe `docs/stabilization/release-gates.md` Phase 2.
+Implementiert — siehe `docs/stabilization/adr-state-version.md` und `lib/sessionVersion.js`.
+
+- Monotone `stateVersion` pro Session
+- Optimistic concurrency auf Presenter-Aktionen
+- Clients ignorieren stale Broadcasts
 
 ## Risiken (verbleibend)
 
 | ID | Risiko | Maßnahme |
 |----|--------|----------|
 | R-001 | Compose-Default noch SQLite+2 Container | Postgres-Service + Migration dokumentieren |
-| R-002 | Kein `stateVersion` — parallele Presenter-Tabs | Phase 2 + Lasttests |
+| R-002 | Kein `stateVersion` — parallele Presenter-Tabs | **behoben** v1.5.8 |
 | R-003 | Asset-Cache-Busting manuell (`?v=`) | Phase 5 Content-Hash-Build |
 
 ## Referenzen
