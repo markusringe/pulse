@@ -35,9 +35,18 @@ import { bindHelp, showHelpPage, explainError } from "./help.js?v=help9";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js?v=nav13";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js?v=nav30";
 import { syncAdminNav } from "./adminNav.js?v=nav43";
-import { loadAuth, applyAdminNavVisibility, getAuthUser, isAuthEnabled, hasAdminAccess, isAuthLoaded, logout } from "./authClient.js?v=nav48";
+import {
+  loadAuth,
+  applyAdminNavVisibility,
+  getAuthUser,
+  isAuthEnabled,
+  hasAdminAccess,
+  isAuthLoaded,
+  canAccessAdminHash,
+  logout,
+} from "./authClient.js?v=nav48";
 import { showLoginPage } from "./loginPage.js?v=nav48";
-import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav48";
+import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav59";
 import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
 import { showProfilePage } from "./profilePage.js?v=nav30";
@@ -476,18 +485,26 @@ function bindGlobal() {
   document.getElementById("add-datetime")?.addEventListener("click", () => addDatetimeField());
   /* Capture: Hash-Links sofort routen, auch wenn ein Overlay das Bubble verhindert. */
   document.addEventListener("click", onInAppHashClick, true);
-  document.getElementById("btn-admin-home")?.addEventListener("click", onAdminHomeClick);
   document.getElementById("consent-ok")?.addEventListener("click", acceptConsent);
   document.getElementById("footer-toggle")?.addEventListener("click", () => {
     document.getElementById("app-footer")?.classList.toggle("is-open");
   });
 }
 
-/** Nach erfolgreichem Admin-Login zur gespeicherten Route navigieren. */
+/** Nach Admin-Login navigieren; bei Modal-Fallback zur Vollseiten-Anmeldung. */
 function afterAdminLogin(result, fallbackPath) {
-  if (!result?.ok) return;
-  const path = String(result.redirectHash || fallbackPath || "/admin").replace(/^#/, "");
-  navigate(path.startsWith("/") ? path : `/${path}`);
+  if (result?.ok) {
+    const path = String(result.redirectHash || fallbackPath || "/admin").replace(/^#/, "");
+    navigate(path.startsWith("/") ? path : `/${path}`);
+    return;
+  }
+  /* Abbrechen: auf Startseite bleiben. */
+  if (result?.cancelled) return;
+  /* showModal fehlgeschlagen oder Ladefehler — navigateAdminLoginPage hat ggf. schon geroutet. */
+  if (result?.fallback) {
+    rememberAdminRedirect(fallbackPath);
+    navigate("/admin/login");
+  }
 }
 
 /** Admin-Hash zurücksetzen ohne erneuten Guard (replaceState). */
@@ -501,6 +518,16 @@ function revertAdminHash() {
       /* Webview ohne Hash */
     }
   }
+}
+
+/** 403-Ansicht: angemeldet, aber Rolle erlaubt diese Admin-Route nicht. */
+function showForbiddenView(routeHash) {
+  showView("forbidden", routeHash);
+  applyAdminNavVisibility();
+  const host = document.getElementById("forbidden-content");
+  if (!host) return;
+  const info = explainError("permission_denied");
+  host.innerHTML = info.html;
 }
 
 function route(forcedHash) {
@@ -528,6 +555,19 @@ function route(forcedHash) {
     if (isAdminLoginModalOpen()) return;
     rememberAdminRedirect(hash);
     navigate("/admin/login");
+    return;
+  }
+
+  if (
+    isAuthEnabled() &&
+    hash.startsWith("/admin") &&
+    hash !== "/admin/login" &&
+    hash !== "/admin/onboarding" &&
+    hasAdminAccess() &&
+    !canAccessAdminHash(hash)
+  ) {
+    teardownRealtime();
+    showForbiddenView(hash);
     return;
   }
 
@@ -716,6 +756,7 @@ function showView(name, routeHash) {
   if (!els.views.email) els.views.email = document.getElementById("view-email");
   if (!els.views.backups) els.views.backups = document.getElementById("view-backups");
   if (!els.views.onboarding) els.views.onboarding = document.getElementById("view-onboarding");
+  if (!els.views.forbidden) els.views.forbidden = document.getElementById("view-forbidden");
   for (const [key, el] of Object.entries(els.views)) {
     if (!el) continue;
     const active = key === name;
@@ -756,25 +797,25 @@ function showView(name, routeHash) {
   }
 }
 
-/** Administration von der Startseite — Modal sofort (Firefox-User-Geste), Event-Laden abbrechen. */
-function onAdminHomeClick(ev) {
-  ev.preventDefault();
-  cancelHomeEventsWork();
-  void openAdminFromHome("/admin");
-}
-
 /**
  * Admin-Einstieg von der Startseite: bei fehlender Session Modal in der Klick-Geste öffnen.
  * @param {string} path z. B. "/admin"
  */
 async function openAdminFromHome(path) {
-  if (!isAuthLoaded()) await loadAuth();
-  if (!isAuthEnabled() || hasAdminAccess()) {
-    navigate(path);
-    return;
+  rememberAdminRedirect(path);
+  try {
+    if (!isAuthLoaded()) await loadAuth();
+    if (!isAuthEnabled() || hasAdminAccess()) {
+      navigate(path);
+      return;
+    }
+    const result = await showAdminLoginModal(path);
+    afterAdminLogin(result, path);
+  } catch (err) {
+    console.error("[admin-home]", err);
+    rememberAdminRedirect(path);
+    navigate("/admin/login");
   }
-  const result = await showAdminLoginModal(path);
-  afterAdminLogin(result, path);
 }
 
 /**

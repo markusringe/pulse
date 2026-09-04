@@ -123,6 +123,17 @@
       <!-- Anmeldung mit E-Mail-PIN (#/admin/login) -->
       <section id="view-login" class="view view-login" data-view="login" hidden></section>
 
+      <!-- Berechtigung fehlt (#/admin/* — angemeldet, Rolle unzureichend) -->
+      <section id="view-forbidden" class="view view-forbidden pulse-admin-shell" data-view="forbidden" hidden>
+        <div class="panel admin-forbidden-panel">
+          <div id="forbidden-content" role="alert"></div>
+          <p class="modal-actions">
+            <a href="#/admin/events" class="btn primary pulse-btn-primary">Zur Event-Übersicht</a>
+            <a href="#/" class="btn ghost">Zur Startseite</a>
+          </p>
+        </div>
+      </section>
+
       <section id="view-onboarding" class="view view-onboarding branding-page" data-view="onboarding" hidden>
         <h1>Ersteinrichtung</h1>
         <p class="muted">Optional können Sie jetzt ein Backup einer früheren Pulse-Instanz einspielen. Wählen Sie die Bereiche wie in der Administration gruppiert.</p>
@@ -1243,6 +1254,6 @@
       <button type="button" id="consent-ok" class="btn primary" data-i18n="consent.ok">Verstanden</button>
     </aside>
 
-    <script type="module" src="/js/app.js?v=nav58"></script>
+    <script type="module" src="/js/app.js?v=nav59"></script>
   </body>
 </html>

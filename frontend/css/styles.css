@@ -1171,6 +1171,14 @@ body.admin-area .view:not([hidden]) {
   max-width: min(480px, calc(100vw - 2rem));
   width: 100%;
   background: transparent;
+  z-index: 100;
+}
+
+.admin-login-host .login-page.panel {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .admin-login-dialog::backdrop {
@@ -1179,6 +1187,11 @@ body.admin-area .view:not([hidden]) {
 
 .admin-login-host .login-page {
   margin: 0;
+}
+
+.admin-forbidden-panel {
+  max-width: 36rem;
+  margin: 2rem auto;
 }
 
 .admin-login-actions {

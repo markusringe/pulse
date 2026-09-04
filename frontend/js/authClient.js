@@ -398,18 +398,25 @@ export async function sendTestEmail(body = {}) {
  * @param {string} hash
  * @returns {Promise<boolean>} true wenn weiter geroutet werden darf
  */
-export async function ensureAdminAccess(hash) {
+/**
+ * Ob die angemeldete Rolle die Admin-Hash-Route öffnen darf (Navigation + Router).
+ * @param {string} hash z. B. "/admin/users"
+ * @returns {boolean}
+ */
+export function canAccessAdminHash(hash) {
   if (!state.enabled) return true;
-  if (hash.startsWith("/admin/login")) return true;
+  const h = String(hash || "").replace(/^#/, "");
+  if (h === "/admin/login" || h === "/admin/onboarding") return true;
   if (!isAuthenticated()) return false;
-  if (hash === "/admin/profile") {
-    if (!state.user) return false;
-    return true;
-  }
+  if (h === "/admin/profile") return Boolean(state.user);
   if (!state.user) return false;
-  const key = navKeyFromHash(hash);
+  const key = navKeyFromHash(h);
   if (key && !hasNav(key)) return false;
   return true;
+}
+
+export async function ensureAdminAccess(hash) {
+  return canAccessAdminHash(hash);
 }
 
 /**
@@ -424,7 +431,7 @@ export async function fetchWithAuth(path, opts = {}) {
     state.nav = [];
     state.stepUpUntil = null;
     state.viaSecret = false;
-    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav48");
+    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav59");
     await showAdminLoginModal("/admin");
     throw new Error("Session abgelaufen");
   }

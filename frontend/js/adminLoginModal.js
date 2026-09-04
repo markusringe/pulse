@@ -8,6 +8,17 @@ import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav48";
 
 const ADMIN_REDIRECT_KEY = "pulse:admin-redirect";
 
+/** Nur interne Hash-Routen (Open-Redirect-Schutz) — siehe lib/internalRoute.js */
+function sanitizeAdminRedirectHash(hash, fallback = "#/admin/events") {
+  const raw = String(hash || "").trim();
+  if (!raw.startsWith("#/")) return fallback;
+  if (raw.includes("://") || raw.startsWith("#//")) return fallback;
+  const pathOnly = raw.replace(/^#/, "").split(/[?#]/)[0] || "/";
+  const normalized = normalizeAdminHash(pathOnly);
+  if (normalized === "/admin" && !pathOnly.startsWith("/admin")) return fallback;
+  return `#${normalized}`;
+}
+
 let dialogEl = null;
 /** Verhindert parallele Modals. */
 let openPromise = null;
@@ -49,8 +60,9 @@ function openDialogSync(host) {
 /** Ziel-Route für Redirect nach Login merken. */
 export function rememberAdminRedirect(targetHash) {
   const clean = normalizeAdminHash(targetHash);
+  const safe = sanitizeAdminRedirectHash(`#${clean}`, `#${clean}`);
   try {
-    sessionStorage.setItem(ADMIN_REDIRECT_KEY, `#${clean}`);
+    sessionStorage.setItem(ADMIN_REDIRECT_KEY, safe);
   } catch {
     /* Webview ohne sessionStorage */
   }
@@ -61,7 +73,7 @@ export function consumeAdminRedirect(fallback = "#/admin/events") {
   try {
     const stored = sessionStorage.getItem(ADMIN_REDIRECT_KEY);
     sessionStorage.removeItem(ADMIN_REDIRECT_KEY);
-    return stored || fallback;
+    return sanitizeAdminRedirectHash(stored || fallback, fallback);
   } catch {
     return fallback;
   }
@@ -75,9 +87,14 @@ export function navigateAdminLoginPage(targetHash = "/admin") {
   rememberAdminRedirect(targetHash);
   const hash = "#/admin/login";
   try {
-    if (location.hash !== hash) location.hash = hash;
+    if (location.hash !== hash) {
+      location.hash = hash;
+    } else {
+      /* Gleicher Hash löst kein hashchange aus — Route trotzdem ausführen. */
+      triggerHashRoute();
+    }
   } catch {
-    /* Webview */
+    triggerHashRoute();
   }
 }
 
@@ -97,31 +114,53 @@ export async function showAdminLoginModal(targetHash = "/admin") {
 
   if (!openDialogSync(host)) {
     navigateAdminLoginPage(destination);
-    return { ok: false };
+    return { ok: false, fallback: true };
   }
+
+  /** Nach Ladefehler ohne sichtbares Formular auf Vollseiten-Login wechseln. */
+  const MODAL_LOAD_TIMEOUT_MS = 20000;
+  let loadTimeoutId = 0;
 
   openPromise = (async () => {
     try {
       await loadAuth();
       if (getAuthUser()) {
         if (dlg.open) dlg.close("ok");
-        openPromise = null;
+        resetOpenPromise();
         return { ok: true, redirectHash: `#${destination}` };
       }
 
       return await new Promise((resolve) => {
         let redirectAfterLogin = `#${destination}`;
+        let settled = false;
 
-        const finish = (ok) => {
+        const finish = (result) => {
+          if (settled) return;
+          settled = true;
+          if (loadTimeoutId) clearTimeout(loadTimeoutId);
           disposeLoginForm(host);
           if (host) host.replaceChildren();
-          openPromise = null;
-          resolve({ ok, redirectHash: redirectAfterLogin });
+          resetOpenPromise();
+          resolve(result);
         };
+
+        loadTimeoutId = window.setTimeout(() => {
+          if (settled) return;
+          console.warn("[admin-login] Modal-Ladezeit überschritten — Fallback Vollseite");
+          finish({ ok: false, fallback: true });
+          if (dlg.open) dlg.close("cancel");
+          navigateAdminLoginPage(destination);
+        }, MODAL_LOAD_TIMEOUT_MS);
 
         const onClose = () => {
           dlg.removeEventListener("close", onClose);
-          finish(dlg.returnValue === "ok");
+          const cancelled = dlg.returnValue === "cancel";
+          finish({
+            ok: dlg.returnValue === "ok",
+            cancelled,
+            fallback: !cancelled && dlg.returnValue !== "ok",
+            redirectHash: redirectAfterLogin,
+          });
         };
 
         dlg.addEventListener("close", onClose);
@@ -136,16 +175,25 @@ export async function showAdminLoginModal(targetHash = "/admin") {
             dlg.close("ok");
           },
           onCancel: () => dlg.close("cancel"),
-        }).then(() => {
-          host.querySelector(`#admin-login-email`)?.focus();
-        });
+        })
+          .then(() => {
+            if (loadTimeoutId) clearTimeout(loadTimeoutId);
+            host.querySelector(`#admin-login-email`)?.focus();
+          })
+          .catch((err) => {
+            console.error("[admin-login] Formular", err);
+            finish({ ok: false, fallback: true });
+            if (dlg.open) dlg.close("cancel");
+            navigateAdminLoginPage(destination);
+          });
       });
     } catch (err) {
       console.error("[admin-login]", err);
-      openPromise = null;
+      if (loadTimeoutId) clearTimeout(loadTimeoutId);
+      resetOpenPromise();
       if (dlg.open) dlg.close("cancel");
       navigateAdminLoginPage(destination);
-      return { ok: false };
+      return { ok: false, fallback: true };
     }
   })();
 
@@ -161,7 +209,21 @@ function normalizeAdminHash(hash) {
   return "/admin";
 }
 
-/** Ob das Admin-Login-Modal gerade offen ist. */
+/** Hash-Routing anstoßen, auch wenn location.hash bereits #/admin/login ist. */
+function triggerHashRoute() {
+  try {
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  } catch {
+    window.dispatchEvent(new Event("hashchange"));
+  }
+}
+
+/** Ob das Admin-Login-Modal sichtbar offen ist (ohne laufendes Laden — sonst blockiert der Router). */
 export function isAdminLoginModalOpen() {
-  return Boolean(dialogEl?.open || openPromise);
+  return Boolean(dialogEl?.open);
+}
+
+/** Hängenden Modal-Zustand zurücksetzen (Timeout, Ladefehler). */
+function resetOpenPromise() {
+  openPromise = null;
 }

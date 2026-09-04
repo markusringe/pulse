@@ -76,6 +76,12 @@ export const ERRORS = {
     next: "Melden Sie sich mit Ihrem Instanz-Konto an und öffnen Sie die Presenter-Ansicht erneut.",
     help: "#/help/admin",
   },
+  permission_denied: {
+    title: "Keine Berechtigung für diesen Bereich",
+    cause: "Sie sind angemeldet, aber Ihre Rolle erlaubt diese Admin-Seite nicht.",
+    next: "Wählen Sie einen anderen Menüpunkt in der Leiste oder wenden Sie sich an einen Administrator.",
+    help: "#/admin/help",
+  },
   rate: {
     title: "Bitte kurz warten",
     cause: "Zu viele Nachrichten in kurzer Zeit (Schutz gegen Spam).",
@@ -125,6 +131,7 @@ export function resolveErrorKey(raw) {
   if (lower.includes("reconnect")) return "reconnecting";
   if (lower.includes("session nicht gefunden") || lower.includes("not found")) return "session_not_found";
   if (lower.includes("team-konto") || lower.includes("auth_required")) return "auth_required";
+  if (lower.includes("permission_denied") || lower.includes("keine berechtigung")) return "permission_denied";
   if (lower.includes("admin") || lower.includes("forbidden") || lower.includes("gesperrt")) return "admin_lock";
   if (lower.includes("rate")) return "rate";
   if (lower.includes("blocked") || lower.includes("blockiert")) return "blocked";

@@ -4,7 +4,22 @@
  * ohne die Leiste zu verlieren.
  */
 
-const ADMIN_VIEWS = new Set(["adminHub", "events", "teams", "branding", "ssl", "email", "adminPrivacy", "adminSettings", "updates", "backups", "login", "users", "profile"]);
+const ADMIN_VIEWS = new Set([
+  "adminHub",
+  "events",
+  "teams",
+  "branding",
+  "ssl",
+  "email",
+  "adminPrivacy",
+  "adminSettings",
+  "updates",
+  "backups",
+  "login",
+  "users",
+  "profile",
+  "forbidden",
+]);
 
 /**
  * Ob die aktuelle View zur Administration gehört (inkl. Admin-Hilfe).
