@@ -235,6 +235,21 @@ let pulseEventLoopLagMs = 0;
 let pulseBootstrapComplete = false;
 
 /**
+ * Redis-Verbindung im Bus ist asynchron — vor Cluster-Validierung kurz warten.
+ * @param {number} [maxMs=20000]
+ */
+async function waitForRedisBus(maxMs = 20000) {
+  if (!process.env.REDIS_URL) return;
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    const ping = await bus.ping();
+    if (ping?.ok !== false) return;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  console.warn("[redis] Verbindungs-Timeout beim Start — Betriebsmodus-Prüfung mit redisOk=false");
+}
+
+/**
  * Health-Payload für /api/health und /api/health/ready.
  * Readiness wird bei jedem Aufruf neu bewertet (Redis/DB/Wartung).
  * @param {boolean} [full=true] Vollständige Felder für /api/health
@@ -364,6 +379,7 @@ async function buildHealthPayload(full = true) {
     }
   }
 
+  await waitForRedisBus();
   const redisPing = await bus.ping();
   pulseOperationAssessment = operationMode.assessOperationConfig({
     dbKind: db.kind,
