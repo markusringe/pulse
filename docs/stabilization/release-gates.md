@@ -12,6 +12,9 @@ Messbare Kriterien vor Tag/Deploy. **Feature-Freeze:** nur Fixes, Tests, Ops —
 | Permissions | `npm run test:permissions` | Exit 0 |
 | Reconnect | `npm run test:reconnect` | Exit 0 |
 | Betriebsmodi | `npm run test:operation-mode` | Exit 0 |
+| Start-Blockade Cluster | `npm run test:operation-start-block` | Exit 0 |
+| Health Live/Ready | `npm run test:health-readiness` | Exit 0 |
+| Remote-Smoke (Prod) | `npm run smoke:remote -- --expect-version X.Y.Z` | Exit 0 |
 
 ## Gate B — Lasttest (Staging, reproduzierbar)
 
@@ -22,6 +25,8 @@ Skript: `scripts/load-test.js` (kein externer Prod-Dienst).
 | P95 Join → Session-Snapshot (WS) | ≤ **800 ms** | `LOAD_GATE_P95_JOIN_MS` |
 | P95 Vote → Broadcast (WS) | ≤ **500 ms** | `LOAD_GATE_P95_VOTE_MS` |
 | Fehlerrate (Join+Vote) | ≤ **1 %** | `LOAD_GATE_ERROR_RATE=0.01` |
+| Readiness nach Lauf | `readinessReady === true` | Report-Feld `runtime` |
+| Eventloop-Lag (Health) | ≤ **200 ms** | `runtime.eventLoopLagMs` |
 | Verlorene/doppelte Stimmen | **0** | Manuell / Zählvergleich |
 | unhandledRejection | **0** | Server-Log |
 
@@ -41,7 +46,9 @@ node scripts/load-test.js --participants=300 --report=baseline-300.json
 | Modus | Pflicht |
 |-------|---------|
 | Single | `PULSE_OPERATION_MODE=single`, ein Container |
-| Cluster | `DATABASE_URL` (Postgres), `REDIS_URL`, gleiche App-Version auf allen Instanzen, `/api/health/ready` = 200 |
+| Cluster | `DATABASE_URL` (Postgres), `REDIS_URL`, gleiche App-Version, `/api/health/ready` = 200, Check `db_readwrite` ok |
+
+**Docker-VPS:** Update nur mit `scripts/update-vps-ubuntu.sh` + `docker compose build` — Admin-UI allein reicht nicht (B-010).
 
 **Verboten in Prod (strict):** zwei Container + gemeinsame SQLite ohne `DATABASE_URL`.
 
@@ -97,5 +104,5 @@ Messung: Browser DevTools + `scripts/test-performance.js` (Lib-Baseline).
 2. Gate C auf Staging mit Ziel-Compose
 3. Gate D manuell
 4. Tag + Release Notes
-5. Prod-Deploy + `/api/health` Version prüfen
+5. Prod-Deploy + `npm run smoke:remote` + `/api/health/ready` (db_readwrite, operation.mode)
 6. 24 h Beobachtung (Grafana/Logs)

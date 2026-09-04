@@ -17,20 +17,50 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const http = require("http");
+const https = require("https");
 
 const ROOT = path.join(__dirname, "..");
 const { pickPort, makeIsolatedDataDir, serverTestEnv } = require("./test-server-env");
 
 function parseArgs(argv) {
-  const out = { participants: 100, votes: 1, report: "" };
+  const out = {
+    participants: 100,
+    votes: 1,
+    report: "",
+    url: "",
+    allowRemote: false,
+    code: "",
+    skipSpawn: false,
+  };
   for (const a of argv) {
+    if (a === "--allow-remote") {
+      out.allowRemote = true;
+      continue;
+    }
     const m = a.match(/^--(\w+)=(.+)$/);
     if (!m) continue;
     if (m[1] === "participants") out.participants = Math.max(1, Number(m[2]) || 100);
     if (m[1] === "votes") out.votes = Math.max(1, Number(m[2]) || 1);
     if (m[1] === "report") out.report = m[2];
+    if (m[1] === "url") {
+      out.url = m[2].replace(/\/$/, "");
+      out.skipSpawn = true;
+    }
+    if (m[1] === "code") out.code = m[2];
   }
   return out;
+}
+
+/** Nur localhost ohne explizite Freigabe — schützt Prod-Sessions. */
+function assertSafeTarget(base, allowRemote) {
+  const u = new URL(base.startsWith("http") ? base : `http://${base}`);
+  const host = u.hostname.toLowerCase();
+  const local = host === "127.0.0.1" || host === "localhost" || host === "::1";
+  if (!local && !allowRemote) {
+    throw new Error(
+      `Lasttest gegen ${host} blockiert — nur isolierte Instanz oder --allow-remote (Prod-Sessions gefährdet).`
+    );
+  }
 }
 
 function percentile(sorted, p) {
@@ -43,13 +73,14 @@ function httpJson(method, url, body, headers = {}) {
   const t0 = performance.now();
   return new Promise((resolve, reject) => {
     const u = new URL(url);
+    const lib = u.protocol === "https:" ? https : http;
     const payload = body != null ? JSON.stringify(body) : null;
     const reqHeaders = { ...headers };
     if (payload) {
       reqHeaders["Content-Type"] = "application/json";
       reqHeaders["Content-Length"] = Buffer.byteLength(payload);
     }
-    const req = http.request(
+    const req = lib.request(
       { hostname: u.hostname, port: u.port, path: u.pathname + u.search, method, headers: reqHeaders },
       (res) => {
         let data = "";
@@ -149,11 +180,19 @@ function stopChild(child) {
     IP_BLOCK: "0",
   });
 
-  const child = spawn(process.execPath, [path.join(ROOT, "server.js")], {
-    cwd: tmpDir,
-    env,
-    stdio: "ignore",
-  });
+  let child = null;
+  let base = args.url || `http://127.0.0.1:${port}`;
+
+  if (!args.skipSpawn) {
+    child = spawn(process.execPath, [path.join(ROOT, "server.js")], {
+      cwd: tmpDir,
+      env,
+      stdio: "ignore",
+    });
+    base = `http://127.0.0.1:${port}`;
+  } else {
+    assertSafeTarget(base, args.allowRemote);
+  }
 
   const joinLatencies = [];
   const voteLatencies = [];
@@ -162,26 +201,32 @@ function stopChild(child) {
   let attempts = 0;
 
   try {
-    await waitForHealth(port);
-    const base = `http://127.0.0.1:${port}`;
+    if (!args.skipSpawn) await waitForHealth(port);
 
-    const created = await httpJson("POST", `${base}/api/sessions`, {
-      slides: [
-        {
-          type: "choice",
-          question: "Lasttest",
-          options: [
-            { id: "a", label: "A" },
-            { id: "b", label: "B" },
-          ],
-          interaction: { manualStart: false, state: "running" },
-        },
-      ],
-      skipLobby: true,
-    });
-    if (created.status !== 201) throw new Error(`Session ${created.status}`);
-    const code = created.json.session?.code;
-    const slideId = created.json.session?.slides?.[0]?.id;
+    const created =
+      args.code && args.skipSpawn
+        ? { status: 200, json: { session: { code: args.code, slides: [] } } }
+        : await httpJson("POST", `${base}/api/sessions`, {
+            slides: [
+              {
+                type: "choice",
+                question: "Lasttest",
+                options: [
+                  { id: "a", label: "A" },
+                  { id: "b", label: "B" },
+                ],
+                interaction: { manualStart: false, state: "running" },
+              },
+            ],
+            skipLobby: true,
+          });
+    if (!args.code && created.status !== 201) throw new Error(`Session ${created.status}`);
+    const code = args.code || created.json.session?.code;
+    let slideId = created.json.session?.slides?.[0]?.id;
+    if (args.code && !slideId) {
+      const sess = await httpJson("GET", `${base}/api/sessions/${code}`);
+      slideId = sess.json?.session?.slides?.[0]?.id;
+    }
     if (!code || !slideId) throw new Error("Session unvollständig");
 
     /** Join + Vote über dieselbe WS-Verbindung (wie echte Teilnehmer). */
@@ -257,6 +302,18 @@ function stopChild(child) {
       if (r.ok) healthLatencies.push(r.ms);
     }
 
+    const lastHealth = await httpJson("GET", `${base}/api/health`);
+    const readyProbe = await httpJson("GET", `${base}/api/health/ready`);
+    const mem = lastHealth.json?.memory || {};
+    const runtime = {
+      eventLoopLagMs: lastHealth.json?.eventLoopLagMs ?? null,
+      rssMb: mem.rssMb ?? null,
+      heapUsedMb: mem.heapUsedMb ?? null,
+      dbLatencyMs: lastHealth.json?.dependencies?.db?.latencyMs ?? null,
+      readinessReady: readyProbe.json?.ok ?? lastHealth.json?.readiness?.ready ?? null,
+      operationMode: lastHealth.json?.operation?.mode ?? null,
+    };
+
     joinLatencies.sort((a, b) => a - b);
     voteLatencies.sort((a, b) => a - b);
     healthLatencies.sort((a, b) => a - b);
@@ -264,10 +321,11 @@ function stopChild(child) {
     const errorRate = attempts > 0 ? errors / attempts : 0;
     const report = {
       at: new Date().toISOString(),
-      mode: "single",
+      target: base,
+      mode: runtime.operationMode || env.PULSE_OPERATION_MODE || "single",
       participants: args.participants,
       votesPerParticipant: args.votes,
-      port,
+      isolated: !args.skipSpawn,
       metrics: {
         join: {
           count: joinLatencies.length,
@@ -290,6 +348,7 @@ function stopChild(child) {
         attempts,
         errors,
       },
+      runtime,
       gates: {
         p95JoinMs: Number(process.env.LOAD_GATE_P95_JOIN_MS || 800),
         p95VoteMs: Number(process.env.LOAD_GATE_P95_VOTE_MS || 500),
@@ -314,10 +373,12 @@ function stopChild(child) {
     }
   } finally {
     stopChild(child);
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch {
-      /* temp */
+    if (!args.skipSpawn) {
+      try {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      } catch {
+        /* temp */
+      }
     }
   }
 })().catch((err) => {

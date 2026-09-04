@@ -231,31 +231,84 @@ let pulseEventLoopLagMs = 0;
   }, 500).unref();
 })();
 
+/** Bootstrap abgeschlossen (Admin/Migration bereit). */
+let pulseBootstrapComplete = false;
+
 /**
  * Health-Payload für /api/health und /api/health/ready.
+ * Readiness wird bei jedem Aufruf neu bewertet (Redis/DB/Wartung).
  * @param {boolean} [full=true] Vollständige Felder für /api/health
  */
 async function buildHealthPayload(full = true) {
   const redis = await bus.ping();
   const authSettings = userDb.supported ? await userService.getSettings(userDb) : { userManagementEnabled: false };
   const { getAppVersion, getAppVersionLabel } = require("./lib/appVersion");
-  const assessment =
-    pulseOperationAssessment ||
-    operationMode.assessOperationConfig({
-      dbKind: db.kind,
-      userDbKind: userDb.kind,
-      redisOk: redis?.ok !== false,
-      instanceId: bus.instanceId,
-      bootstrapComplete: true,
+
+  let dbHealth = { ok: true, latencyMs: 0 };
+  if (typeof db.healthCheck === "function") {
+    dbHealth = await Promise.resolve(db.healthCheck());
+  }
+
+  const maintenance = updateService.getMaintenanceState();
+  const restoreBusy = backupService.isRestoreInProgress();
+
+  const assessment = operationMode.assessOperationConfig({
+    dbKind: db.kind,
+    userDbKind: userDb.kind,
+    redisOk: redis?.ok !== false,
+    instanceId: bus.instanceId,
+    bootstrapComplete: pulseBootstrapComplete,
+  });
+
+  /** @type {Array<{id:string,ok:boolean,message:string}>} */
+  const runtimeChecks = [...assessment.checks.map((c) => ({ id: c.id, ok: c.ok, message: c.message }))];
+
+  if (!dbHealth.ok) {
+    runtimeChecks.push({
+      id: "db_readwrite",
+      ok: false,
+      message: "Datenbank-Lese/Schreib-Probe fehlgeschlagen.",
     });
-  const mem = process.memoryUsage();
+  } else if (dbHealth.latencyMs != null) {
+    runtimeChecks.push({
+      id: "db_readwrite",
+      ok: true,
+      message: `Datenbank OK (${dbHealth.latencyMs} ms).`,
+    });
+  }
+
+  if (maintenance.blocksReadiness) {
+    runtimeChecks.push({
+      id: "update_in_progress",
+      ok: false,
+      message: maintenance.pendingRestart
+        ? "Update abgeschlossen — Neustart ausstehend."
+        : "Update-Installation läuft — Traffic vorübergehend blockiert.",
+    });
+  }
+
+  if (restoreBusy) {
+    runtimeChecks.push({
+      id: "restore_in_progress",
+      ok: false,
+      message: "Backup-Wiederherstellung läuft — Instanz nicht bereit.",
+    });
+  }
+
+  let ready = assessment.ready && dbHealth.ok && !maintenance.blocksReadiness && !restoreBusy;
+  const degraded =
+    (assessment.degraded || pulseEventLoopLagMs > 200) && ready;
+
   const readiness = {
-    ready: assessment.ready,
-    degraded: assessment.degraded,
-    checks: assessment.checks.map((c) => ({ id: c.id, ok: c.ok, message: c.message })),
+    ready,
+    degraded,
+    checks: runtimeChecks,
   };
+
+  metrics.setOperationalReadiness(ready ? 1 : 0, degraded ? 1 : 0, pulseEventLoopLagMs, dbHealth.latencyMs || 0);
+
   const base = {
-    ok: assessment.ready,
+    ok: ready,
     version: getAppVersion(),
     versionLabel: getAppVersionLabel(),
     operation: operationMode.publicSummary(assessment),
@@ -264,8 +317,12 @@ async function buildHealthPayload(full = true) {
     instanceId: bus.instanceId,
     eventLoopLagMs: pulseEventLoopLagMs,
     memory: {
-      rssMb: Math.round(mem.rss / 1024 / 1024),
-      heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+      rssMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+      heapUsedMb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+    },
+    dependencies: {
+      db: { ok: dbHealth.ok, latencyMs: dbHealth.latencyMs || 0, kind: db.kind },
+      redis: redis ? { ok: redis.ok !== false, mode: redis.mode || "unknown" } : { ok: true, mode: "none" },
     },
   };
   if (!full) return base;
@@ -315,6 +372,7 @@ async function buildHealthPayload(full = true) {
     instanceId: bus.instanceId,
     bootstrapComplete: true,
   });
+  pulseBootstrapComplete = true;
   try {
     operationMode.assertStartupAllowed(pulseOperationAssessment);
   } catch (err) {

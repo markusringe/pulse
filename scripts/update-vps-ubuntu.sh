@@ -486,7 +486,8 @@ update_npm() {
 wait_for_health() {
   local dir="$1"
   local mode="$2"
-  local url="http://127.0.0.1/api/health"
+  local url="http://127.0.0.1/api/health/ready"
+  local fallback="http://127.0.0.1/api/health"
   local i=0
   local max=$((HEALTH_TIMEOUT_SEC / 2))
 
@@ -496,17 +497,27 @@ wait_for_health() {
   fi
 
   need_cmd curl
-  log "Healthcheck: $url …"
+  log "Readiness: $url …"
 
   while [ "$i" -lt "$max" ]; do
     if curl -fsS "$url" >/dev/null 2>&1; then
-      ok "Pulse antwortet auf /api/health"
-      RESULT_HEALTH="ok"
+      ok "Pulse bereit (/api/health/ready → 200)"
+      RESULT_HEALTH="ready"
+      return 0
+    fi
+    if curl -fsS "$fallback" >/dev/null 2>&1; then
+      ok "Pulse antwortet (/api/health — Ready noch 503 oder Legacy)"
+      RESULT_HEALTH="health_only"
+      return 0
+    fi
+    if [ "$mode" = "npm" ] && curl -fsS "http://127.0.0.1:3000/api/health/ready" >/dev/null 2>&1; then
+      ok "Pulse bereit auf Port 3000"
+      RESULT_HEALTH="ready"
       return 0
     fi
     if [ "$mode" = "npm" ] && curl -fsS "http://127.0.0.1:3000/api/health" >/dev/null 2>&1; then
-      ok "Pulse antwortet auf Port 3000"
-      RESULT_HEALTH="ok"
+      ok "Pulse antwortet auf Port 3000 (/api/health)"
+      RESULT_HEALTH="health_only"
       return 0
     fi
     sleep 2

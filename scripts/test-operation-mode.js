@@ -86,5 +86,32 @@ const clusterPg = operationMode.assessOperationConfig(
 assert(clusterPg.ready, "cluster postgres ready");
 assert(!clusterPg.degraded, "cluster postgres not degraded");
 
+/* --- Cluster ohne REDIS_URL --- */
+const noRedis = operationMode.assessOperationConfig(
+  { dbKind: "postgres", userDbKind: "postgres", redisOk: false },
+  {
+    PULSE_OPERATION_MODE: "cluster",
+    DATABASE_URL: "postgres://u:p@postgres:5432/pulse",
+    ...baseEnv,
+  }
+);
+assert(!noRedis.ready, "cluster ohne REDIS_URL not ready");
+const redisReq = noRedis.checks.find((c) => c.id === "redis_required");
+assert(redisReq && !redisReq.ok, "redis_required fehlt");
+
+/* --- Cluster Redis down --- */
+const redisDown = operationMode.assessOperationConfig(
+  { dbKind: "postgres", userDbKind: "postgres", redisOk: false },
+  {
+    PULSE_OPERATION_MODE: "cluster",
+    REDIS_URL: "redis://redis:6379",
+    DATABASE_URL: "postgres://u:p@postgres:5432/pulse",
+    ...baseEnv,
+  }
+);
+assert(!redisDown.ready, "cluster redis down not ready");
+const redisPing = redisDown.checks.find((c) => c.id === "redis_ping");
+assert(redisPing && !redisPing.ok, "redis_ping fail");
+
 console.log("test-operation-mode: OK");
 fs.rmSync(tmpData, { recursive: true, force: true });

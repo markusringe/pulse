@@ -1,4 +1,4 @@
-# Operations-Runbook — Pulse v1.5.4
+# Operations-Runbook — Pulse v1.5.5 (Audit)
 
 Kurzanleitung für Betrieb, Diagnose und Incident Response. **Keine Secrets in Logs/Konsole.**
 
@@ -15,7 +15,7 @@ Kurzanleitung für Betrieb, Diagnose und Incident Response. **Keine Secrets in L
 |----------|-------|-----------|
 | `GET /api/health` | Vollständiger Status | 200, `operation.mode`, `readiness` |
 | `GET /api/health/live` | Liveness (Prozess lebt) | 200 `{ ok: true }` |
-| `GET /api/health/ready` | Readiness (DB/Redis/Modus) | 200 oder **503** |
+| `GET /api/health/ready` | Readiness (DB R/W, Redis, Modus, kein Update/Restore) | 200 oder **503** |
 | `GET /metrics` | Prometheus (intern) | Nur aus vertrauenswürdigem Netz |
 
 ### Readiness-Felder (Auszug)
@@ -23,7 +23,9 @@ Kurzanleitung für Betrieb, Diagnose und Incident Response. **Keine Secrets in L
 - `operation.mode`: `single` | `cluster`
 - `operation.instanceId`: Bus-Instanz (kein Secret)
 - `readiness.degraded`: true = läuft, aber Konfigurationswarnung (z. B. SQLite im Cluster)
-- `eventLoopLagMs`, `memory.rssMb`
+- `readiness.checks[]` — u. a. `db_readwrite`, `update_in_progress`, `restore_in_progress`
+- `dependencies.db.latencyMs`, `eventLoopLagMs`
+- Prometheus: `pulse_readiness`, `pulse_degraded`, `pulse_event_loop_lag_ms`
 
 ## Diagnose-Befehle
 
@@ -56,8 +58,9 @@ curl -sS https://<domain>/api/health/ready
 
 ```bash
 cd /opt/pulse
-sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.4 --yes
-curl -sS https://<domain>/api/health | jq .version
+sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.5 --yes
+# Docker: Skript führt compose build + up aus — nicht nur Admin-UI-Update
+curl -sS https://<domain>/api/health/ready | jq '{ok, operation, checks: .checks|map({id,ok})}'
 ```
 
 Rollback: vorheriges Tag + `./scripts/update-vps-ubuntu.sh --tag v1.5.3 --yes` (Pre-Update-Backup prüfen).

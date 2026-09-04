@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.4 · Prod Deploy v1.5.4 ausstehend · Branch `main`
+Stand: v1.5.5 Audit · Prod Deploy v1.5.5+Audit ausstehend · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -18,7 +18,8 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-006 | Live | Falsche aktive Folie bei Reconnect | **teilweise** | v1.5.0 clamp + v1.5.2 join; `test-ws-reconnect.js` |
 | B-007 | Live | „Interaktion starten“ ohne serverseitige Wirkung | **behoben** | v1.5.3: stale ix nach normalizeSlide |
 | B-008 | Update | loadState/effectiveRepo Endlosrekursion | **behoben** | v1.5.3: readStoredRepo + emptyConfig |
-| B-009 | Ops | SQLite + 2 Container ohne Startwarnung | **teilweise** | v1.5.4: operationMode block/warn + Compose-Flags |
+| B-009 | Ops | SQLite + 2 Container ohne Startwarnung | **behoben** | v1.5.4/5: operationMode block/warn + Compose-Flags |
+| B-010 | Update | Docker: Admin-UI-Update ohne Image-Rebuild | **offen** | Host: `update-vps-ubuntu.sh` + `docker compose build` |
 
 ---
 
@@ -37,7 +38,8 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-009 | Security | CORS `*` bei Cookie-Auth | **behoben** | v1.4.9 |
 | C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust | OBS — Phase 5 Content-Hash |
 | C-011 | Live | Kein stateVersion — parallele Presenter-Konflikte | **offen** | Phase 2 (ADR, nicht v1.5.4) |
-| C-012 | Ops | Kein reproduzierbarer Lasttest | **teilweise** | v1.5.4: `scripts/load-test.js` |
+| C-012 | Ops | Kein reproduzierbarer Lasttest | **behoben** | v1.5.5: `load-test.js` + Gates + `--url` |
+| C-013 | Ops | Readiness ohne DB-R/W und Wartungs-Flags | **behoben** | v1.5.5 Audit: healthCheck, maintenance, restore |
 
 ---
 
@@ -74,7 +76,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-002 | v1.5.1 | test-bootstrap, auth-http |
 | B-003 | v1.4.5 | test-routes |
 | B-005, B-007, B-008 | **v1.5.3** | test-interaction-state.js, test-updates.js |
-| B-009, C-012 | **v1.5.4** | test-operation-mode.js, load-test.js |
+| B-009, C-012, C-013 | **v1.5.5** | test-operation-mode, load-test, test-health-readiness |
 | C-009 | v1.4.9 | test-cors.js |
 | H-002 | v1.4.7 | test-routes |
 
@@ -82,7 +84,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.5.4 · Prod Deploy ausstehend
+- **Version:** `package.json` 1.5.5 · Prod: v1.5.1 gemeldet (Deploy + `docker compose build` ausstehend)
 - **Betriebsmodi:** ADR `docs/stabilization/architecture-operation-modes.md`
 - **Lasttest:** `npm run load-test` · Gates in `release-gates.md`
 - **Docker:** `pulse` + `pulse-b` teilen `./data`, `.env`, `REDIS_URL` ✓
@@ -92,8 +94,9 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## Nächste Schritte (priorisiert)
 
-1. **v1.5.4** deployen + Betriebsmodus in `.env` setzen
-2. Last-Baseline 100/300 TN (`load-test.js --report=`)
-3. Postgres-Migration für Cluster-Compose (R-001)
-4. Phase 2: stateVersion (separates Release, Freeze-Freigabe nötig)
-5. Smoke-Checkliste + `/api/health/ready` auf Prod
+1. **v1.5.5 Audit** deployen (`update-vps-ubuntu.sh` + `docker compose build`)
+2. VPS auf **Einzelinstanz** (`docker-compose.single.yml`) oder Postgres migrieren
+3. Last-Baseline 100/300 TN
+4. Phase 2: stateVersion
+5. Phase 5: Content-Hash Assets
+6. Smoke-Checkliste + `smoke:remote --expect-version`
