@@ -4,7 +4,11 @@
  * Misst P50/P95/P99 für Join (WS), Vote (HTTP) und Health.
  *
  * Aufruf:
- *   node scripts/load-test.js [--participants=100] [--votes=1] [--duration-minutes=30] [--report=./load-report.json]
+ *   node scripts/load-test.js [--participants=100] [--batch-size=10] [--votes=1]
+ *     [--duration-minutes=30] [--report=./load-report.json]
+ *
+ * --batch-size: parallele Join+Vote-Verbindungen pro Welle (Burst oder Dauer-Tick).
+ *   Standard 10 — für Gleichzeitigkeitstests z. B. --participants=500 --batch-size=500.
  *
  * Release-Gates (Standard, überschreibbar per Env):
  *   LOAD_GATE_P95_JOIN_MS=800
@@ -33,19 +37,22 @@ function parseArgs(argv) {
     skipSpawn: false,
     durationMinutes: 0,
     healthSampleSec: 30,
+    batchSize: 10,
   };
   for (const a of argv) {
     if (a === "--allow-remote") {
       out.allowRemote = true;
       continue;
     }
-    const m = a.match(/^--(\w+)=(.+)$/);
+    /* Bindestrich-Flags (--duration-minutes) — \w+ allein bricht bei Kebab-Case ab. */
+    const m = a.match(/^--([\w-]+)=(.+)$/);
     if (!m) continue;
     if (m[1] === "participants") out.participants = Math.max(1, Number(m[2]) || 100);
     if (m[1] === "votes") out.votes = Math.max(1, Number(m[2]) || 1);
     if (m[1] === "report") out.report = m[2];
     if (m[1] === "duration-minutes") out.durationMinutes = Math.max(0, Number(m[2]) || 0);
     if (m[1] === "health-sample-sec") out.healthSampleSec = Math.max(5, Number(m[2]) || 30);
+    if (m[1] === "batch-size") out.batchSize = Math.max(1, Number(m[2]) || 10);
     if (m[1] === "url") {
       out.url = m[2].replace(/\/$/, "");
       out.skipSpawn = true;
@@ -276,7 +283,7 @@ function stopChild(child) {
       return { joinMs, voteMs, ok: true };
     }
 
-    const batch = Math.min(10, args.participants);
+    const batch = Math.min(args.batchSize, args.participants);
 
     if (args.durationMinutes > 0) {
       const endAt = Date.now() + args.durationMinutes * 60 * 1000;
@@ -390,6 +397,7 @@ function stopChild(child) {
       target: base,
       mode: runtime.operationMode || env.PULSE_OPERATION_MODE || "single",
       participants: args.participants,
+      batchSize: args.batchSize,
       votesPerParticipant: args.votes,
       durationMinutes: args.durationMinutes || null,
       isolated: !args.skipSpawn,
