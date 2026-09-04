@@ -52,11 +52,11 @@ Stand: 2026-09-04 · Basis: v1.5.2-Analyse + Stabilisierungslauf bis v1.5.4 · F
 
 | TN | Join P50 | Join P95 | Join P99 | Vote P95 | Fehlerrate | Modus |
 |----|----------|----------|----------|----------|------------|-------|
-| 100 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | single |
-| 300 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | single |
+| 100 | 10 ms | 15 ms | 17 ms | 402 ms | 0 % | single |
+| 300 | 7 ms | 15 ms | 17 ms | 403 ms | 0 % | single |
 | 1000 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | cluster+PG |
 
-Referenz-Hardware: _CPU/RAM/OS notieren_
+Referenz: `docs/stabilization/load-baseline-100.json`, `load-baseline-300.json` · v1.5.7 · isolierter Lasttest (ephemerer Port).
 
 ## Verbleibende Risiken
 
@@ -81,6 +81,6 @@ Referenz-Hardware: _CPU/RAM/OS notieren_
 - [x] Health live/ready/degraded-Grundlage
 - [x] Lasttest-Skript + Release-Gates definiert
 - [x] Runbook + ADR
-- [ ] Baseline 100/300 TN gemessen (lokal/Staging)
-- [ ] Prod auf v1.5.4 + Modus explizit gesetzt
+- [x] Baseline 100/300 TN gemessen (lokal/Staging)
+- [x] Prod auf v1.5.7 + Modus **single** gesetzt
 - [ ] Phase 2 stateVersion (separates Release)

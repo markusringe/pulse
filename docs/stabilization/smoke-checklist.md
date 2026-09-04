@@ -2,6 +2,15 @@
 
 Vor Betriebsfreigabe abhaken. Browser: Chrome/Firefox/Safari · Mobil: 375 px und 430 px Breite.
 
+## Automatisiert (Prod v1.5.7, 2026-09-04)
+
+Remote-Smoke `npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.7` — **12/12 OK**:
+
+- GET `/`, `/js/app.js`, `/api/health`, `/api/health/live`, `/api/health/ready`, `/api/auth/status`
+- Version 1.5.7, Betriebsmodus **single**, Readiness **ready**, nicht degraded
+
+Manuelle Punkte unten weiterhin Pflicht (Login, Mobil, Live-Session, Rollen).
+
 ## Startseite & Join
 
 - [ ] Startseite lädt ohne ungestylte Links/Buttons

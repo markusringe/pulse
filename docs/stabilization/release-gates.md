@@ -37,9 +37,11 @@ Szenarien (mindestens):
 - 1000 TN — optional, dokumentierte Hardware
 
 ```bash
-node scripts/load-test.js --participants=100 --report=baseline-100.json
-node scripts/load-test.js --participants=300 --report=baseline-300.json
+node scripts/load-test.js --participants=100 --report=docs/stabilization/load-baseline-100.json
+node scripts/load-test.js --participants=300 --report=docs/stabilization/load-baseline-300.json
 ```
+
+Referenz-Baselines (v1.5.7, isolierter Single-Modus, lokal): `docs/stabilization/load-baseline-100.json`, `load-baseline-300.json`.
 
 ## Gate C — Betriebsmodus (Prod)
 

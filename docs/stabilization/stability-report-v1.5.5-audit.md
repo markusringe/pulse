@@ -134,9 +134,14 @@ Open-Source-nginx leitet **nicht** nur an Ready-Instanzen — nur passives `max_
 | Release-Gates + Exit ≠ 0 | ✓ |
 | `--url=` für Staging | ✓ (WS nur lokal) |
 
-**Baseline (Agent, 30 TN):** Join P95 < 800 ms, Vote P95 < 500 ms, Error 0 %.
+**Baseline (v1.5.7, lokal, Single):**
 
-**Offen:** Wortwolke/Q&A/Quiz-Szenarien, Reconnect-Welle, Mehrinstanz-Last — Staging mit `--participants=300`.
+| TN | Join P95 | Vote P95 | Fehlerrate | Report |
+|----|----------|----------|------------|--------|
+| 100 | 15 ms | 402 ms | 0 % | `load-baseline-100.json` |
+| 300 | 15 ms | 403 ms | 0 % | `load-baseline-300.json` |
+
+**Offen:** Wortwolke/Q&A/Quiz-Szenarien, Reconnect-Welle, Mehrinstanz-Last — Staging optional.
 
 ---
 
@@ -248,13 +253,14 @@ sudo docker compose -f docker-compose.single.yml up -d --build
 
 ## Blockierende Restpunkte vor Produktivfreigabe
 
-1. **v1.5.5 + Audit-Fixes auf VPS deployen** (`update-vps-ubuntu.sh --tag vX --yes` mit `docker compose build`)
-2. **Betriebsmodus:** Single-Compose auf VPS **oder** Postgres-Migration
-3. **Post-Deploy-Smoke:** `npm run smoke:remote -- --expect-version …`
-4. **Last-Baseline:** 100/300 TN auf Staging
-5. **C-011 stateVersion** — separates Release (Freeze-Freigabe)
+1. ~~**v1.5.7 auf VPS deployen**~~ — **erledigt** (2026-09-04)
+2. ~~**Betriebsmodus Single auf VPS**~~ — **erledigt** (`migrate-vps-single.sh`, Prod single, nicht degraded)
+3. ~~**Post-Deploy-Smoke**~~ — **erledigt** (12/12, v1.5.7)
+4. ~~**Last-Baseline 100/300 TN**~~ — **erledigt** (`load-baseline-100.json`, `load-baseline-300.json`)
+5. **C-011 stateVersion** — separates Release (Freeze-Freigabe, Phase 2)
 6. **C-010 Content-Hash Assets** — Phase 5
-7. **Manuelle Smoke-Checkliste** (`docs/stabilization/smoke-checklist.md`)
+7. **Manuelle Smoke-Checkliste** (`docs/stabilization/smoke-checklist.md`) — offen
+8. **SSH-Key rotieren** — Key im Chat exponiert
 
 ---
 

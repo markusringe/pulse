@@ -80,8 +80,10 @@ Rollback: vorheriges Tag + `./scripts/update-vps-ubuntu.sh --tag v1.5.3 --yes` (
 ## Lasttest (Staging)
 
 ```bash
-node scripts/load-test.js --participants=100 --report=./load-report.json
-node scripts/load-test.js --participants=300
+node scripts/load-test.js --participants=100 --report=docs/stabilization/load-baseline-100.json
+node scripts/load-test.js --participants=300 --report=docs/stabilization/load-baseline-300.json
 ```
+
+Referenz-Baselines: `docs/stabilization/load-baseline-100.json`, `load-baseline-300.json` (v1.5.7, Single, Gates grün).
 
 Gates: `LOAD_GATE_P95_JOIN_MS`, `LOAD_GATE_P95_VOTE_MS`, `LOAD_GATE_ERROR_RATE`.
