@@ -157,7 +157,7 @@ Open-Source-nginx leitet **nicht** nur an Ready-Instanzen — nur passives `max_
 | Readiness nach Update | ✓ (update-vps wartet Ready) |
 | Rekursion updateService | ✓ behoben (B-008) |
 
-**Blocker B-010:** Docker-Deploy: Code-Update im Container ohne `docker compose build` → Rollback auf Image-Version.
+**Blocker B-010:** ~~Docker-Deploy: Code-Update im Container ohne `docker compose build`~~ — **behoben:** Admin-Install/Rollback in Docker blockiert (409), UI-Hinweis auf `update-vps-ubuntu.sh`.
 
 ### Backup/Restore
 

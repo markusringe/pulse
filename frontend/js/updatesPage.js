@@ -313,6 +313,21 @@ function renderDashboard(cachedWrap, statusWrap) {
   const installBtn = $("btn-update-install");
   const msgEl = $("update-msg");
   const disabledEl = $("update-disabled-hint");
+  const dockerHintEl = $("update-docker-hint");
+  const deployment = cachedWrap?.deployment || {};
+  const dockerBlocked = deployment.kind === "docker" && deployment.adminInstallAllowed === false;
+
+  if (dockerHintEl) {
+    if (dockerBlocked) {
+      dockerHintEl.hidden = false;
+      dockerHintEl.textContent = [deployment.adminInstallBlockedReason, deployment.adminInstallHint]
+        .filter(Boolean)
+        .join(" ");
+    } else {
+      dockerHintEl.hidden = true;
+      dockerHintEl.textContent = "";
+    }
+  }
 
   if (currentEl) currentEl.textContent = `v${info.currentVersion || "?"}`;
   if (latestEl) {
@@ -347,18 +362,20 @@ function renderDashboard(cachedWrap, statusWrap) {
   }
 
   if (installBtn) {
-    installBtn.hidden = !info.hasUpdate;
-    installBtn.disabled = installActive || ["pending", "downloading", "installing", "restarting"].includes(status.phase);
+    installBtn.hidden = !info.hasUpdate || dockerBlocked;
+    installBtn.disabled =
+      dockerBlocked || installActive || ["pending", "downloading", "installing", "restarting"].includes(status.phase);
   }
 
   if (msgEl && status.error && status.phase === "failed") msgEl.textContent = status.error;
 
-  renderConfigForm(config);
+  renderConfigForm(config, deployment);
   renderHistory(statusWrap?.history || []);
   renderProgress(status);
 }
 
-function renderConfigForm(config) {
+function renderConfigForm(config, deployment = {}) {
+  const dockerBlocked = deployment.kind === "docker" && deployment.adminInstallAllowed === false;
   const form = $("update-config-form");
   if (!form) return;
   const enabled = form.querySelector('[name="enabled"]');
@@ -370,6 +387,7 @@ function renderConfigForm(config) {
   if (interval) interval.value = String(config.checkIntervalSec || 86400);
   if (prerelease) prerelease.checked = Boolean(config.allowPrerelease);
   if (autoInstall) autoInstall.checked = Boolean(config.autoInstall);
+  if (autoInstall) autoInstall.disabled = dockerBlocked;
   if (repo) repo.value = config.repo || "";
 }
 

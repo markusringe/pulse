@@ -13,7 +13,7 @@ Manuelle Punkte unten weiterhin Pflicht (Login, Mobil, Live-Session, Rollen).
 
 ## Startseite & Join
 
-- [ ] Startseite lädt ohne ungestylte Links/Buttons
+- [x] Startseite lädt ohne ungestylte Links/Buttons (Prod 2026-09-04, Browser)
 - [ ] Kein horizontaler Scroll (320–430 px)
 - [ ] Join mit 6-stelligem Code funktioniert
 - [ ] Datenschutz-Hinweis blockiert keine Klicks dauerhaft

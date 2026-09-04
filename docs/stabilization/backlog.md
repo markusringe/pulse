@@ -19,7 +19,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-007 | Live | „Interaktion starten“ ohne serverseitige Wirkung | **behoben** | v1.5.3: stale ix nach normalizeSlide |
 | B-008 | Update | loadState/effectiveRepo Endlosrekursion | **behoben** | v1.5.3: readStoredRepo + emptyConfig |
 | B-009 | Ops | SQLite + 2 Container ohne Startwarnung | **behoben** | v1.5.4/5: operationMode block/warn + Compose-Flags |
-| B-010 | Update | Docker: Admin-UI-Update ohne Image-Rebuild | **offen** | Host: `update-vps-ubuntu.sh` + `docker compose build` |
+| B-010 | Update | Docker: Admin-UI-Update ohne Image-Rebuild | **behoben** | Admin-Install/Rollback in Docker blockiert; Hinweis `update-vps-ubuntu.sh` |
 
 ---
 

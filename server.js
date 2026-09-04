@@ -2524,6 +2524,16 @@ async function handleUpdatesApi(req, res, parts, ipKey) {
       send(res, 403, { error: "Nur Administratoren dürfen Updates installieren" });
       return;
     }
+    const deploy = updateService.getDeploymentContext();
+    if (!deploy.adminInstallAllowed) {
+      send(res, 409, {
+        error: deploy.adminInstallBlockedReason,
+        hint: deploy.adminInstallHint,
+        deployment: deploy.kind,
+        code: "DOCKER_INSTALL_BLOCKED",
+      });
+      return;
+    }
     const body = await readJson(req);
     const auth = await getAuth(req, body);
     send(res, 202, { ok: true, message: "Installation gestartet" });
@@ -2555,6 +2565,16 @@ async function handleUpdatesApi(req, res, parts, ipKey) {
   if (req.method === "POST" && parts[2] === "rollback") {
     if (!(await isUpdateInstallAdmin(req, {}))) {
       send(res, 403, { error: "Nur Administratoren dürfen Rollbacks ausführen" });
+      return;
+    }
+    const deploy = updateService.getDeploymentContext();
+    if (!deploy.adminInstallAllowed) {
+      send(res, 409, {
+        error: deploy.adminInstallBlockedReason,
+        hint: deploy.adminInstallHint,
+        deployment: deploy.kind,
+        code: "DOCKER_INSTALL_BLOCKED",
+      });
       return;
     }
     const auth = await getAuth(req, {});

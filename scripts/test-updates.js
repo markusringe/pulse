@@ -73,6 +73,26 @@ process.env.UPDATE_ENABLED = "true";
 assert(updateService.effectiveRepo() === "markusringe/pulse", "effectiveRepo Fallback DEFAULT_REPO");
 assert(updateService.updatesEnabled(), "Updates mit DEFAULT_REPO aktiv");
 
+assert(!updateService.isDockerContainer(), "Test-Umgebung nicht als Docker erkannt");
+const hostCtx = updateService.getDeploymentContext();
+assert(hostCtx.kind === "host" && hostCtx.adminInstallAllowed, "Host erlaubt Admin-Install");
+
+process.env.RUNNING_IN_DOCKER = "1";
+delete require.cache[require.resolve("../lib/updateService")];
+const updateServiceDocker = require("../lib/updateService");
+assert(updateServiceDocker.isDockerContainer(), "RUNNING_IN_DOCKER erkannt");
+const dockerCtx = updateServiceDocker.getDeploymentContext();
+assert(dockerCtx.kind === "docker" && !dockerCtx.adminInstallAllowed, "Docker blockiert Admin-Install");
+let blocked = false;
+try {
+  updateServiceDocker.assertAdminFilesystemUpdateAllowed();
+} catch (err) {
+  blocked = err.code === "DOCKER_INSTALL_BLOCKED";
+}
+assert(blocked, "assertAdminFilesystemUpdateAllowed wirft in Docker");
+delete process.env.RUNNING_IN_DOCKER;
+delete require.cache[require.resolve("../lib/updateService")];
+
 delete process.env.UPDATE_REPO;
 process.env.UPDATE_ENABLED = "false";
 assert(!updateService.configuredRepo(), "Ohne UPDATE_REPO kein Repo");
