@@ -100,14 +100,30 @@ export class RealtimeClient {
 
   /**
    * Nachricht senden. Vote/Word werden 100 ms gebündelt (Pulse-Last).
+   * Bei offener Verbindung sofort in die Queue; ausstehende Batches gehen nicht verloren.
    * Envelope: { type, payload, ts }
    */
   send(type, payload = {}) {
     if (BATCHABLE.has(type) && !this.mock) {
+      /* Stimmen bei schlechter Verbindung nicht verzögern — direkt in Sende-Queue. */
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        return this.#sendRaw({ type, payload, ts: Date.now() });
+      }
       this.#queueBatch(type, payload);
       return true;
     }
     return this.#sendRaw({ type, payload, ts: Date.now() });
+  }
+
+  /** Ausstehende Batch-Stimmen vor Reconnect/Disconnect in die Persistenz-Queue schreiben. */
+  #flushPendingBatch() {
+    if (!this.pendingUpdates.length) return;
+    const updates = this.pendingUpdates;
+    this.pendingUpdates = [];
+    window.clearTimeout(this.batchTimer);
+    this.batchTimer = 0;
+    if (updates.length === 1) this.#sendRaw(updates[0]);
+    else this.#sendRaw({ type: "batch", payload: { updates }, ts: Date.now() });
   }
 
   #queueBatch(type, payload) {
@@ -192,6 +208,7 @@ export class RealtimeClient {
 
     socket.addEventListener("close", () => {
       window.clearTimeout(failTimer);
+      this.#flushPendingBatch();
       this.#clearHeartbeat();
       if (this.closedByUser) {
         this.#setState("closed");
@@ -221,13 +238,33 @@ export class RealtimeClient {
     if (data.type === "batch") {
       const updates = data.payload?.updates || data.updates || [];
       for (const item of updates) {
-        this.emit(item.type, item.payload ?? item);
+        this.#emitPayload(item.type, item);
       }
       this.emit("message", data);
       return;
     }
-    this.emit(data.type, data.payload ?? data);
+    this.#emitPayload(data.type, data);
     this.emit("message", data);
+  }
+
+  /**
+   * stateVersion aus WS-Envelope-Top-Level in Payload übernehmen (announce-Fanout).
+   * @param {string} type
+   * @param {object} envelope
+   */
+  #emitPayload(type, envelope) {
+    if (!type) return;
+    let payload = envelope?.payload ?? envelope;
+    if (
+      envelope?.stateVersion != null &&
+      payload &&
+      typeof payload === "object" &&
+      !Array.isArray(payload) &&
+      payload.stateVersion == null
+    ) {
+      payload = { ...payload, stateVersion: envelope.stateVersion };
+    }
+    this.emit(type, payload);
   }
 
   #flushQueue() {
@@ -258,11 +295,10 @@ export class RealtimeClient {
   }
 
   #clearTimers() {
+    this.#flushPendingBatch();
     this.#clearHeartbeat();
     window.clearTimeout(this.reconnectTimer);
     window.clearTimeout(this.realRetryTimer);
-    window.clearTimeout(this.batchTimer);
-    this.batchTimer = 0;
     this.realRetryTimer = 0;
   }
 

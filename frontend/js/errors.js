@@ -112,6 +112,30 @@ export const ERRORS = {
     next: "Bestehende Fragen bleiben sichtbar und können weiter bewertet werden.",
     help: "#/help/qa",
   },
+  wrong_slide: {
+    title: "Folie bereits gewechselt",
+    cause: "Der Präsentator ist zur nächsten Folie gewechselt, bevor Ihre Stimme ankam.",
+    next: "Die aktuelle Folie wird automatisch angezeigt — dort können Sie erneut abstimmen, wenn die Runde läuft.",
+    help: "#/help/troubleshooting",
+  },
+  already_voted: {
+    title: "Bereits abgestimmt",
+    cause: "Ihre Stimme auf dieser Folie ist bereits beim Server angekommen.",
+    next: "Es ist keine weitere Aktion nötig.",
+    help: "#/help/getting-started",
+  },
+  invalid_option: {
+    title: "Ungültige Antwort",
+    cause: "Die gewählte Option existiert auf dieser Folie nicht (veralteter Stand).",
+    next: "Seite kurz warten oder neu laden, dann erneut wählen.",
+    help: "#/help/troubleshooting",
+  },
+  vote_timeout: {
+    title: "Stimme nicht bestätigt",
+    cause: "Der Server hat die Stimme innerhalb der Wartezeit nicht bestätigt (langsames Netz).",
+    next: "Bitte erneut abstimmen. Bei anhaltenden Problemen WLAN prüfen.",
+    help: "#/help/troubleshooting",
+  },
   generic: {
     title: "Das hat nicht geklappt",
     cause: "Ein unerwarteter Fehler ist aufgetreten.",
@@ -149,6 +173,10 @@ export function resolveErrorKey(raw) {
   if (lower.includes("rate")) return "rate";
   if (lower.includes("blocked") || lower.includes("blockiert")) return "blocked";
   if (lower.includes("qa_closed") || lower.includes("fragenrunde")) return "qa_closed";
+  if (lower.includes("wrong_slide") || lower.includes("nicht aktiv")) return "wrong_slide";
+  if (lower.includes("already_voted") || lower.includes("bereits abgestimmt")) return "already_voted";
+  if (lower.includes("invalid_option")) return "invalid_option";
+  if (lower.includes("vote_timeout") || lower.includes("nicht bestätigt")) return "vote_timeout";
   return "generic";
 }
 

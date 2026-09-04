@@ -74,7 +74,7 @@ import {
   renderPresentStrip,
   applyMockDeck,
 } from "./deck.js";
-import { normalizeSessionSlides, acceptIncoming, applyIncoming } from "./sessionSync.js";
+import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming } from "./sessionSync.js";
 import {
   mountPresenterStats,
   refreshPresenterStats,
@@ -248,6 +248,8 @@ const els = {
 let interactionBarCtrl = null;
 /** Lokaler Timer-Tick für Countdown-Darstellung. */
 let interactionTickTimer = null;
+/** Timeout bis poll:update die Stimme bestätigt — danach einmal Retry. */
+let voteConfirmTimer = 0;
 
 /** @type {{ session: any, role: string, rt: RealtimeClient | null, sim: number }} */
 const ctx = {
@@ -258,6 +260,8 @@ const ctx = {
   votedSlide: new Set(),
   /** Folien-ID mit ausstehender Stimme (Live-WS), bis poll:update oder Fehler. */
   pendingVoteSlideId: null,
+  /** Letzte Vote-Payload für Reconnect-Retry. */
+  pendingVotePayload: null,
   /** Folien-IDs, für die der Q&A-Timer in dieser Presenter-Session schon auto-gestartet wurde. */
   qaAutoStarted: new Set(),
   instanceBranding: null,
@@ -1341,7 +1345,10 @@ function connectRealtime(role) {
   teardownRealtime();
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
   const url = `${proto}//${location.host}/ws`;
-  const rt = new RealtimeClient(url, { mockWhenOffline: true });
+  const rt = new RealtimeClient(url, {
+    /* Teilnehmer dürfen nie in den Demo-Mock — sonst gehen Stimmen am echten Server vorbei. */
+    mockWhenOffline: role === "presenter",
+  });
   ctx.rt = rt;
 
   rt.on("connection", ({ state, mock, label, description }) => {
@@ -1393,6 +1400,9 @@ function connectRealtime(role) {
     if (ctx.role === "join" && ctx.pendingVoteSlideId && payload.slideId === ctx.pendingVoteSlideId) {
       ctx.votedSlide.add(ctx.pendingVoteSlideId);
       ctx.pendingVoteSlideId = null;
+      ctx.pendingVotePayload = null;
+      window.clearTimeout(voteConfirmTimer);
+      voteConfirmTimer = 0;
     }
     if (ctx.role === "present") syncPresentResults();
   });
@@ -1413,7 +1423,9 @@ function connectRealtime(role) {
   });
   rt.on("slide", (payload) => {
     if (!ctx.session) return;
-    if (!acceptIncoming(ctx.session, payload)) return;
+    const syncRole = wsSyncRole();
+    if (!acceptStructural(ctx.session, payload, { role: syncRole, eventType: "slide" })) return;
+    if (ctx.pendingVoteSlideId) rollbackPendingVote();
     ctx.session.activeSlideIndex = payload.index;
     normalizeSessionSlides(ctx.session);
     if (payload.slide) {
@@ -1421,12 +1433,14 @@ function connectRealtime(role) {
       ctx.session.slides[payload.index] = { ...ctx.session.slides[payload.index], ...incoming };
     }
     applyIncoming(ctx.session, payload);
+    persistLocal(ctx.session);
     if (ctx.role === "present") renderActiveSlide();
     else renderJoinSlide();
   });
   rt.on("deck", (payload) => {
     if (!ctx.session) return;
-    if (!acceptIncoming(ctx.session, payload)) return;
+    const syncRole = wsSyncRole();
+    if (!acceptStructural(ctx.session, payload, { role: syncRole, eventType: "deck" })) return;
     applyDeckEvent(payload);
     applyIncoming(ctx.session, payload);
   });
@@ -1449,7 +1463,8 @@ function connectRealtime(role) {
   });
   rt.on("lobby", (payload) => {
     if (!ctx.session) return;
-    if (!acceptIncoming(ctx.session, payload)) return;
+    const syncRole = wsSyncRole();
+    if (!acceptStructural(ctx.session, payload, { role: syncRole, eventType: "lobby" })) return;
     ctx.session.lobby = Boolean(payload.lobby);
     applyIncoming(ctx.session, payload);
     persistLocal(ctx.session);
@@ -1591,7 +1606,9 @@ function connectRealtime(role) {
       return;
     }
     const msg = payload?.message || payload?.error || "Verbindungsfehler";
+    const errCode = payload?.error || payload?.code || "";
     if (ctx.role === "join") {
+      console.warn("[join] WS-Fehler", errCode || msg, payload);
       if (payload?.error === "blocked") setJoinFeedback(t("qa.blocked"), { state: "error" });
       else if (payload?.error === "qa_closed") setJoinFeedback(t("qa.closed"), { state: "error" });
       else if (payload?.error === "rate") setJoinFeedback(t("qa.rateWait", { n: payload.waitTime || 30 }), { state: "error" });
@@ -1599,20 +1616,45 @@ function connectRealtime(role) {
       else if (payload?.error === "interaction_paused") {
         setJoinFeedback(t("interaction.join.paused"), { state: "info" });
         rollbackPendingVote();
-      }
-      else if (payload?.error === "interaction_ended") {
+        renderJoinSlide({ preserveFeedback: true });
+      } else if (payload?.error === "interaction_ended") {
         setJoinFeedback(t("interaction.join.ended"), { state: "info" });
         rollbackPendingVote();
-      }
-      else if (payload?.error === "invalid") {
+        renderJoinSlide({ preserveFeedback: true });
+      } else if (payload?.error === "invalid") {
         setJoinFeedback(t("interaction.join.rankIncomplete"), { state: "error" });
         rollbackPendingVote();
+        renderJoinSlide({ preserveFeedback: true });
       } else if (payload?.error === "sum") {
         setJoinFeedback(t("interaction.join.pointsIncomplete"), { state: "error" });
         rollbackPendingVote();
+        renderJoinSlide({ preserveFeedback: true });
+      } else if (payload?.error === "wrong_slide") {
+        setJoinFeedback(t("join.error.wrongSlide"), { state: "info" });
+        rollbackPendingVote();
+        renderJoinSlide({ preserveFeedback: true });
+        void resyncJoinSession();
+      } else if (payload?.error === "lobby") {
+        setJoinFeedback(t("lobby.wait"), { state: "info" });
+        rollbackPendingVote();
+        renderJoinSlide({ preserveFeedback: true });
+      } else if (payload?.error === "paused") {
+        setJoinFeedback(t("join.error.paused"), { state: "info" });
+        rollbackPendingVote();
+        renderJoinSlide({ preserveFeedback: true });
+      } else if (payload?.error === "already_voted") {
+        setJoinFeedback(t("join.error.alreadyVoted"), { state: "info" });
+        confirmPendingVote();
+      } else if (payload?.error === "invalid_option") {
+        setJoinFeedback(t("join.error.invalidOption"), { state: "error" });
+        rollbackPendingVote();
+        renderJoinSlide({ preserveFeedback: true });
       } else if (payload?.pendingReview) setJoinFeedback(t("qa.pendingHint"));
-      else setJoinFeedback(explainError(msg).html, { html: true, state: "error" });
-      if (ctx.pendingVoteSlideId) rollbackPendingVote();
+      else {
+        setJoinFeedback(explainError(msg).html, { html: true, state: "error" });
+        rollbackPendingVote();
+        renderJoinSlide({ preserveFeedback: true });
+      }
     }
     if (ctx.role === "present") {
       const eventSession = isEventLinkedSession(ctx.session);
@@ -1652,6 +1694,10 @@ function connectRealtime(role) {
       clientId: api.clientId,
       teamName: readTeamName(),
     });
+    /* Ausstehende Stimme nach Reconnect erneut senden. */
+    if (ctx.role === "join" && ctx.pendingVotePayload && ctx.pendingVoteSlideId) {
+      scheduleVoteConfirmRetry(ctx.pendingVotePayload, true);
+    }
     /* Auth parallel — Reconnect soll join nicht verzögern (B-006). */
     void loadAuth();
   });
@@ -1662,6 +1708,10 @@ function connectRealtime(role) {
 function teardownRealtime() {
   stopDemoSimulator();
   clearInteractionTick();
+  window.clearTimeout(voteConfirmTimer);
+  voteConfirmTimer = 0;
+  ctx.pendingVoteSlideId = null;
+  ctx.pendingVotePayload = null;
   destroyPresenterStats();
   ctx.rt?.disconnect();
   ctx.rt = null;
@@ -1813,7 +1863,7 @@ function renderActiveSlide() {
   refreshPresenterPanel();
 }
 
-function renderJoinSlide() {
+function renderJoinSlide(opts = {}) {
   const s = ctx.session;
   if (!s) return;
   const slide = s.slides[s.activeSlideIndex || 0];
@@ -1832,17 +1882,19 @@ function renderJoinSlide() {
     els.joinQuiz.hidden = true;
     if (els.joinRating) els.joinRating.hidden = true;
     if (els.joinExtra) els.joinExtra.hidden = true;
-    els.joinFeedback.textContent = "";
+    if (!opts.preserveFeedback) els.joinFeedback.textContent = "";
     return;
   }
   els.joinQuestion.textContent = slide.question;
-  setJoinFeedback("");
+  if (!opts.preserveFeedback) {
+    setJoinFeedback("");
+    const ixMsg = joinStatusMessage(slide);
+    if (ixMsg) setJoinFeedback(ixMsg, { state: "info" });
+  }
   resetJoinTimerAnnouncements(slide.id);
   const inputBlocked = joinInputsBlocked(slide) || Boolean(s.paused);
-  const ixMsg = joinStatusMessage(slide);
-  if (ixMsg) setJoinFeedback(ixMsg, { state: "info" });
   updateJoinInteractionHint(slide);
-  const voted = ctx.votedSlide.has(slide.id);
+  const voted = ctx.votedSlide.has(slide.id) || ctx.pendingVoteSlideId === slide.id;
   els.joinChoice.hidden = slide.type !== "choice";
   els.joinWordForm.hidden = slide.type !== "wordcloud";
   els.joinQa.hidden = slide.type !== "qa";
@@ -1929,12 +1981,13 @@ function renderJoinSlide() {
 
 function submitTypedVote(payload) {
   const slide = currentSlide();
-  if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused) return;
+  if (!slide || ctx.votedSlide.has(slide.id) || ctx.pendingVoteSlideId === slide.id || ctx.session?.paused) return;
   if (joinInputsBlocked(slide)) {
     setJoinFeedback(joinStatusMessage(slide) || t("interaction.join.timeout"), { state: "info" });
     return;
   }
-  ctx.rt?.send("vote", { code: ctx.session.code, slideId: slide.id, ...payload });
+  const votePayload = { code: ctx.session.code, slideId: slide.id, ...payload };
+  sendParticipantVote(votePayload);
   ctx.pendingVoteSlideId = slide.id;
   hapticSuccess();
   playBrandSound();
@@ -1948,16 +2001,80 @@ function submitTypedVote(payload) {
 
 function submitVote(optionId, btn) {
   const slide = currentSlide();
-  if (!slide || ctx.votedSlide.has(slide.id) || ctx.session?.paused || joinInputsBlocked(slide)) return;
-  ctx.votedSlide.add(slide.id);
+  if (!slide || ctx.votedSlide.has(slide.id) || ctx.pendingVoteSlideId === slide.id || ctx.session?.paused || joinInputsBlocked(slide)) {
+    return;
+  }
+  ctx.pendingVoteSlideId = slide.id;
   btn.classList.add("is-selected");
   btn.setAttribute("aria-selected", "true");
   const group = btn.parentElement || els.joinChoice;
   for (const b of group.querySelectorAll("button")) b.disabled = true;
-  ctx.rt?.send("vote", { code: ctx.session.code, optionId, slideId: slide.id });
+  sendParticipantVote({ code: ctx.session.code, optionId, slideId: slide.id });
   hapticSuccess();
   playBrandSound();
   setJoinFeedback(t("join.voted"));
+}
+
+/** Rolle für stateVersion-Filter (Teilnehmer vs. Presenter). */
+function wsSyncRole() {
+  if (ctx.role === "join") return "participant";
+  if (ctx.wsClientRole === "stage") return "stage";
+  return "presenter";
+}
+
+/**
+ * Stimme senden und bei fehlender poll:update-Bestätigung retryen.
+ * @param {object} payload
+ */
+function sendParticipantVote(payload) {
+  ctx.pendingVotePayload = payload;
+  ctx.rt?.send("vote", payload);
+  scheduleVoteConfirmRetry(payload, false);
+}
+
+/**
+ * @param {object} payload
+ * @param {boolean} immediateReconnect Retry direkt nach WS-Reconnect
+ */
+function scheduleVoteConfirmRetry(payload, immediateReconnect) {
+  window.clearTimeout(voteConfirmTimer);
+  const delay = immediateReconnect ? 600 : 4500;
+  voteConfirmTimer = window.setTimeout(() => {
+    if (!ctx.pendingVoteSlideId || ctx.pendingVoteSlideId !== payload.slideId) return;
+    if (ctx.rt?.state === "open" && !ctx.rt?.mock) {
+      console.warn("[join] Stimme ohne Bestätigung — Retry", payload.slideId);
+      ctx.rt.send("vote", payload);
+      voteConfirmTimer = window.setTimeout(() => {
+        if (ctx.pendingVoteSlideId === payload.slideId) {
+          setJoinFeedback(t("join.error.voteTimeout"), { state: "error" });
+          rollbackPendingVote();
+          renderJoinSlide({ preserveFeedback: true });
+        }
+      }, 6000);
+    }
+  }, delay);
+}
+
+/** Server meldet bereits abgestimmt — lokal als bestätigt markieren. */
+function confirmPendingVote() {
+  if (ctx.pendingVoteSlideId) {
+    ctx.votedSlide.add(ctx.pendingVoteSlideId);
+  }
+  ctx.pendingVoteSlideId = null;
+  ctx.pendingVotePayload = null;
+  window.clearTimeout(voteConfirmTimer);
+  voteConfirmTimer = 0;
+}
+
+/** Session-Stand nach Folienwechsel-Konflikt vom Server nachladen. */
+async function resyncJoinSession() {
+  if (ctx.role !== "join" || !ctx.session?.code) return;
+  try {
+    const data = await api.getSession(ctx.session.code);
+    if (data?.session) applySession({ session: data.session });
+  } catch (err) {
+    console.warn("[join] Session-Resync fehlgeschlagen", err);
+  }
 }
 
 function onChoiceKeys(ev) {
@@ -2018,16 +2135,15 @@ function onWordSubmit(ev) {
 }
 
 /**
- * Stimmen-UI nach serverseitiger Ablehnung wieder freigeben.
+ * Ausstehende Stimme zurücksetzen (Server-Fehler oder Folienwechsel).
  */
 function rollbackPendingVote() {
+  const sid = ctx.pendingVoteSlideId;
+  if (sid) ctx.votedSlide.delete(sid);
   ctx.pendingVoteSlideId = null;
-  const slide = currentSlide();
-  if (!slide || !els.joinExtra) return;
-  const blocked = joinInputsBlocked(slide) || ctx.session?.paused;
-  els.joinExtra.querySelectorAll("button, input, textarea").forEach((el) => {
-    el.disabled = blocked || ctx.votedSlide.has(slide.id);
-  });
+  ctx.pendingVotePayload = null;
+  window.clearTimeout(voteConfirmTimer);
+  voteConfirmTimer = 0;
 }
 
 /**

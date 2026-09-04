@@ -34,6 +34,19 @@ assert(sessionVersion.acceptIncoming({ stateVersion: 1 }, { stateVersion: 2 }), 
 assert(!sessionVersion.acceptIncoming({ stateVersion: 3 }, { stateVersion: 2 }), "reject stale");
 assert(sessionVersion.acceptIncoming({ stateVersion: 1 }, {}), "accept missing version");
 
+assert(
+  sessionVersion.acceptStructural({ stateVersion: 5 }, { stateVersion: 3 }, { role: "participant", eventType: "slide" }),
+  "participant slide bypass stale"
+);
+assert(
+  !sessionVersion.acceptStructural({ stateVersion: 5 }, { stateVersion: 3 }, { role: "presenter", eventType: "slide" }),
+  "presenter slide rejects stale"
+);
+assert(
+  sessionVersion.acceptStructural({ stateVersion: 5 }, { stateVersion: 3 }, { role: "stage", eventType: "deck" }),
+  "stage deck bypass stale"
+);
+
 sessionVersion.applyIncoming(session, { stateVersion: 5 });
 assert(sessionVersion.getVersion(session) === 5, "applyIncoming");
 

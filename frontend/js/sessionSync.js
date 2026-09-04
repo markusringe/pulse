@@ -58,6 +58,44 @@ export function acceptIncoming(session, payload) {
   return Number(incoming) >= getVersion(session);
 }
 
+/** Folienwechsel/Deck/Lobby: für Teilnehmer und Stage nicht wegen stateVersion verwerfen. */
+const HIGH_PRIORITY_EVENTS = new Set(["slide", "deck", "lobby"]);
+
+/**
+ * Strukturelle Events rollenabhängig filtern — Presenter behält stale-Schutz.
+ * @param {{ stateVersion?: number } | null | undefined} session
+ * @param {{ stateVersion?: number } | null | undefined} payload
+ * @param {{ role?: string, eventType?: string }} [opts]
+ * @returns {boolean}
+ */
+export function acceptStructural(session, payload, { role = "presenter", eventType = "" } = {}) {
+  const r = String(role || "");
+  if ((r === "join" || r === "participant" || r === "stage") && HIGH_PRIORITY_EVENTS.has(String(eventType || ""))) {
+    return true;
+  }
+  return acceptIncoming(session, payload);
+}
+
+/**
+ * WS-Envelope: stateVersion von Top-Level in Payload übernehmen (announce-Fanout).
+ * @param {object | null | undefined} envelope
+ * @returns {object | null | undefined}
+ */
+export function normalizeWsPayload(envelope) {
+  if (!envelope || typeof envelope !== "object") return envelope;
+  const payload = envelope.payload ?? envelope;
+  if (
+    envelope.stateVersion != null &&
+    payload &&
+    typeof payload === "object" &&
+    !Array.isArray(payload) &&
+    payload.stateVersion == null
+  ) {
+    return { ...payload, stateVersion: envelope.stateVersion };
+  }
+  return payload;
+}
+
 /**
  * Lokale stateVersion nach angenommenem Event aktualisieren.
  * @param {object} session

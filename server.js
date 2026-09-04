@@ -2264,8 +2264,20 @@ function applyVote(session, client, payload) {
   }
   if (slide.type === "choice" || slide.type === "rating_scale") {
     const key = `${client.id}:${slide.id}`;
-    if (session.votes.has(key)) return;
-    if (!(payload.optionId in slide.counts)) return;
+    if (session.votes.has(key)) {
+      client.send({
+        type: "error",
+        payload: { error: "already_voted", message: "Sie haben auf dieser Folie bereits abgestimmt." },
+      });
+      return;
+    }
+    if (!(payload.optionId in slide.counts)) {
+      client.send({
+        type: "error",
+        payload: { error: "invalid_option", message: "Ungültige Antwortoption." },
+      });
+      return;
+    }
     session.votes.set(key, payload.optionId);
     slide.counts[payload.optionId] += 1;
     metrics.counters.votes += 1;

@@ -12,7 +12,7 @@ import { t } from "./i18n.js";
 import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRatingResults } from "./poll.js";
 import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
-import { normalizeSessionSlides, acceptIncoming, applyIncoming } from "./sessionSync.js";
+import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming } from "./sessionSync.js";
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js";
 import { stageStatusMessage } from "./interactionPresenter.js";
 
@@ -102,7 +102,7 @@ function connectStage(code) {
   });
   rt.on("slide", (payload) => {
     if (!session) return;
-    if (!acceptIncoming(session, payload)) return;
+    if (!acceptStructural(session, payload, { role: "stage", eventType: "slide" })) return;
     session.activeSlideIndex = payload.index;
     normalizeSessionSlides(session);
     if (payload.slide) {
@@ -113,7 +113,7 @@ function connectStage(code) {
   });
   rt.on("deck", (payload) => {
     if (!session || !payload.slides) return;
-    if (!acceptIncoming(session, payload)) return;
+    if (!acceptStructural(session, payload, { role: "stage", eventType: "deck" })) return;
     session.slides = payload.slides;
     if (payload.activeSlideIndex != null) session.activeSlideIndex = payload.activeSlideIndex;
     applyIncoming(session, payload);
@@ -121,7 +121,7 @@ function connectStage(code) {
   });
   rt.on("lobby", (payload) => {
     if (!session) return;
-    if (!acceptIncoming(session, payload)) return;
+    if (!acceptStructural(session, payload, { role: "stage", eventType: "lobby" })) return;
     session.lobby = Boolean(payload.lobby);
     applyIncoming(session, payload);
     renderStage();
