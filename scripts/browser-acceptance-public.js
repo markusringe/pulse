@@ -14,7 +14,7 @@ const path = require("path");
 const ROOT = path.join(__dirname, "..");
 
 function parseArgs(argv) {
-  const out = { url: process.env.PULSE_SMOKE_URL || "https://pulse.ringe.us", expectVersion: "1.5.13" };
+  const out = { url: process.env.PULSE_SMOKE_URL || "https://pulse.ringe.us", expectVersion: "1.5.14" };
   for (let i = 2; i < argv.length; i++) {
     if (argv[i] === "--url" && argv[i + 1]) out.url = argv[++i];
     else if (argv[i] === "--expect-version" && argv[i + 1]) out.expectVersion = argv[++i];
