@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.1 · Prod login ✓ · Branch `main`
+Stand: v1.5.2 · Prod noch v1.5.1 (Deploy ausstehend) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -15,7 +15,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-003 | Auth | Redirect-Schleife Login ↔ Onboarding | **behoben** | v1.4.5 / v1.5.1 |
 | B-004 | Rechte | Teamrechte serverseitig umgehbar | **teilweise** | `test-api-permissions.js` |
 | B-005 | Live | Antworten vor Interaktionsstart | **behoben (Unit)** | `test-interaction-state.js` |
-| B-006 | Live | Falsche aktive Folie bei Reconnect | **teilweise** | v1.5.0 + join sofort bei WS-open (nav63) |
+| B-006 | Live | Falsche aktive Folie bei Reconnect | **teilweise** | v1.5.0 clamp + v1.5.2 join; `test-ws-reconnect.js` |
 
 ---
 
@@ -30,7 +30,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-005 | Auth | Passwort-Login blockiert bei SMTP-Fehler | prüfen |
 | C-006 | Mobile | Startseite/Join nicht nutzbar | **teilweise** | v1.4.8 |
 | C-007 | Mobile | Overlays blockieren Klicks | teilweise |
-| C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | **teilweise** | v1.5.0 Mock-Reconnect |
+| C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | **teilweise** | v1.5.0 Mock-Reconnect + WS-Integrationstest |
 | C-009 | Security | CORS `*` bei Cookie-Auth | **behoben** | v1.4.9 |
 | C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust | OBS — `?v=` in index.html |
 
@@ -63,7 +63,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.5.1 · Prod `app.js?v=nav62` (nav63 nach Deploy)
+- **Version:** `package.json` 1.5.2 · Prod `1.5.1` / `app.js?v=nav62` (nav63 nach Deploy)
 - **Docker:** `pulse` + `pulse-b` teilen `./data`, `.env`, `REDIS_URL` ✓
 - **Diagnose:** `docker exec pulse-pulse-1 npm run pulse:diagnose` (Skripte im Image ab v1.5.0)
 
@@ -71,7 +71,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## Nächste Schritte (priorisiert)
 
-1. v1.5.2 deployen (Deep-Link + Reconnect-join)
+1. **v1.5.2 auf Prod deployen** — Deep-Link + Reconnect-join + nav63
 2. Smoke-Checkliste Live-Reconnect manuell (Presenter + Join)
 3. Block 4: Permission-Tests erweitern
 4. Mobile Smoke 320–430 px

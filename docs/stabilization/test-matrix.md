@@ -12,6 +12,7 @@
 | Events / Sessions | ja | `test:events` | Deck-Editor |
 | Deck / Folien | ja | `test:deck`, `test:slides` | Presenter |
 | Join / Lobby | teilweise | `test:live` | Mobil |
+| Reconnect / WS-Sync | ja | `test:reconnect` (Unit + `test-ws-reconnect.js`) | smoke-checklist Live |
 | Interaktion / Timer | ja | `test:interaction-state`, `test:qa-timer` | Live-Session |
 | Quiz / Q&A / Picker | teilweise | `test:slides` | Live |
 | Stage / Presenter | ja | `test:presenter` | Screen |
@@ -21,7 +22,7 @@
 | Datenschutz | ja | `test:privacy` | — |
 | Settings | ja | `test:settings` | Import/Export |
 | Performance | teilweise | `test:performance` | Admin-Routen |
-| WebSocket / Redis | teilweise | `test:live` | Zwei Container |
+| WebSocket / Redis | teilweise | `test:live`, `test:reconnect` | Zwei Container |
 | Security | ja | `test:security` | Audit |
 | Accessibility | teilweise | `test:accessibility` | VoiceOver/NVDA |
 | HTTP Smoke | ja | `test:smoke` | — |
@@ -39,6 +40,7 @@ npm run test:performance
 npm run test:accessibility
 npm run test:install
 npm run test:backup
+npm run test:reconnect
 npm run pulse:diagnose
 ```
 

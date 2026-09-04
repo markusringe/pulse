@@ -1,9 +1,9 @@
 # Feature-Freeze — Pulse / Team Townhall
 
 **Status:** aktiv  
-**Branch:** `stabilization/feature-freeze`  
-**Basisversion:** 1.4.7  
-**Ziel:** Stabilitätsrelease (geplant v1.5.0 oder v1.4.7+)
+**Branch:** `main` (Stabilisierung) · `stabilization/feature-freeze` (Referenz)  
+**Basisversion:** 1.5.2  
+**Ziel:** Stabilitätsrelease v1.5.x
 
 ## Ziel des Zyklus
 
@@ -42,17 +42,17 @@ Erlaubt: Bugfixes, Security-/Performance-Fixes, Fehlermeldungen, Tests, Monitori
 
 | # | Block | Status |
 |---|-------|--------|
-| 1 | Release- und Installationsbasis | in Arbeit |
-| 2 | Administration, Login, Routing | in Arbeit |
-| 3 | Bootstrap-Admin und Kennwort-Login | teilweise (v1.4.6) |
-| 4 | Rollen- und Teamrechte | offen |
-| 5 | Event-/Session-/Deck-Logik | offen |
-| 6 | Interaktions- und Countdown-Logik | offen |
+| 1 | Release- und Installationsbasis | **weitgehend** (v1.4.9–v1.5.2, Diagnose im Docker-Image) |
+| 2 | Administration, Login, Routing | **weitgehend** (B-001, B-002 Prod ✓, Deep-Link v1.5.2) |
+| 3 | Bootstrap-Admin und Kennwort-Login | **weitgehend** (v1.5.1 sync:install-password) |
+| 4 | Rollen- und Teamrechte | **teilweise** (`test-api-permissions.js`) |
+| 5 | Event-/Session-/Deck-Logik | teilweise |
+| 6 | Interaktions- und Countdown-Logik | **weitgehend** (B-005 Unit) |
 | 7 | Performance / Admin-Ladezeit | teilweise (v1.4.4) |
-| 8 | Mobile Darstellung | offen |
-| 9 | Barrierefreiheit | offen |
-| 10 | Sicherheit | offen |
-| 11 | Teststrategie | in Arbeit |
+| 8 | Mobile Darstellung | teilweise (v1.4.8) |
+| 9 | Barrierefreiheit | teilweise (`test:accessibility`) |
+| 10 | Sicherheit | **teilweise** (C-009 CORS v1.4.9) |
+| 11 | Teststrategie | **in Arbeit** (Smoke, Permissions, WS-Reconnect) |
 | 12 | Fehler-Backlog | siehe `docs/stabilization/backlog.md` |
 | 13 | Abschlusskriterien | offen |
 
@@ -63,14 +63,23 @@ npm run pulse:diagnose    # Gesamtstatus Instanz
 npm run auth:diagnose     # Auth/Bootstrap
 ```
 
+Auf dem VPS (ab v1.5.0 im Image):
+
+```bash
+docker exec pulse-pulse-1 npm run pulse:diagnose
+docker exec pulse-pulse-1 npm run auth:diagnose
+docker exec pulse-pulse-1 npm run sync:install-password
+```
+
 ## Tests
 
 ```bash
 npm test                  # Vollsuite
 npm run test:smoke        # HTTP-Smoke (ephemerer Port, nicht 3000)
 npm run test:auth
-npm run test:permissions
+npm run test:permissions  # inkl. test-api-permissions.js
 npm run test:routes
+npm run test:reconnect    # Unit + WS-Integration
 npm run test:performance
 npm run test:accessibility
 npm run test:install
@@ -79,12 +88,27 @@ npm run test:backup
 
 ## Abschlusskriterien (Auszug)
 
-- Administration-Klick Desktop + Mobil zuverlässig
-- Bootstrap-Login mit Installations-Kennwort
-- Passwort-Login ohne Mail; PIN-Login mit Mail
-- Rollen/Teams serverseitig durchgesetzt
-- Deck-Editor, Live-Sync, Timer, Mobile, Backup/Update reproduzierbar
-- Alle automatisierten Tests grün
-- Stabilitätsbericht, Changelog, Rollback-Hinweis
+| Kriterium | Stand |
+|-----------|-------|
+| Administration-Klick Desktop + Mobil | ✓ nav59 |
+| Bootstrap-Login mit Installations-Kennwort | ✓ Prod v1.5.1 |
+| Deep-Link `#/admin/*` nach Login | ✓ v1.5.2 (Deploy ausstehend) |
+| Passwort-Login ohne Mail; PIN-Login mit Mail | prüfen (C-004/C-005) |
+| Rollen/Teams serverseitig durchgesetzt | teilweise (API-Tests) |
+| Deck-Editor, Live-Sync, Timer | teilweise |
+| Reconnect korrekte Folie | teilweise (Unit + WS-Test) |
+| Mobile 320–430 px | manuell |
+| Backup/Update reproduzierbar | Skripte vorhanden |
+| Alle automatisierten Tests grün | laufend |
+| Stabilitätsbericht, Changelog, Rollback | v1.5.x Releases |
 
 Details: `docs/stabilization/backlog.md`, `docs/stabilization/smoke-checklist.md`, `docs/stabilization/test-matrix.md`.
+
+## Prod-Update (v1.5.2)
+
+```bash
+cd /opt/pulse
+sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.2 --yes
+```
+
+Erwartung nach Hard-Reload: `app.js?v=nav63`, `/api/health` → `"version":"1.5.2"`.
