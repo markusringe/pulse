@@ -1,0 +1,45 @@
+{
+  "at": "2026-09-04T19:31:37.379Z",
+  "target": "http://127.0.0.1:36778",
+  "mode": "single",
+  "participants": 100,
+  "votesPerParticipant": 1,
+  "durationMinutes": null,
+  "isolated": true,
+  "metrics": {
+    "join": {
+      "count": 100,
+      "p50": 8,
+      "p95": 13,
+      "p99": 15
+    },
+    "vote": {
+      "count": 100,
+      "p50": 401,
+      "p95": 402,
+      "p99": 402
+    },
+    "health": {
+      "count": 20,
+      "p50": 1,
+      "p95": 3
+    },
+    "errorRate": 0,
+    "attempts": 100,
+    "errors": 0
+  },
+  "runtime": {
+    "eventLoopLagMs": 1,
+    "rssMb": 81,
+    "heapUsedMb": 24,
+    "dbLatencyMs": 0,
+    "readinessReady": true,
+    "operationMode": "single"
+  },
+  "gates": {
+    "p95JoinMs": 800,
+    "p95VoteMs": 500,
+    "maxErrorRate": 0.01
+  },
+  "passed": true
+}

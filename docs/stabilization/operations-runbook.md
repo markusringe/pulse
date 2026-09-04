@@ -82,6 +82,8 @@ Erwartung: Rollback auf `pulse-app:<vorherige-version>` → Ready `ok:true` → 
 
 ---
 
+## Incident: asset_manifest fehlgeschlagen
+
 - Symptom: Container startet nicht (Production) oder Ready 503, Check `asset_manifest` false
 - Ursache: fehlendes/kaputtes `frontend/asset-manifest.json` im Image
 - Maßnahme: `npm run build` lokal prüfen, Docker-Image neu bauen, erneut deployen

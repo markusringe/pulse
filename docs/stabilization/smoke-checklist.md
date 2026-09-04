@@ -204,4 +204,18 @@ docker images | grep pulse-app
 | Rollback-Drill Prod | ✓ (2026-09-04, success) |
 | Browser-Pflichtpfad (19 Schritte) | ✗ |
 | Admin/Login/Rollen Prod | ✗ (SMTP) |
-| Gesamt Freigabe | **RC Pilot** — Browser-Pflichtpfad + Admin/Login Prod offen |
+| Gesamt Freigabe | **RC Pilot** — automatisierte Abnahme OK; manuell: Browser 19 Schritte, Auth Prod, Mobilgeräte |
+
+### Automatisierte Abnahme (2026-09-04)
+
+```bash
+npm run acceptance:stabilization   # OK
+```
+
+| Check | Ergebnis |
+|-------|----------|
+| `acceptance:public` | 20/20 Prod |
+| `smoke:remote` | 16/16 |
+| `backup:restore-drill` | OK |
+| Load 100/300 Burst + 3-min-Dauer-Smoke | OK |
+| Bericht | `acceptance-report-2026-09-04.md` |

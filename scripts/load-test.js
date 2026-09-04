@@ -4,7 +4,7 @@
  * Misst P50/P95/P99 für Join (WS), Vote (HTTP) und Health.
  *
  * Aufruf:
- *   node scripts/load-test.js [--participants=100] [--votes=1] [--report=./load-report.json]
+ *   node scripts/load-test.js [--participants=100] [--votes=1] [--duration-minutes=30] [--report=./load-report.json]
  *
  * Release-Gates (Standard, überschreibbar per Env):
  *   LOAD_GATE_P95_JOIN_MS=800
@@ -31,6 +31,8 @@ function parseArgs(argv) {
     allowRemote: false,
     code: "",
     skipSpawn: false,
+    durationMinutes: 0,
+    healthSampleSec: 30,
   };
   for (const a of argv) {
     if (a === "--allow-remote") {
@@ -42,6 +44,8 @@ function parseArgs(argv) {
     if (m[1] === "participants") out.participants = Math.max(1, Number(m[2]) || 100);
     if (m[1] === "votes") out.votes = Math.max(1, Number(m[2]) || 1);
     if (m[1] === "report") out.report = m[2];
+    if (m[1] === "duration-minutes") out.durationMinutes = Math.max(0, Number(m[2]) || 0);
+    if (m[1] === "health-sample-sec") out.healthSampleSec = Math.max(5, Number(m[2]) || 30);
     if (m[1] === "url") {
       out.url = m[2].replace(/\/$/, "");
       out.skipSpawn = true;
@@ -49,6 +53,15 @@ function parseArgs(argv) {
     if (m[1] === "code") out.code = m[2];
   }
   return out;
+}
+
+/** WebSocket-URL aus HTTP-Basis ableiten. */
+function wsUrlFromBase(base) {
+  const u = new URL(base.startsWith("http") ? base : `http://${base}`);
+  u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
+  u.pathname = "/ws";
+  u.search = "";
+  return u.toString();
 }
 
 /** Nur localhost ohne explizite Freigabe — schützt Prod-Sessions. */
@@ -199,6 +212,7 @@ function stopChild(child) {
   const healthLatencies = [];
   let errors = 0;
   let attempts = 0;
+  let reportDurationSamples = [];
 
   try {
     if (!args.skipSpawn) await waitForHealth(port);
@@ -229,10 +243,12 @@ function stopChild(child) {
     }
     if (!code || !slideId) throw new Error("Session unvollständig");
 
+    const wsBase = wsUrlFromBase(base);
+
     /** Join + Vote über dieselbe WS-Verbindung (wie echte Teilnehmer). */
     async function joinAndVote(clientId) {
       const t0Join = performance.now();
-      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+      const ws = new WebSocket(wsBase);
       await new Promise((resolve, reject) => {
         const t = setTimeout(() => reject(new Error("WS open timeout")), 10000);
         ws.addEventListener("open", () => {
@@ -261,6 +277,53 @@ function stopChild(child) {
     }
 
     const batch = Math.min(10, args.participants);
+
+    if (args.durationMinutes > 0) {
+      const endAt = Date.now() + args.durationMinutes * 60 * 1000;
+      let tick = 0;
+      let lastHealthSample = 0;
+      const runtimeSamples = [];
+
+      while (Date.now() < endAt) {
+        const slice = Math.min(batch, args.participants);
+        const jobs = [];
+        for (let i = 0; i < slice; i++) {
+          jobs.push(
+            joinAndVote(`dur-${tick}-${i}`).catch(() => ({ joinMs: 0, voteMs: 0, ok: false }))
+          );
+        }
+        const results = await Promise.all(jobs);
+        for (const r of results) {
+          attempts += 1;
+          if (r.ok) {
+            joinLatencies.push(r.joinMs);
+            voteLatencies.push(r.voteMs);
+          } else {
+            errors += 1;
+          }
+        }
+        tick += 1;
+        if (Date.now() - lastHealthSample >= args.healthSampleSec * 1000) {
+          lastHealthSample = Date.now();
+          try {
+            const r = await httpJson("GET", `${base}/api/health`);
+            if (r.ok) {
+              healthLatencies.push(r.ms);
+              runtimeSamples.push({
+                at: new Date().toISOString(),
+                eventLoopLagMs: r.json?.eventLoopLagMs ?? null,
+                rssMb: r.json?.memory?.rssMb ?? null,
+                heapUsedMb: r.json?.memory?.heapUsedMb ?? null,
+              });
+            }
+          } catch {
+            errors += 1;
+          }
+        }
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      reportDurationSamples = runtimeSamples;
+    } else {
     for (let offset = 0; offset < args.participants; offset += batch) {
       const slice = Math.min(batch, args.participants - offset);
       const jobs = [];
@@ -282,7 +345,9 @@ function stopChild(child) {
         }
       }
     }
+    }
 
+    if (args.durationMinutes <= 0) {
     for (let v = 1; v < args.votes; v++) {
       /* Zusätzliche Vote-Runden über frische Verbindungen */
       for (let i = 0; i < Math.min(args.participants, 50); i++) {
@@ -295,6 +360,7 @@ function stopChild(child) {
           errors += 1;
         }
       }
+    }
     }
 
     for (let h = 0; h < 20; h++) {
@@ -325,6 +391,7 @@ function stopChild(child) {
       mode: runtime.operationMode || env.PULSE_OPERATION_MODE || "single",
       participants: args.participants,
       votesPerParticipant: args.votes,
+      durationMinutes: args.durationMinutes || null,
       isolated: !args.skipSpawn,
       metrics: {
         join: {
@@ -349,6 +416,7 @@ function stopChild(child) {
         errors,
       },
       runtime,
+      durationSamples: reportDurationSamples.length ? reportDurationSamples : undefined,
       gates: {
         p95JoinMs: Number(process.env.LOAD_GATE_P95_JOIN_MS || 800),
         p95VoteMs: Number(process.env.LOAD_GATE_P95_VOTE_MS || 500),
