@@ -294,6 +294,16 @@ try {
   bootUi();
 })();
 
+/** Beim ersten Paint nur globale Chrome-Elemente + aktive View übersetzen (nicht das gesamte DOM). */
+function applyDomBoot() {
+  const topNav = document.querySelector(".pulse-top-nav");
+  const footer = document.getElementById("app-footer");
+  if (topNav) applyDom(topNav);
+  if (footer) applyDom(footer);
+  const viewEl = els.views?.[ctx.role] || els.views.home;
+  if (viewEl) applyDom(viewEl);
+}
+
 async function bootUi() {
   let branding;
   try {
@@ -306,7 +316,7 @@ async function bootUi() {
   }
   await initI18n(branding?.languages);
   renderLangSwitch();
-  applyDom();
+  applyDomBoot();
   applyBranding(ctx.branding || branding);
   onLang(() => {
     applyBranding(ctx.branding);

@@ -30,8 +30,18 @@ async function fetchJson(path, opts = {}) {
   return { ok: res.ok, status: res.status, data, headers: res.headers };
 }
 
-/** Auth-Status und aktuellen Benutzer laden. */
+/** Auth-Status und aktuellen Benutzer laden (dedupliziert bei parallelen Aufrufen). */
+let authLoadPromise = null;
+
 export async function loadAuth() {
+  if (authLoadPromise) return authLoadPromise;
+  authLoadPromise = loadAuthInner().finally(() => {
+    authLoadPromise = null;
+  });
+  return authLoadPromise;
+}
+
+async function loadAuthInner() {
   const status = await fetchJson("/auth/status");
   state.enabled = Boolean(status.data?.enabled);
   state.needsBootstrap = Boolean(status.data?.needsBootstrap);

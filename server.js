@@ -2723,6 +2723,34 @@ async function migrateEventDecks() {
   if (changed) console.log(`[events] Migration: ${pending.length} Event(s) von Sets auf Session-Deck`);
 }
 
+/**
+ * Session-Snapshot für Admin-Event-Listen — ein listMeta()-Lauf statt N× getSession().
+ * Live-Sessions im RAM haben Vorrang (Teilnehmerzahl).
+ */
+async function buildAdminSessionLookup() {
+  const map = new Map();
+  for (const session of sessions.values()) {
+    if (session?.code) map.set(session.code, session);
+  }
+  try {
+    const meta = (await Promise.resolve(db.listMeta?.() || [])) || [];
+    for (const row of meta) {
+      const code = row?.code;
+      if (!code || map.has(code)) continue;
+      const payload = row.payload || {};
+      map.set(code, {
+        code,
+        slides: payload.slides || [],
+        participants: new Set(),
+        eventId: payload.eventId || "",
+      });
+    }
+  } catch (err) {
+    console.warn("[events-admin] listMeta:", err.message);
+  }
+  return map;
+}
+
 async function listAdminSessions() {
   const seen = new Set();
   const rows = [];
@@ -2847,8 +2875,10 @@ async function handleEventsApi(req, res, url, parts) {
       teamNameCache.set(tid, name);
       return name;
     }
+    const sessionLookup = await buildAdminSessionLookup();
     for (const ev of list) {
-      const session = sessions.get(eventStore.sessionRef(ev)) || (await getSession(eventStore.sessionRef(ev)));
+      const code = eventStore.sessionRef(ev);
+      const session = sessionLookup.get(code) || null;
       const stats = eventStore.computeStats(ev, session);
       const card = enrichPublicEvent(ev, origin);
       events.push({
