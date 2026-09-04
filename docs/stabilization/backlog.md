@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.11 · Prod **v1.5.11** (cluster, ready) · Branch `main`
+Stand: v1.5.27 · Prod **v1.5.27** (single, ready) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -20,6 +20,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-008 | Update | loadState/effectiveRepo Endlosrekursion | **behoben** | v1.5.3: readStoredRepo + emptyConfig |
 | B-009 | Ops | SQLite + 2 Container ohne Startwarnung | **behoben** | v1.5.4/5: operationMode block/warn + Compose-Flags |
 | B-010 | Update | Docker: Admin-UI-Update ohne Image-Rebuild | **behoben** | Admin-Install/Rollback in Docker blockiert; Hinweis `update-vps-ubuntu.sh` |
+| B-011 | Join | „Das hat nicht geklappt“ beim Öffnen Join-Link | **behoben** | v1.5.26–27: WS-Join + deriveStatus; `test-event-join-planned.js`, `test-join-live-remote.js` |
 
 ---
 
@@ -32,7 +33,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-003 | Auth | Abgelaufene Session → unklarer Zustand | **teilweise** | v1.5.0: session_expired |
 | C-004 | Auth | PIN fälschlich statt Passwort ohne SMTP | teilweise (test-auth) |
 | C-005 | Auth | Passwort-Login blockiert bei SMTP-Fehler | prüfen |
-| C-006 | Mobile | Startseite/Join nicht nutzbar | **teilweise** | v1.4.8 |
+| C-006 | Mobile | Startseite/Join nicht nutzbar | **teilweise** | v1.4.8 Layout; v1.5.21–26 Sync/Fehlerbanner |
 | C-007 | Mobile | Overlays blockieren Klicks | teilweise |
 | C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | **teilweise** | v1.5.0 Mock-Reconnect + WS-Integrationstest |
 | C-009 | Security | CORS `*` bei Cookie-Auth | **behoben** | v1.4.9 |
@@ -41,6 +42,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-012 | Ops | Kein reproduzierbarer Lasttest | **behoben** | v1.5.5: `load-test.js` + Gates + `--url` |
 | C-013 | Ops | Readiness ohne DB-R/W und Wartungs-Flags | **behoben** | v1.5.5 Audit: healthCheck, maintenance, restore |
 | C-014 | Ops | Update ohne atomaren Rollback bei Ready-Fail | **behoben** | v1.5.11: `pulse-app:`-Tags, auto-Rollback, `test:update-rollback` |
+| C-015 | Join | Generische Fehlermeldung statt Server-Hinweis | **behoben** | v1.5.25–26: `explainServerError`, `eventMeta.status` |
 
 ---
 
@@ -85,7 +87,9 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` **1.5.11** · Prod: **1.5.11 live**, Cluster, Ready ok (`asset_manifest`)
+- **Version:** `package.json` **1.5.27** · Prod: **v1.5.26** (Live-Demo vorbereitet via `prepare-live-demo.js`)
+- **Live-Demo:** Event `241184` — `node scripts/prepare-live-demo.js` + Container-Neustart
+- **Remote-Tests:** `node scripts/smoke-remote-url.js --expect-version 1.5.27` · `node scripts/test-join-live-remote.js --vote`
 - **Last-Baseline:** `load-baseline-100.json`, `load-baseline-300.json` (lokal, Single, Gates grün)
 - **Betriebsmodi:** ADR `docs/stabilization/architecture-operation-modes.md`
 - **Lasttest:** `npm run load-test` · Gates in `release-gates.md`

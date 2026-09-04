@@ -3019,14 +3019,16 @@ function participantEventGate(session) {
   if (!session) return null;
   const ev = session.eventId ? eventStore.get(session.eventId) : eventByJoinCode(session.code);
   if (!ev) return null;
-  if (ev.status === "planned") {
+  /* Kalendergesteuerter Effektivstatus — nicht nur gespeichertes status-Feld. */
+  const status = eventStore.deriveStatus(ev);
+  if (status === "planned") {
     return {
       ok: false,
       error: "event_planned",
       message: "Dieses Event nimmt noch keine Teilnahmen an.",
     };
   }
-  if (ev.status === "archived") {
+  if (status === "archived") {
     return {
       ok: false,
       error: "event_archived",

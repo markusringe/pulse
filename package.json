@@ -1,6 +1,6 @@
 {
   "name": "pulse",
-  "version": "1.5.26",
+  "version": "1.5.27",
   "private": true,
   "description": "Pulse — Live-Interaktion für Umfragen, Wortwolken, Q&A und Quiz (Vanilla JS + Node.js)",
   "main": "server.js",
@@ -23,6 +23,7 @@
     "test:events": "node scripts/test-events.js",
     "test:errors": "node scripts/test-errors.js",
     "test:event-join-planned": "node scripts/test-event-join-planned.js",
+    "test:join-live-remote": "node scripts/test-join-live-remote.js",
     "test:auth": "node scripts/test-auth.js && node scripts/test-auth-http.js",
     "test:smoke": "node scripts/test-smoke.js",
     "smoke:remote": "node scripts/smoke-remote-url.js",
