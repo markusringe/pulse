@@ -90,6 +90,31 @@ assert(
 assert(!/from\s+\.\//.test(appOut), "Keine ungültigen unquoted ES-Module-Imports");
 assert(!appOut.includes("https://"), "Keine externen URLs verändert");
 
+console.log("test-asset-manifest: ES-Modul-Syntax (Admin-Seitenmodule)…");
+const { pathToFileURL } = require("url");
+const { execSync } = require("child_process");
+/** Dynamisch geladene Admin-Module — Syntaxfehler blockieren ganze Admin-Bereiche. */
+const ES_MODULE_PAGES = [
+  "/js/backupsPage.js",
+  "/js/events.js",
+  "/js/onboardingPage.js",
+  "/js/updatesPage.js",
+];
+for (const webPath of ES_MODULE_PAGES) {
+  assert(assets[webPath], `${webPath} im Manifest`);
+  const file = path.join(frontend, webPath.slice(1));
+  const href = pathToFileURL(file).href;
+  try {
+    execSync(`node --input-type=module -e "import '${href}'"`, {
+      stdio: "pipe",
+      env: { ...process.env, NODE_NO_WARNINGS: "1" },
+    });
+  } catch (e) {
+    const err = e.stderr?.toString() || e.message;
+    throw new Error(`ES-Modul-Syntax fehlerhaft ${webPath}: ${err.split("\n").find((l) => l.includes("SyntaxError")) || err.split("\n")[0]}`);
+  }
+}
+
 console.log("test-asset-manifest: Manifest-Datei laden…");
 if (fs.existsSync(path.join(frontend, "asset-manifest.json"))) {
   const loaded = loadManifestStrict(frontend, { production: false });

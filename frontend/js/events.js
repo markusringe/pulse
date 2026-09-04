@@ -266,6 +266,8 @@ let dragSlideId = "";
 let listFilter = {};
 /** Verhindert, dass ein älterer Render eine neuere Seite überschreibt. */
 let pageSeq = 0;
+/** Laufender Render — route() und bootUi() teilen sich einen Aufruf pro Hash. */
+let eventsShowTask = null;
 /** Tab-Schließen warnen bei ungespeicherten Folien-Änderungen. */
 let deckDirtyGuard = false;
 
@@ -313,21 +315,40 @@ export function isLegacyEventJoinHash(hash) {
 export async function showEventsPage() {
   const root = document.getElementById("events-root");
   if (!root) return;
-  /* Sequenz erst nach Root-Check erhöhen — sonst kann ein Fehlversuch
-     parallele, gültige Renderings abbrechen und die Seite leer lassen. */
+  const hash = location.hash.replace(/^#/, "") || "/";
+  if (!isEventsHash(hash)) return;
+
+  /* route() und bootUi() rufen parallel auf — nicht zweimal pageSeq erhöhen. */
+  if (eventsShowTask && eventsShowTask.hash === hash) {
+    return eventsShowTask.promise;
+  }
+
   const seq = ++pageSeq;
-  /* Sofort Feedback: route() und bootUi() rufen diese Funktion oft parallel auf. */
   if (!root.dataset.eventsPainted) {
     root.innerHTML = `<p class="muted">${esc(tx("events.loading"))}</p>`;
   }
+
+  const promise = showEventsPageInner(root, seq, hash).finally(() => {
+    if (eventsShowTask?.promise === promise) eventsShowTask = null;
+  });
+  eventsShowTask = { hash, promise };
+  return promise;
+}
+
+/** Eigentliche Event-Seiten-Logik (ein Aufruf pro Hash, siehe eventsShowTask). */
+async function showEventsPageInner(root, seq, hash) {
   try {
     await i18nReady;
     if (seq !== pageSeq) return;
     applyDom(document.getElementById("view-events") || root);
-    const hash = location.hash.replace(/^#/, "") || "/";
     const parsed = parseAdminHash();
     if (!parsed) {
-      /* Hash passt nicht (Zwischenzustand) — nicht leeren, neuer Aufruf kommt. */
+      /* Hash-Zwischenzustand — kurz erneut versuchen statt bei „Lade Events…“ hängen. */
+      await new Promise((r) => setTimeout(r, 0));
+      if (seq !== pageSeq) return;
+      if (isEventsHash(location.hash.replace(/^#/, "") || "/")) {
+        void showEventsPage();
+      }
       return;
     }
     if (parsed.page === "legacyJoin") {
@@ -690,6 +711,7 @@ async function fetchAdminEventRows() {
 }
 
 async function renderList(root, seq = pageSeq) {
+  if (seq !== pageSeq) return;
   root.innerHTML = `<p class="muted">${esc(tx("events.loading"))}</p>`;
   let events = [];
   try {

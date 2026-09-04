@@ -193,7 +193,7 @@ function renderRestoreGroups(inspect) {
         ${items}
       </fieldset>`;
     })
-    .join("");
+    .join("")}`;
 }
 
 /**
