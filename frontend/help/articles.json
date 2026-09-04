@@ -86,7 +86,7 @@
       "title": "Willkommen & Einstieg",
       "titleEn": "Welcome",
       "titleFr": "Bienvenue",
-      "summary": "Rollen-Auswahl: Teilnehmer, Presenter oder Admin \u2014 mit Einstiegslinks.",
+      "summary": "Rollen-Auswahl: Teilnehmer, Presenter oder Admin — mit Einstiegslinks.",
       "tags": [
         "willkommen",
         "rolle",
@@ -106,7 +106,7 @@
       "title": "Session-Architektur verstehen",
       "titleEn": "Session architecture",
       "titleFr": "Architecture de session",
-      "summary": "Event \u2192 Session \u2192 Deck \u2192 Folien \u2014 ein Join-Code, Diagramm und Beispiel.",
+      "summary": "Event → Session → Deck → Folien — ein Join-Code, Diagramm und Beispiel.",
       "tags": [
         "architektur",
         "event",
@@ -115,7 +115,7 @@
         "folie",
         "diagramm"
       ],
-      "bodyText": "Event Session Deck Folie Join-Code sessionCode Admin-Schl\u00fcssel Lobby Reveal Metadaten pulse.db data events.json Beispiel B\u00fcrgerversammlung kein Set"
+      "bodyText": "Event Session Deck Folie Join-Code sessionCode Admin-Schlüssel Lobby Reveal Metadaten pulse.db data events.json Beispiel Bürgerversammlung kein Set"
     },
     {
       "id": "getting-started",
@@ -126,7 +126,7 @@
       ],
       "title": "Schnellstart in 5 Minuten",
       "titleEn": "Getting started in 5 minutes",
-      "titleFr": "D\u00e9marrage en 5 minutes",
+      "titleFr": "Démarrage en 5 minutes",
       "summary": "Session oder Event, Code teilen, Lobby, Probe, erste Stimmen.",
       "tags": [
         "start",
@@ -149,9 +149,9 @@
         "participant",
         "presenter"
       ],
-      "title": "Funktionen im \u00dcberblick",
+      "title": "Funktionen im Überblick",
       "titleEn": "Feature overview",
-      "titleFr": "Aper\u00e7u des fonctions",
+      "titleFr": "Aperçu des fonctions",
       "summary": "Folientypen inkl. Picker, dynamisches Session-Formular, Events, Lobby, Reaktionen, Deck.",
       "tags": [
         "umfrage",
@@ -178,7 +178,7 @@
       "title": "Guide: Teilnehmende",
       "titleEn": "Participant guide",
       "titleFr": "Guide participant",
-      "summary": "Code, Lobby, Folientypen, Daumenzone, Offline \u2014 ca. 5 Min.",
+      "summary": "Code, Lobby, Folientypen, Daumenzone, Offline — ca. 5 Min.",
       "tags": [
         "teilnehmer",
         "join",
@@ -197,16 +197,16 @@
       ],
       "title": "Guide: Presenter",
       "titleEn": "Presenter guide",
-      "titleFr": "Guide pr\u00e9sentateur",
-      "summary": "Session anlegen, pr\u00e4sentieren, moderieren, Quiz, Export \u2014 ca. 15 Min.",
+      "titleFr": "Guide présentateur",
+      "summary": "Session anlegen, präsentieren, moderieren, Quiz, Export — ca. 15 Min.",
       "tags": [
         "presenter",
-        "pr\u00e4sentation",
+        "präsentation",
         "moderation",
         "deck",
         "lobby"
       ],
-      "bodyText": "Presenter Session Event Deck Lobby Reveal Moderation Q&A Quiz Rangliste Notfall Export Admin-Schl\u00fcssel Passwort"
+      "bodyText": "Presenter Session Event Deck Lobby Reveal Moderation Q&A Quiz Rangliste Notfall Export Admin-Schlüssel Passwort"
     },
     {
       "id": "roles-admin",
@@ -218,7 +218,7 @@
       "title": "Guide: Admin",
       "titleEn": "Admin guide",
       "titleFr": "Guide admin",
-      "summary": "Branding, Events, SSL, Installation, Monitoring \u2014 ca. 30 Min.",
+      "summary": "Branding, Events, SSL, Installation, Monitoring — ca. 30 Min.",
       "tags": [
         "admin",
         "branding",
@@ -238,19 +238,19 @@
       ],
       "title": "Session erstellen und verwalten",
       "titleEn": "Create and manage sessions",
-      "titleFr": "Cr\u00e9er et g\u00e9rer les sessions",
-      "summary": "Schritt-f\u00fcr-Schritt: dynamisches Formular, Folien, Deck-Editor mit Picker/Kategorien.",
+      "titleFr": "Créer et gérer les sessions",
+      "summary": "Schritt-für-Schritt: dynamisches Formular, Folien, Deck-Editor mit Picker/Kategorien.",
       "tags": [
         "session",
         "deck",
         "folien",
         "anlegen",
-        "admin-schl\u00fcssel",
+        "admin-schlüssel",
         "bearbeiten",
         "picker",
         "formular"
       ],
-      "bodyText": "Session anlegen Folien Deck Presenter-Passwort Probe Session starten Join-Code Admin-Schl\u00fcssel live verwalten Deck-Editor admin sessions bearbeiten Inline Modal Bulk Auto-Save dynamisches Formular Grundlagen Optionen Typ-Einstellungen Erweiterte Einstellungen Picker Kategorien Vorschau Massen-Import"
+      "bodyText": "Session anlegen Folien Deck Presenter-Passwort Probe Session starten Join-Code Admin-Schlüssel live verwalten Deck-Editor admin sessions bearbeiten Inline Modal Bulk Auto-Save dynamisches Formular Grundlagen Optionen Typ-Einstellungen Erweiterte Einstellungen Picker Kategorien Vorschau Massen-Import"
     },
     {
       "id": "use-cases",
@@ -262,16 +262,16 @@
       ],
       "title": "Typische Szenarien (Use-Cases)",
       "titleEn": "Typical scenarios",
-      "titleFr": "Sc\u00e9narios types",
-      "summary": "B\u00fcrgerversammlung, Team-Quiz, Schulung mit Skalen \u2014 mit Zeitplan.",
+      "titleFr": "Scénarios types",
+      "summary": "Bürgerversammlung, Team-Quiz, Schulung mit Skalen — mit Zeitplan.",
       "tags": [
         "use-case",
-        "b\u00fcrgerversammlung",
+        "bürgerversammlung",
         "quiz",
         "schulung",
         "szenario"
       ],
-      "bodyText": "B\u00fcrgerversammlung Team-Meeting Quiz Schulung Bewertungsskala 200 Teilnehmer Lobby Wortfilter Rate-Limit Webex hybrid"
+      "bodyText": "Bürgerversammlung Team-Meeting Quiz Schulung Bewertungsskala 200 Teilnehmer Lobby Wortfilter Rate-Limit Webex hybrid"
     },
     {
       "id": "polls",
@@ -283,7 +283,7 @@
       "title": "Umfragen und Wortwolken",
       "titleEn": "Polls and word clouds",
       "titleFr": "Sondages et nuages de mots",
-      "summary": "Choice, Ranking, Picker (10\u201350), Skala, Wortwolke, Reveal.",
+      "summary": "Choice, Ranking, Picker (10–50), Skala, Wortwolke, Reveal.",
       "tags": [
         "poll",
         "choice",
@@ -295,7 +295,7 @@
         "reveal",
         "picker"
       ],
-      "bodyText": "Multiple Choice Ranking 100 Punkte Freitext Bildwahl Terminfindung Picker 10-50 Optionen Kategorien Suche Dropdown Liste Raster Bewertungsskala Smileys Sterne Wortwolke Stoppw\u00f6rter PNG wortwolke.png Klick Ergebnisse zeigen verbergen Reveal Web-Worker Massen-Import Mehrfachauswahl"
+      "bodyText": "Multiple Choice Ranking 100 Punkte Freitext Bildwahl Terminfindung Picker 10-50 Optionen Kategorien Suche Dropdown Liste Raster Bewertungsskala Smileys Sterne Wortwolke Stoppwörter PNG wortwolke.png Klick Ergebnisse zeigen verbergen Reveal Web-Worker Massen-Import Mehrfachauswahl"
     },
     {
       "id": "picker",
@@ -304,10 +304,10 @@
       "roles": [
         "presenter"
       ],
-      "title": "Picker \u2014 gro\u00dfe Auswahllisten",
-      "titleEn": "Picker \u2014 large option lists",
-      "titleFr": "Picker \u2014 longues listes d\u2019options",
-      "summary": "10\u201350 Optionen, Kategorien, Suche, Single/Multi-Select, List/Grid/Dropdown.",
+      "title": "Picker — große Auswahllisten",
+      "titleEn": "Picker — large option lists",
+      "titleFr": "Picker — longues listes d’options",
+      "summary": "10–50 Optionen, Kategorien, Suche, Single/Multi-Select, List/Grid/Dropdown.",
       "tags": [
         "picker",
         "kategorien",
@@ -316,7 +316,7 @@
         "massen-import",
         "10-50"
       ],
-      "bodyText": "Picker Folientyp 10 50 Optionen Kategorien Farbe Massen-Import Single-Select Multi-Select maxSelections Suche Dropdown Liste Raster Virtual Scrolling Live-Vorschau dynamisches Formular Ortsauswahl St\u00e4dte Reveal gruppierte Ergebnisse"
+      "bodyText": "Picker Folientyp 10 50 Optionen Kategorien Farbe Massen-Import Single-Select Multi-Select maxSelections Suche Dropdown Liste Raster Virtual Scrolling Live-Vorschau dynamisches Formular Ortsauswahl Städte Reveal gruppierte Ergebnisse"
     },
     {
       "id": "qa",
@@ -362,7 +362,7 @@
         "eisbrecher",
         "power-up"
       ],
-      "bodyText": "Quiz Timer mehrere Richtige Teams Power-Up Power-Ups 50:50 Doppelpunkte Rangliste Leaderboard Gesamtrangliste Punkte Einf\u00fchrungs-Quiz Wissens-Check Eisbrecher Leertaste intro-quiz knowledge-quiz"
+      "bodyText": "Quiz Timer mehrere Richtige Teams Power-Up Power-Ups 50:50 Doppelpunkte Rangliste Leaderboard Gesamtrangliste Punkte Einführungs-Quiz Wissens-Check Eisbrecher Leertaste intro-quiz knowledge-quiz"
     },
     {
       "id": "events",
@@ -374,7 +374,7 @@
       ],
       "title": "Events und Session-Decks",
       "titleEn": "Events and session decks",
-      "titleFr": "\u00c9v\u00e9nements et decks de session",
+      "titleFr": "Événements et decks de session",
       "summary": "Event = Session, Status, Deck-Editor (Inhalt bearbeiten), Countdown, Grafik, Folien kopieren.",
       "tags": [
         "event",
@@ -401,18 +401,18 @@
       "title": "Administration",
       "titleEn": "Administration",
       "titleFr": "Administration",
-      "summary": "Men\u00fcs, Branding, Schl\u00fcssel, Datenschutz, Settings Schema 2.",
+      "summary": "Menüs, Branding, Schlüssel, Datenschutz, Settings Schema 2.",
       "tags": [
         "admin",
         "events",
         "sessions",
         "branding",
         "datenschutz",
-        "schl\u00fcssel",
+        "schlüssel",
         "ssl",
         "export"
       ],
-      "bodyText": "Admin-Schl\u00fcssel Presenter-Passwort Men\u00fc Sessions Events Branding Datenschutz Logo Farben White-Label Homepage Schema 2 Settings-Export pulse-settings.json PEM Einstellungen Footer Sprachen Aufbewahrung Wortfilter SSL"
+      "bodyText": "Admin-Schlüssel Presenter-Passwort Menü Sessions Events Branding Datenschutz Logo Farben White-Label Homepage Schema 2 Settings-Export pulse-settings.json PEM Einstellungen Footer Sprachen Aufbewahrung Wortfilter SSL"
     },
     {
       "id": "installation",
@@ -448,14 +448,14 @@
       "title": "SSL-Zertifikate",
       "titleEn": "SSL certificates",
       "titleFr": "Certificats SSL",
-      "summary": "Let\u2019s Encrypt, Domain, Status-Badges, Erneuerung, Settings-Backup.",
+      "summary": "Let’s Encrypt, Domain, Status-Badges, Erneuerung, Settings-Backup.",
       "tags": [
         "ssl",
         "https",
         "letsencrypt",
         "zertifikat"
       ],
-      "bodyText": "SSL HTTPS Let\u2019s Encrypt Domain Port 80 Staging Erneuern Ablauf Status aktiv pending error expired Wildcard PEM Schema 2 Settings-Export HTTP-01 acme-challenge"
+      "bodyText": "SSL HTTPS Let’s Encrypt Domain Port 80 Staging Erneuern Ablauf Status aktiv pending error expired Wildcard PEM Schema 2 Settings-Export HTTP-01 acme-challenge"
     },
     {
       "id": "updates",
@@ -466,8 +466,8 @@
       ],
       "title": "Automatische Updates",
       "titleEn": "Automatic updates",
-      "titleFr": "Mises \u00e0 jour automatiques",
-      "summary": "GitHub Releases pr\u00fcfen, Backup, Installation, Rollback, UPDATE_REPO.",
+      "titleFr": "Mises à jour automatiques",
+      "summary": "GitHub Releases prüfen, Backup, Installation, Rollback, UPDATE_REPO.",
       "tags": [
         "update",
         "github",
@@ -508,15 +508,15 @@
       ],
       "title": "Datenschutz in der Hilfe",
       "titleEn": "Privacy",
-      "titleFr": "Confidentialit\u00e9",
-      "summary": "Anonym abstimmen, keine Cookies, Erkl\u00e4rung und Impressum.",
+      "titleFr": "Confidentialité",
+      "summary": "Anonym abstimmen, keine Cookies, Erklärung und Impressum.",
       "tags": [
         "datenschutz",
         "anonym",
         "localStorage",
         "impressum"
       ],
-      "bodyText": "Datenschutzerkl\u00e4rung Impressum Saarbr\u00fccken anonym keine Cookies localStorage sessionStorage Session-ID Aufbewahrung Einwilligung Verfahrensverzeichnis Settings-Export PEM Events nicht im Export"
+      "bodyText": "Datenschutzerklärung Impressum Saarbrücken anonym keine Cookies localStorage sessionStorage Session-ID Aufbewahrung Einwilligung Verfahrensverzeichnis Settings-Export PEM Events nicht im Export"
     },
     {
       "id": "faq",
@@ -527,7 +527,7 @@
         "presenter",
         "admin"
       ],
-      "title": "H\u00e4ufige Fragen",
+      "title": "Häufige Fragen",
       "titleEn": "FAQ",
       "titleFr": "FAQ",
       "summary": "Code, Event vs. Session, Beamer, Handy, Demo, Probe, Folien.",
@@ -579,7 +579,7 @@
       ],
       "title": "Fehlerbehebung",
       "titleEn": "Troubleshooting",
-      "titleFr": "D\u00e9pannage",
+      "titleFr": "Dépannage",
       "summary": "Flowcharts: Join, HTTPS, WebSocket, Admin-Lock, Lobby, Docker.",
       "tags": [
         "ws",
@@ -591,7 +591,7 @@
         "join",
         "flowchart"
       ],
-      "bodyText": "WebSocket reconnect Session nicht gefunden Event Join gesperrt geplant archiviert Admin gesperrt Offline-Banner Demo HTTP 403 Rate-Limit Lobby Notfall SSL Wildcard Let\u2019s Encrypt installation docker compose ADMIN_SECRET install-vps healthcheck Flowchart Debug-Checkliste"
+      "bodyText": "WebSocket reconnect Session nicht gefunden Event Join gesperrt geplant archiviert Admin gesperrt Offline-Banner Demo HTTP 403 Rate-Limit Lobby Notfall SSL Wildcard Let’s Encrypt installation docker compose ADMIN_SECRET install-vps healthcheck Flowchart Debug-Checkliste"
     },
     {
       "id": "glossary",
@@ -615,7 +615,7 @@
         "reveal",
         "probe"
       ],
-      "bodyText": "Session Event Deck sessionCode Join-Code Folienfolge Raum Moderation Upvote Rate-Limit Admin-Schl\u00fcssel Presenter-Passwort Lobby Folie Probe Notizen Reveal Power-Up White-Label Settings-Export Schema Daumenzone copy-from kein Set ADMIN_SECRET data pulse.db Folien bearbeiten PATCH slide_updated Picker Kategorien dynamisches Formular"
+      "bodyText": "Session Event Deck sessionCode Join-Code Folienfolge Raum Moderation Upvote Rate-Limit Admin-Schlüssel Presenter-Passwort Lobby Folie Probe Notizen Reveal Power-Up White-Label Settings-Export Schema Daumenzone copy-from kein Set ADMIN_SECRET data pulse.db Folien bearbeiten PATCH slide_updated Picker Kategorien dynamisches Formular"
     },
     {
       "id": "interaction-control",
@@ -626,8 +626,8 @@
       ],
       "title": "Interaktionssteuerung",
       "titleEn": "Interaction control",
-      "titleFr": "Contr\u00f4le des interactions",
-      "summary": "Folie anzeigen, Interaktion starten, Timer, Pause, Event-Countdown Los geht\u2019s.",
+      "titleFr": "Contrôle des interactions",
+      "summary": "Folie anzeigen, Interaktion starten, Timer, Pause, Event-Countdown Los geht’s.",
       "tags": [
         "interaktion",
         "timer",
@@ -637,7 +637,7 @@
         "ablauf",
         "los-gehts"
       ],
-      "bodyText": "Interaktionssteuerung Folie anzeigen Interaktion starten Pause Verl\u00e4ngern Beenden Timer 30-300 Sekunden manueller Start Ablauf Zeitlimit event_meta dismissCountdown Los geht's Event-Countdown Join-Sperre Reveal Ergebnisse zeigen Presenter-Leiste A11y Ranking 100 Punkte legacy interaction state running paused ended"
+      "bodyText": "Interaktionssteuerung Folie anzeigen Interaktion starten Pause Verlängern Beenden Timer 30-300 Sekunden manueller Start Ablauf Zeitlimit event_meta dismissCountdown Los geht's Event-Countdown Join-Sperre Reveal Ergebnisse zeigen Presenter-Leiste A11y Ranking 100 Punkte legacy interaction state running paused ended"
     },
     {
       "id": "related-docs",
@@ -659,5 +659,5 @@
       "bodyText": "docs hilfe.md installation.md projektdokumentation.md verfahrensverzeichnis README INSTALL-CREDENTIALS"
     }
   ],
-  "appVersion": "1.4.3"
+  "appVersion": "1.4.4"
 }
