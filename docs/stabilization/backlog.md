@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.5 Audit · Prod Deploy v1.5.5+Audit ausstehend · Branch `main`
+Stand: v1.5.6 · Prod Deploy v1.5.6 ausstehend · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -84,7 +84,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.5.5 · Prod: v1.5.1 gemeldet (Deploy + `docker compose build` ausstehend)
+- **Version:** `package.json` 1.5.6 · Prod: Deploy + `docker compose build` ausstehend
 - **Betriebsmodi:** ADR `docs/stabilization/architecture-operation-modes.md`
 - **Lasttest:** `npm run load-test` · Gates in `release-gates.md`
 - **Docker:** `pulse` + `pulse-b` teilen `./data`, `.env`, `REDIS_URL` ✓
@@ -94,7 +94,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## Nächste Schritte (priorisiert)
 
-1. **v1.5.5 Audit** deployen (`update-vps-ubuntu.sh` + `docker compose build`)
+1. **v1.5.6** deployen (`update-vps-ubuntu.sh --tag v1.5.6 --yes` + `docker compose build`)
 2. VPS auf **Einzelinstanz** (`docker-compose.single.yml`) oder Postgres migrieren
 3. Last-Baseline 100/300 TN
 4. Phase 2: stateVersion
