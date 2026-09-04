@@ -251,8 +251,22 @@
     );
   }
 
-  .admin-home-link {
-    display: none;
+  /* Administration-Icon bleibt sichtbar — direkter Einstieg neben Menü-Drawer. */
+  .view-home .home-brand {
+    gap: 10px;
+  }
+
+  .view-home .home-title {
+    overflow-wrap: anywhere;
+  }
+
+  .view-home .pulse-home-headline {
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  .view-home .home-tools {
+    max-width: 100%;
   }
 }
 

@@ -6,6 +6,9 @@
 let adminDrawerBound = false;
 let publicMenuBound = false;
 
+/** Registrierte Schließen-Funktionen für programmatisches Schließen (Router). */
+const drawerClosers = new Map();
+
 /**
  * Drawer-Logik für ein Panel.
  * @param {object} opts
@@ -21,14 +24,21 @@ function bindDrawer({ toggleSelector, drawerId, overlayId, closeSelector }) {
 
   let lastFocus = null;
 
-  const close = () => {
+  /**
+   * Drawer schließen.
+   * @param {{ restoreFocus?: boolean }} [opts]
+   */
+  const close = (opts = {}) => {
+    const restoreFocus = opts.restoreFocus !== false;
     drawer.hidden = true;
     overlay.hidden = true;
     drawer.setAttribute("aria-hidden", "true");
     toggle.setAttribute("aria-expanded", "false");
     document.documentElement.classList.remove("pulse-drawer-open");
-    if (lastFocus?.focus) lastFocus.focus();
+    if (restoreFocus && lastFocus?.focus) lastFocus.focus();
   };
+
+  drawerClosers.set(drawerId, close);
 
   const open = () => {
     lastFocus = document.activeElement;
@@ -49,10 +59,16 @@ function bindDrawer({ toggleSelector, drawerId, overlayId, closeSelector }) {
   overlay.addEventListener("click", close);
   drawer.querySelector(closeSelector)?.addEventListener("click", close);
 
-  /* Navigation: Drawer nach Klick auf internen Hash-Link schließen */
+  /*
+   * Hash-Navigation: Drawer schließen ohne Fokus-Rückgabe —
+   * sonst konkurriert lastFocus mit Login-Modal (#/admin) auf Mobilgeräten.
+   */
   drawer.addEventListener("click", (ev) => {
     const link = ev.target.closest("a[href]");
-    if (link && drawer.contains(link)) close();
+    if (!link || !drawer.contains(link)) return;
+    const href = (link.getAttribute("href") || "").trim();
+    const isInAppRoute = href.startsWith("#/");
+    close({ restoreFocus: !isInAppRoute });
   });
 
   drawer.addEventListener("keydown", (ev) => {
@@ -75,6 +91,16 @@ function bindDrawer({ toggleSelector, drawerId, overlayId, closeSelector }) {
       first.focus();
     }
   });
+}
+
+/** Öffentliches Startseiten-Menü schließen (z. B. vor Admin-Login aus Capture-Handler). */
+export function closeHomeMenuDrawer() {
+  drawerClosers.get("home-menu-drawer")?.({ restoreFocus: false });
+}
+
+/** Admin-Nav-Drawer schließen. */
+export function closeAdminNavDrawer() {
+  drawerClosers.get("admin-nav-drawer")?.({ restoreFocus: false });
 }
 
 /** Admin-Navigation ab schmaler Breite als Drawer. */

@@ -28,7 +28,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-003 | Auth | Abgelaufene Session → unklarer Zustand | offen |
 | C-004 | Auth | PIN fälschlich statt Passwort ohne SMTP | teilweise (test-auth) |
 | C-005 | Auth | Passwort-Login blockiert bei SMTP-Fehler | prüfen |
-| C-006 | Mobile | Startseite/Join nicht nutzbar | offen |
+| C-006 | Mobile | Startseite/Join nicht nutzbar | **teilweise** | v1.4.8: Admin-Icon sichtbar, Drawer-Fokus, Overflow |
 | C-007 | Mobile | Overlays blockieren Klicks | teilweise (Modal z-index) |
 | C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | offen |
 | C-009 | Security | CORS `*` bei Cookie-Auth | OBS — prüfen Block 10 |

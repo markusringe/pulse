@@ -81,7 +81,7 @@ import {
 import { bindJoinGestures, hapticSuccess } from "./joinMobile.js";
 import { bindPresentMobileUi } from "./presentMobile.js?v=nav54";
 import { bindInteractionBar, joinInputsBlocked, joinStatusMessage, computeRemainingMs, formatCountdown, resetJoinTimerAnnouncements, tickJoinTimerA11y, applyJoinTimerUrgency, joinTimerTypeHint } from "./interactionPresenter.js?v=nav55";
-import { bindAdminMobileNav, bindPublicMobileMenu } from "./mobileNav.js?v=nav54";
+import { bindAdminMobileNav, bindPublicMobileMenu, closeHomeMenuDrawer } from "./mobileNav.js?v=nav60";
 import {
   renderRankingInput,
   renderPointsInput,
@@ -832,6 +832,7 @@ function onInAppHashClick(ev) {
   const path = href.slice(1);
   if (path.startsWith("/admin") && path !== "/admin/login") {
     cancelHomeEventsWork();
+    closeHomeMenuDrawer();
     void openAdminFromHome(path);
     return;
   }

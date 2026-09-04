@@ -149,6 +149,16 @@ textarea::placeholder {
   stroke-linejoin: round;
 }
 
+/* Touch-Ziele auf schmalen Screens (WCAG 2.5.5). */
+@media (max-width: 640px) {
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* Light: Mond (Wechsel nach Dark). Dark: Sonne (Wechsel nach Light). */
 html:not([data-theme="dark"]) .icon-sun,
 [data-theme="dark"] .icon-moon {

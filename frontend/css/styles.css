@@ -18,7 +18,9 @@ body {
   min-height: 0;
   height: 100%;
   overflow: auto;
+  overflow-x: hidden;
   width: 100%;
+  min-width: 0;
 }
 
 .view {
@@ -1133,10 +1135,17 @@ body.admin-area .view:not([hidden]) {
 /* ----- Login / Benutzerverwaltung ----- */
 .view-login,
 .view-users,
-.view-profile {
+.view-profile,
+.view-forbidden {
   max-width: 720px;
   margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  padding: max(1.5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(3rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+
+.view-login .login-page .btn,
+.view-forbidden .modal-actions .btn {
+  min-height: 48px;
 }
 
 .profile-grid {

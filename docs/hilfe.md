@@ -405,8 +405,8 @@ Im Browser: Drucken → „Als PDF sichern“. Version und Datum im Guide-Kopf.
 | `docs/installation.md` | Installation |
 | `docs/projektdokumentation.md` | Technische Spezifikation |
 | `docs/verfahrensverzeichnis.md` | DSGVO Art. 30 |
-| `frontend/help/articles.json` | Hilfe-Katalog v10 · Programm v1.4.6 (26 Artikel) |
+| `frontend/help/articles.json` | Hilfe-Katalog v10 · Programm v1.4.7 (26 Artikel) |
 
 ---
 
-*Bei Abweichungen gilt der Stand der HTML-Artikel unter `frontend/help/` (Programmversion **v1.4.6**, Katalog-Version in `articles.json`).*
+*Bei Abweichungen gilt der Stand der HTML-Artikel unter `frontend/help/` (Programmversion **v1.4.7**, Katalog-Version in `articles.json`).*
