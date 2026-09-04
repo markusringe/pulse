@@ -2,7 +2,7 @@
 
 **Status:** aktiv  
 **Branch:** `stabilization/feature-freeze`  
-**Basisversion:** 1.4.6  
+**Basisversion:** 1.4.7  
 **Ziel:** Stabilitätsrelease (geplant v1.5.0 oder v1.4.7+)
 
 ## Ziel des Zyklus
