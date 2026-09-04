@@ -1,6 +1,7 @@
 /**
  * Cache-Busting-URLs aus dem serverseitig injizierten Content-Hash-Manifest.
  * window.__PULSE_ASSET_H__ wird in index.html beim Ausliefern gesetzt (Phase 5).
+ * Unterstützt JS, CSS, JSON (i18n), HTML (Hilfe) und /assets/* (Favicon, Logo).
  */
 
 /**

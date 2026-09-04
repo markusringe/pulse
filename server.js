@@ -54,8 +54,35 @@ const assetManifestLib = require("./lib/assetManifest");
 const PORT = Number(process.env.PORT) || 3000;
 const BATCH_INTERVAL = Number(process.env.BATCH_INTERVAL_MS) || 100;
 const FRONTEND = path.join(__dirname, "frontend");
-/** Content-Hash-Map für Frontend-Assets (?h= statt manuellem ?v=) — beim Start neu berechnet. */
-let pulseAssetHashes = assetManifestLib.buildManifest(FRONTEND).assets;
+/** Content-Hash-Map für Frontend-Assets (?h=) — einmalig beim Start aus asset-manifest.json geladen. */
+let pulseAssetHashes = {};
+/** Readiness: false wenn Production-Manifest fehlt oder nicht zur Platte passt. */
+let pulseAssetManifestReady = false;
+/** Nicht-sensibler Diagnose-Text bei Manifest-Fehler (Logs / Readiness). */
+let pulseAssetManifestError = null;
+
+/**
+ * Asset-Manifest beim Start laden (Production: fail-fast, kein Hash pro HTTP-Request).
+ */
+function initializeAssetManifest() {
+  const production = process.env.NODE_ENV === "production";
+  try {
+    const manifest = assetManifestLib.loadManifestStrict(FRONTEND, { production });
+    pulseAssetHashes = manifest.assets;
+    pulseAssetManifestReady = true;
+    pulseAssetManifestError = null;
+    console.log(`[asset-manifest] ${Object.keys(pulseAssetHashes).length} Assets aus ${assetManifestLib.MANIFEST_REL} geladen`);
+  } catch (err) {
+    pulseAssetManifestError = err.message || String(err);
+    pulseAssetManifestReady = false;
+    if (production) {
+      console.error(`[asset-manifest] Start abgebrochen: ${pulseAssetManifestError}`);
+      process.exit(1);
+    }
+    console.warn(`[asset-manifest] ${pulseAssetManifestError} — Fallback: Manifest zur Laufzeit berechnet`);
+    pulseAssetHashes = assetManifestLib.buildManifest(FRONTEND).assets;
+  }
+}
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 const MAX_PAYLOAD = 512 * 1024;
 
@@ -314,7 +341,22 @@ async function buildHealthPayload(full = true) {
     });
   }
 
-  let ready = assessment.ready && dbHealth.ok && !maintenance.blocksReadiness && !restoreBusy;
+  if (process.env.NODE_ENV === "production") {
+    runtimeChecks.push({
+      id: "asset_manifest",
+      ok: pulseAssetManifestReady,
+      message: pulseAssetManifestReady
+        ? `${Object.keys(pulseAssetHashes).length} Content-Hash-Assets geladen.`
+        : pulseAssetManifestError || "Asset-Manifest nicht bereit.",
+    });
+  }
+
+  let ready =
+    assessment.ready &&
+    dbHealth.ok &&
+    !maintenance.blocksReadiness &&
+    !restoreBusy &&
+    (process.env.NODE_ENV !== "production" || pulseAssetManifestReady);
   const degraded =
     (assessment.degraded || pulseEventLoopLagMs > 200) && ready;
 
@@ -382,6 +424,8 @@ async function buildHealthPayload(full = true) {
       console.error("[bootstrap]", err);
     }
   }
+
+  initializeAssetManifest();
 
   await waitForRedisBus();
   const redisPing = await bus.ping();
@@ -3782,7 +3826,7 @@ function serveStatic(pathname, req, res) {
     }
     const type = MIME[ext] || "application/octet-stream";
     compress.writeEncoded(res, 200, body, type, req, {
-      "Cache-Control": cacheControlFor(ext),
+      "Cache-Control": cacheControlFor(ext, req.url, webPath),
     });
   });
 }
@@ -3802,17 +3846,83 @@ function applyAssetBase(htmlBuf) {
   return Buffer.from(html);
 }
 
-function cacheControlFor(ext) {
-  if (ext === ".html") return "no-cache";
-  if (ext === ".css" || ext === ".js" || ext === ".json" || ext === ".svg") return "public, max-age=86400";
+/**
+ * Cache-Control für statische Assets.
+ * Gehashte URLs (?h= stimmt mit Manifest) → lang + immutable; index.html → Revalidierung.
+ * @param {string} ext
+ * @param {string} [reqUrl]
+ * @param {string} [webPath]
+ */
+function cacheControlFor(ext, reqUrl, webPath) {
+  if (ext === ".html") {
+    return "no-cache, must-revalidate";
+  }
+
+  let hashParam = null;
+  if (reqUrl) {
+    try {
+      hashParam = new URL(reqUrl, "http://localhost").searchParams.get("h");
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const hashableExt = [".css", ".js", ".json", ".svg", ".html"];
+  if (hashableExt.includes(ext) && hashParam && webPath) {
+    const expected = pulseAssetHashes[webPath];
+    if (expected && hashParam === expected) {
+      return "public, max-age=31536000, immutable";
+    }
+    return "no-cache, must-revalidate";
+  }
+
+  if (ext === ".css" || ext === ".js" || ext === ".json" || ext === ".svg") {
+    return "public, max-age=86400";
+  }
   if (ext === ".png" || ext === ".ico" || ext === ".woff" || ext === ".woff2" || ext === ".ttf") {
     return "public, max-age=604800";
   }
   return "public, max-age=3600";
 }
 
+/**
+ * Cache-Control für API-Responses: Auth/Admin/Teams no-store; öffentliche Event-Daten kurz cachebar.
+ * @param {string} pathname
+ */
+function cacheControlForApi(pathname) {
+  if (pathname.startsWith("/api/health")) return "no-cache";
+  if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/users")) return "no-store, private";
+  if (pathname.startsWith("/api/teams")) return "no-store, private";
+  if (pathname.startsWith("/api/backups")) return "no-store, private";
+  if (pathname.startsWith("/api/email")) return "no-store, private";
+  if (pathname.startsWith("/api/settings")) return "no-store, private";
+  if (pathname.startsWith("/api/updates")) return "no-store, private";
+  if (pathname.startsWith("/api/events/admin")) return "no-store, private";
+  if (pathname.startsWith("/api/sessions") && !/^\/api\/sessions\/\d{6}$/.test(pathname)) {
+    return "no-store, private";
+  }
+  if (/^\/api\/sessions\/\d{6}$/.test(pathname)) {
+    return "private, no-cache";
+  }
+  if (pathname.startsWith("/api/events")) {
+    return "public, max-age=60";
+  }
+  if (pathname === "/api/branding") {
+    return "public, max-age=300";
+  }
+  if (pathname.startsWith("/api/privacy")) {
+    return "public, max-age=300";
+  }
+  return "no-store, private";
+}
+
 function send(res, status, obj) {
-  compress.writeEncoded(res, status, JSON.stringify(obj), "application/json; charset=utf-8", res._pulseReq, corsHeaders(res._pulseReq));
+  const req = res._pulseReq;
+  const pathname = req ? new URL(req.url, "http://localhost").pathname : "";
+  compress.writeEncoded(res, status, JSON.stringify(obj), "application/json; charset=utf-8", req, {
+    "Cache-Control": cacheControlForApi(pathname),
+    ...corsHeaders(req),
+  });
 }
 
 function observe(req, url, status, started) {

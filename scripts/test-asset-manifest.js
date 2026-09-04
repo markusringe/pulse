@@ -11,6 +11,10 @@ const {
   rewriteJsImports,
   resolveWebPath,
   withContentHash,
+  isRewritableLocalAssetRef,
+  validateManifestReferences,
+  loadManifestStrict,
+  verifyManifestMatchesDisk,
 } = require("../lib/assetManifest");
 
 function assert(cond, msg) {
@@ -24,14 +28,26 @@ console.log("test-asset-manifest: Manifest berechnen…");
 const manifest = buildManifest(frontend);
 const assets = manifest.assets;
 
-assert(Object.keys(assets).length >= 50, "Mindestens 50 Assets im Manifest");
+assert(Object.keys(assets).length >= 80, "Mindestens 80 Assets im Manifest");
 assert(assets["/js/app.js"], "/js/app.js im Manifest");
 assert(assets["/css/pulse.css"], "/css/pulse.css im Manifest");
 assert(assets["/i18n/de.json"], "/i18n/de.json im Manifest");
 assert(assets["/help/articles.json"], "/help/articles.json im Manifest");
+assert(assets["/help/welcome.html"], "/help/welcome.html im Manifest");
+assert(assets["/assets/favicon.svg"], "/assets/favicon.svg im Manifest");
 
 const appHash = hashFile(path.join(frontend, "js/app.js"));
 assert(assets["/js/app.js"] === appHash, "app.js-Hash stimmt mit Datei überein");
+
+console.log("test-asset-manifest: Referenz-Validierung…");
+const refErrors = validateManifestReferences(frontend, assets);
+assert(refErrors.length === 0, `Referenz-Fehler: ${refErrors.join("; ")}`);
+
+console.log("test-asset-manifest: Sichere Pfad-Filter…");
+assert(!isRewritableLocalAssetRef("https://cdn.example.com/x.js"), "HTTPS extern bleibt unberührt");
+assert(!isRewritableLocalAssetRef("data:text/javascript,void 0"), "data-URL bleibt unberührt");
+assert(!isRewritableLocalAssetRef("/api/health"), "API-Pfad bleibt unberührt");
+assert(isRewritableLocalAssetRef("./websocket.js"), "Relativer JS-Import ist lokal");
 
 console.log("test-asset-manifest: Pfadauflösung…");
 assert(
@@ -57,11 +73,22 @@ assert(
   indexOut.includes(`/js/app.js?h=${assets["/js/app.js"]}`),
   "app.js-Link mit Content-Hash",
 );
+assert(
+  indexOut.includes(`/assets/favicon.svg?h=${assets["/assets/favicon.svg"]}`),
+  "favicon mit Content-Hash",
+);
 assert(!indexOut.includes("?v=nav"), "Kein manuelles ?v=nav in ausgeliefertem HTML");
 
 console.log("test-asset-manifest: JS-Rewrite…");
 const appSrc = fs.readFileSync(path.join(frontend, "js/app.js"), "utf8");
 const appOut = rewriteJsImports(appSrc, "/js/app.js", assets);
 assert(appOut.includes(`?h=${wsHash}`), "app.js-Imports mit Hash");
+assert(!appOut.includes("https://"), "Keine externen URLs verändert");
+
+console.log("test-asset-manifest: Manifest-Datei laden…");
+if (fs.existsSync(path.join(frontend, "asset-manifest.json"))) {
+  const loaded = loadManifestStrict(frontend, { production: false });
+  verifyManifestMatchesDisk(frontend, loaded.assets);
+}
 
 console.log("test-asset-manifest: OK");

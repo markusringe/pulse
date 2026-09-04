@@ -25,6 +25,7 @@ import {
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
 import { initI18n, setLang, t, applyDom, currentLang, onLang } from "./i18n.js";
+import { assetUrl } from "./assetUrl.js";
 import { showEmergencyBanner, bindPanic, setPanicState } from "./emergency.js";
 import { renderModeration } from "./moderation.js";
 import { introQuiz, knowledgeCheck, icebreakerQuiz } from "./templates.js";
@@ -3362,7 +3363,7 @@ function applyWhiteLabel(b) {
         icon.href = b.favicon;
         icon.type = /svg/i.test(b.favicon) ? "image/svg+xml" : "image/png";
       } else {
-        icon.href = "./assets/favicon.svg";
+        icon.href = assetUrl("/assets/favicon.svg");
         icon.type = "image/svg+xml";
       }
     } catch {

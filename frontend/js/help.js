@@ -543,7 +543,7 @@ function renderSide(admin) {
 
 async function loadArticleHtml(id) {
   try {
-    const res = await fetch(`/help/${encodeURIComponent(id)}.html`);
+    const res = await fetch(assetUrl(`/help/${encodeURIComponent(id)}.html`));
     if (!res.ok) throw new Error("missing");
     return await res.text();
   } catch {

@@ -80,11 +80,17 @@ function joinUrl(base, path) {
   record("GET /", index.status === 200, `HTTP ${index.status}, ${index.body.length} B`);
   assert(index.status === 200, "Startseite nicht erreichbar");
   assert(/Pulse|pulse/i.test(index.body), "Startseite enthält keinen Pulse-Bezug");
+  record("index.__PULSE_ASSET_H__", /__PULSE_ASSET_H__/.test(index.body), "Manifest injiziert");
+  record("index.app.js?h=", /\/js\/app\.js\?h=[a-f0-9]{8}/.test(index.body), "app.js mit Content-Hash");
 
-  // Statisches JS (Pfad wie in index.html)
-  const appJs = await httpGet(joinUrl(base, "/js/app.js"), opts.timeoutMs);
-  record("GET /js/app.js", appJs.status === 200, `HTTP ${appJs.status}, ${appJs.body.length} B`);
-  assert(appJs.status === 200, "/js/app.js nicht erreichbar");
+  // Statisches JS mit Hash-Query (wie nach Deploy aus index.html)
+  const appJsMatch = index.body.match(/\/js\/app\.js\?h=([a-f0-9]{8})/);
+  const appJsUrl = appJsMatch ? `/js/app.js?h=${appJsMatch[1]}` : "/js/app.js";
+  const appJs = await httpGet(joinUrl(base, appJsUrl), opts.timeoutMs);
+  record("GET /js/app.js?h=", appJs.status === 200, `HTTP ${appJs.status}, ${appJs.body.length} B`);
+  assert(appJs.status === 200, "/js/app.js mit Hash nicht erreichbar");
+  const immutableCache = appJs.headers["cache-control"] || "";
+  record("app.js Cache-Control immutable", /immutable/.test(immutableCache), immutableCache || "fehlt");
 
   // Vollständiger Health
   const health = await httpGet(joinUrl(base, "/api/health"), opts.timeoutMs);
@@ -131,6 +137,12 @@ function joinUrl(base, path) {
     record("health/ready.operation", true, `mode=${readyJson.operation.mode || "?"}`);
   } else if (readyJson.version) {
     record("health/ready.legacy", true, `Legacy (volles Health, v${readyJson.version})`);
+  }
+  if (Array.isArray(readyJson.checks)) {
+    const assetCheck = readyJson.checks.find((c) => c.id === "asset_manifest");
+    if (assetCheck) {
+      record("health/ready.asset_manifest", assetCheck.ok === true, assetCheck.message || "");
+    }
   }
 
   // Auth-Status (öffentlich)

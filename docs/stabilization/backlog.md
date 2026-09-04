@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.9 · Prod **v1.5.9** (single, ready) · Branch `main`
+Stand: v1.5.10 · Prod **v1.5.9** (single, ready) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -99,6 +99,5 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 2. ~~Last-Baseline 300 TN dokumentieren~~ — **erledigt** (`load-baseline-300.json`)
 3. ~~Phase 2: stateVersion (C-011)~~ — **erledigt** (v1.5.8, ADR `adr-state-version.md`)
 4. ~~Phase 5: Content-Hash Assets (C-010)~~ — **erledigt** (v1.5.9, ADR `adr-asset-content-hash.md`)
-5. Smoke-Checkliste manuell abhaken (`smoke-checklist.md`)
-6. ~~v1.5.9 deployen + Remote-Smoke~~ — **erledigt** (2026-09-04)
-7. SSH-Key auf VPS rotieren (Key im Chat exponiert)
+5. ~~Smoke-Checkliste manuell abhaken (`smoke-checklist.md`)~~ — **teilweise** (2026-09-04, s. Checkliste — Admin/Rollen offen wegen PIN-Mail)
+6. SSH-Key auf VPS rotieren (Key im Chat exponiert)

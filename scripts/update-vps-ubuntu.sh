@@ -458,11 +458,8 @@ update_npm() {
   run_with_spinner "npm install" npm install
 
   log "npm: Frontend-Build (CSS + Asset-Manifest)…"
-  if npm run build; then
-    ok "build erfolgreich (css + asset-manifest)"
-  else
-    warn "build fehlgeschlagen — Fallback pulse.css / Laufzeit-Manifest bleibt aktiv."
-  fi
+  npm run build || die "build fehlgeschlagen — kein Deployment ohne gültiges asset-manifest.json."
+  ok "build erfolgreich (css + asset-manifest)"
 
   log "npm: Dev-Abhängigkeiten entfernen…"
   npm prune --omit=dev || die "npm prune fehlgeschlagen."
@@ -614,6 +611,14 @@ main() {
   fi
 
   wait_for_health "$RESULT_DIR" "$RESULT_MODE"
+
+  if [ "$RESULT_HEALTH" = "timeout" ]; then
+    if [ -n "$RESULT_BACKUP" ]; then
+      warn "Readiness-Timeout — Backup unter: $RESULT_BACKUP"
+      warn "Manuelles Rollback: git -C $RESULT_DIR checkout v$RESULT_FROM_VER && cp -a $RESULT_BACKUP/data $RESULT_DIR/data && cp -a $RESULT_BACKUP/.env $RESULT_DIR/.env && systemctl restart pulse.service"
+    fi
+    die "Update abgeschlossen, aber Instanz nicht bereit (/api/health/ready)."
+  fi
 
   local end_ts elapsed
   end_ts=$(date +%s%3N 2>/dev/null || echo $(($(date +%s) * 1000)))
