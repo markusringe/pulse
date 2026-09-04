@@ -1,0 +1,35 @@
+---
+description: Feature-Freeze Pulse/Team Townhall — nur Stabilisierung, keine neuen Features
+alwaysApply: true
+---
+
+# Feature-Freeze (Stabilisierungszyklus)
+
+Ab Stabilisierungszyklus **keine neuen Produktfunktionen**. Branch: `stabilization/feature-freeze`.
+
+## Verboten
+
+- Neue Folientypen, Rollen, Teamhierarchien, Integrationen, KI, Reporting, Design-Gimmicks
+- Framework-Wechsel (React/Vue/Angular/Svelte)
+- Architekturwechsel (Node, Vanilla JS, WebSocket, Hash-Routing)
+- Öffentliche API- oder Datenmodell-Änderungen ohne Migration, Backup, Tests und Rückwärtskompatibilität
+- Auth-/Berechtigungsänderungen ohne Security-Tests
+
+## Erlaubt
+
+- Bugfixes, Security-, Performance-Fixes
+- Fehlermeldungen, Tests, Diagnose, Doku, A11y
+- Kleine Refactorings nur mit Begründung und Regressionstests
+
+## Vorgehen (pro Themenblock)
+
+1. Ausgangszustand sichern → 2. Reproduzieren → 3. Ursache → 4. Minimaler Fix → 5. Tests → 6. Manuell (Browser/Mobil) → 7. Regression → 8. Doku → 9. Nächster Block
+
+## Commits
+
+Format: `fix(bereich): kurze Beschreibung` — z. B. `fix(auth): admin login route opens reliably`
+
+## Referenz
+
+- `docs/feature-freeze.md` — vollständige Regeln und Abschlusskriterien
+- `docs/stabilization/backlog.md` — priorisierte Fehlerliste

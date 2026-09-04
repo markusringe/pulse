@@ -1,0 +1,43 @@
+#!/usr/bin/env node
+/**
+ * Grundlegende Accessibility-Checks (statisch, HTML/CSS — kein Browser).
+ */
+
+const fs = require("fs");
+const path = require("path");
+
+function assert(cond, msg) {
+  if (!cond) throw new Error(msg);
+}
+
+const ROOT = path.join(__dirname, "..");
+const indexPath = path.join(ROOT, "frontend/index.html");
+const html = fs.readFileSync(indexPath, "utf8");
+
+assert(html.includes('lang="de"'), "html lang=de");
+assert(/<title>/.test(html), "title vorhanden");
+assert(html.includes('name="viewport"'), "viewport meta");
+
+const inputs = [...html.matchAll(/<input[^>]*>/gi)].map((m) => m[0]);
+for (const inp of inputs) {
+  if (/type=["']hidden["']/i.test(inp)) continue;
+  const hasLabel =
+    /aria-label=/i.test(inp) ||
+    /aria-labelledby=/i.test(inp) ||
+    html.includes(`for="${inp.match(/id=["']([^"']+)["']/)?.[1]}"`);
+  assert(hasLabel, `Input ohne Label/ARIA: ${inp.slice(0, 80)}`);
+}
+
+assert(html.includes("admin-login-dialog") || html.includes("view-login"), "Login-Container definiert");
+assert(fs.existsSync(path.join(ROOT, "frontend/css/accessibility.css")), "accessibility.css vorhanden");
+
+const a11yCss = fs.readFileSync(path.join(ROOT, "frontend/css/accessibility.css"), "utf8");
+assert(/:focus-visible|:focus/.test(a11yCss), "Fokus-Stile in accessibility.css");
+
+const contrastDoc = path.join(ROOT, "docs/contrast.md");
+assert(fs.existsSync(contrastDoc), "docs/contrast.md vorhanden");
+
+const errorsJs = fs.readFileSync(path.join(ROOT, "frontend/js/errors.js"), "utf8");
+assert(errorsJs.includes("permission_denied"), "permission_denied in errors.js");
+
+console.log("Accessibility-Static-Checks OK");

@@ -112,7 +112,7 @@ Das Installationsskript `./scripts/install.sh` fragt interaktiv ab, ob die Benut
 
 Nach der Installation: Erstlogin unter `#/admin/login` mit E-Mail + Installations-Kennwort (siehe `INSTALL-CREDENTIALS.txt`). **Kein E-Mail-PIN**, solange kein SMTP/Sendmail konfiguriert ist.
 
-Diagnose ohne Secrets: `npm run auth:diagnose`  
+Diagnose ohne Secrets: `npm run pulse:diagnose` (Gesamtinstanz) · `npm run auth:diagnose` (Login/Bootstrap)  
 Notfall-Kennwort zurücksetzen (lokal auf dem Server): `npm run admin:reset`  
 Nach erfolgreichem Erstlogin: `BOOTSTRAP_ADMIN_PASSWORD` aus `.env` entfernen und Container neu starten.
 

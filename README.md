@@ -20,6 +20,8 @@ Docker (Redis, zwei App-Instanzen, nginx): `./scripts/install.sh --docker`
 
 Ausführlich: **`docs/installation.md`** (Voraussetzungen, manuelle Schritte, Compose, VPS, Fehlerbehebung).
 
+**Stabilisierungszyklus (Feature-Freeze):** siehe **`docs/feature-freeze.md`**.
+
 ## Dokumentation
 - `docs/hilfe.md` — **Benutzerhilfe** (Schnellstart, Admin, FAQ, Glossar — Auszug der In-App-Hilfe)
 - `docs/installation.md` — Installation und Erststart (lokal & Docker)
