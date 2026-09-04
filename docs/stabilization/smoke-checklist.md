@@ -1,6 +1,6 @@
 # Manuelle Smoke-Checkliste — Stabilisierungsrelease
 
-Stand: **v1.5.10** · Prod `https://pulse.ringe.us` · **Deploy ausstehend** (Prod noch v1.5.9)
+Stand: **v1.5.10** · Prod `https://pulse.ringe.us` · geprüft **2026-09-04**
 
 Browser: Chrome (Automatisierung) + API/VPS-Diagnose. Mobil: 320 / 375 / 430 px (Emulation).
 
