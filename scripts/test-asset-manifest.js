@@ -83,6 +83,11 @@ console.log("test-asset-manifest: JS-Rewrite…");
 const appSrc = fs.readFileSync(path.join(frontend, "js/app.js"), "utf8");
 const appOut = rewriteJsImports(appSrc, "/js/app.js", assets);
 assert(appOut.includes(`?h=${wsHash}`), "app.js-Imports mit Hash");
+assert(
+  appOut.includes(`from "./websocket.js?h=${wsHash}"`) || appOut.includes(`from './websocket.js?h=${wsHash}'`),
+  "Import-Anführungszeichen müssen erhalten bleiben",
+);
+assert(!/from\s+\.\//.test(appOut), "Keine ungültigen unquoted ES-Module-Imports");
 assert(!appOut.includes("https://"), "Keine externen URLs verändert");
 
 console.log("test-asset-manifest: Manifest-Datei laden…");
