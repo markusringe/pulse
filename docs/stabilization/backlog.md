@@ -14,8 +14,8 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | **teilweise** | v1.4.9: `test:bootstrap` — VPS: `auth:diagnose` |
 | B-003 | Auth | Redirect-Schleife Login ↔ Onboarding | behoben | v1.4.5: eine authClient-Instanz |
 | B-004 | Rechte | Teamrechte serverseitig umgehbar | **teilweise** | `test-api-permissions.js`: fremdes Team/Event, User-Anlage |
-| B-005 | Live | Antworten vor Interaktionsstart | prüfen | `test-interaction-state.js` — manuell verifizieren |
-| B-006 | Live | Falsche aktive Folie bei Reconnect | offen | Block 6 |
+| B-005 | Live | Antworten vor Interaktionsstart | **behoben (Unit)** | `test-interaction-state.js` + Server-Gate in applyVote |
+| B-006 | Live | Falsche aktive Folie bei Reconnect | **teilweise** | v1.5.0: WS-Mock-Hintergrund-Reconnect, clamp activeSlideIndex |
 
 ---
 
@@ -25,12 +25,12 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 |----|-------|--------------|--------|
 | C-001 | Performance | Hohe Admin-Ladezeit beim ersten `#/admin` | teilweise (v1.4.4) |
 | C-002 | Auth | Session-/Auth-Redirect-Schleifen | teilweise |
-| C-003 | Auth | Abgelaufene Session → unklarer Zustand | offen |
+| C-003 | Auth | Abgelaufene Session → unklarer Zustand | **teilweise** | v1.5.0: session_expired + Login-Hinweis |
 | C-004 | Auth | PIN fälschlich statt Passwort ohne SMTP | teilweise (test-auth) |
 | C-005 | Auth | Passwort-Login blockiert bei SMTP-Fehler | prüfen |
 | C-006 | Mobile | Startseite/Join nicht nutzbar | **teilweise** | v1.4.8: Admin-Icon sichtbar, Drawer-Fokus, Overflow |
 | C-007 | Mobile | Overlays blockieren Klicks | teilweise (Modal z-index) |
-| C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | offen |
+| C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | **teilweise** | v1.5.0: Mock gibt Server nicht auf, join erneut |
 | C-009 | Security | CORS `*` bei Cookie-Auth | **behoben** | v1.4.9: lib/cors.js — nur Same-Host + Whitelist |
 | B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | **teilweise** | test:bootstrap + auth:diagnose — VPS verifizieren |
 | C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust nach Update | OBS — `?v=` in index.html Pflicht |
@@ -41,9 +41,9 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 | ID | Thema | Status |
 |----|-------|--------|
-| H-001 | Unklare Fehlermeldungen (401/403/500) | offen |
+| H-001 | Unklare Fehlermeldungen (401/403/500) | **teilweise** | v1.5.0: HTTP 401 + session_expired |
 | H-002 | 403-Ansicht für berechtigte Nutzer ohne Recht | **behoben (lokal)** | `#view-forbidden` + `canAccessAdminHash` |
-| H-003 | Logout → Startseite nicht zuverlässig | prüfen |
+| H-003 | Logout → Startseite nicht zuverlässig | **teilweise** | v1.5.0: teardownRealtime + navigate |
 | H-004 | Deep Links `#/admin/*` ohne Session | in Arbeit |
 | H-005 | Events ohne Team — historische Daten | teilweise |
 | H-006 | Dark-Mode-Kontrast | siehe `docs/contrast.md` |
@@ -64,7 +64,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.4.6 = letzter Git-Tag v1.4.6 ✓
+- **Version:** `package.json` 1.5.0
 - **Docker:** `pulse` + `pulse-b` teilen `./data`, `.env`, `REDIS_URL` ✓
 - **Update:** `update-vps-ubuntu.sh` führt `npm run css:build` aus ✓
 - **Assets:** HTML `no-cache`; JS/CSS `max-age=86400` — Cache-Bust via `?v=` in `index.html` erforderlich

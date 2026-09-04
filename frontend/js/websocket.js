@@ -42,6 +42,8 @@ export class RealtimeClient {
     this.heartbeatTimer = 0;
     this.heartbeatWatchdog = 0;
     this.reconnectTimer = 0;
+    /** Hintergrund-Versuch, echte WS-Verbindung wiederherzustellen, während Mock aktiv ist. */
+    this.realRetryTimer = 0;
     this.mock = null;
     this.state = "idle";
     this.pendingUpdates = [];
@@ -170,10 +172,18 @@ export class RealtimeClient {
     socket.addEventListener("open", () => {
       window.clearTimeout(failTimer);
       this.reconnectAttempt = 0;
+      const hadMock = Boolean(this.mock);
+      if (this.mock) {
+        this.mock.dispose();
+        this.mock = null;
+      }
+      window.clearTimeout(this.realRetryTimer);
+      this.realRetryTimer = 0;
       this.#setState("open");
       this.#startHeartbeat();
       this.#flushQueue();
       this.emit("open");
+      if (hadMock) this.emit("mock", { enabled: false });
     });
 
     socket.addEventListener("message", (ev) => {
@@ -250,8 +260,21 @@ export class RealtimeClient {
   #clearTimers() {
     this.#clearHeartbeat();
     window.clearTimeout(this.reconnectTimer);
+    window.clearTimeout(this.realRetryTimer);
     window.clearTimeout(this.batchTimer);
     this.batchTimer = 0;
+    this.realRetryTimer = 0;
+  }
+
+  /** Während Mock-Modus weiter versuchen, den echten Server zu erreichen (Live-Sync). */
+  #scheduleRealRetry() {
+    window.clearTimeout(this.realRetryTimer);
+    if (this.closedByUser) return;
+    this.realRetryTimer = window.setTimeout(() => {
+      if (this.closedByUser) return;
+      if (this.ws?.readyState === WebSocket.OPEN) return;
+      this.#openSocket();
+    }, 8000);
   }
 
   #onSocketFailure() {
@@ -259,8 +282,10 @@ export class RealtimeClient {
     this.#clearHeartbeat();
     if (this.closedByUser) return;
 
-    if (this.opts.mockWhenOffline && this.reconnectAttempt >= 1) {
-      this.#enableMock();
+    /* Erst nach mehreren Fehlversuchen in Mock — danach weiter im Hintergrund zum Server. */
+    if (this.opts.mockWhenOffline && this.reconnectAttempt >= 2) {
+      if (!this.mock) this.#enableMock();
+      else this.#scheduleRealRetry();
       return;
     }
 
@@ -280,6 +305,7 @@ export class RealtimeClient {
     this.#setState("open");
     this.emit("open");
     this.emit("mock", { enabled: true });
+    this.#scheduleRealRetry();
   }
 }
 

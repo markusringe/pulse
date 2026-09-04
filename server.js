@@ -30,6 +30,7 @@ const slideVotes = require("./lib/slideVotes");
 const compress = require("./lib/compress");
 const qaTimer = require("./lib/qaTimer");
 const interactionState = require("./lib/interactionState");
+const { normalizeSessionSlides } = require("./lib/sessionSync");
 const { createUserDb } = require("./lib/userDb");
 const authApi = require("./lib/authApi");
 const permissions = require("./lib/permissions");
@@ -1919,6 +1920,7 @@ async function joinSession(client, payload = {}) {
   }
   if (payload.teamName) interactive.rememberTeam(session, client, payload.teamName);
   if (client.role === "participant") session.participants.add(client.id);
+  normalizeSessionSlides(session);
   client.send({
     type: "session",
     payload: {

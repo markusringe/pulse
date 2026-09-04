@@ -28,6 +28,18 @@ export const ERRORS = {
     next: "Bei Events: mit Ihrem Team-Konto anmelden. Bei Ad-hoc-Sessions ohne Event: Admin-Schlüssel eingeben.",
     help: "#/help/troubleshooting",
   },
+  "HTTP 401": {
+    title: "Anmeldung abgelaufen",
+    cause: "Ihre Sitzung ist nicht mehr gültig (Timeout, Abmeldung auf einem anderen Tab oder Server-Neustart).",
+    next: "Bitte erneut anmelden. Ungespeicherte Eingaben in Admin-Bereichen gehen verloren.",
+    help: "#/admin/login",
+  },
+  session_expired: {
+    title: "Sitzung abgelaufen",
+    cause: "Sie waren angemeldet, aber die Session ist nicht mehr gültig.",
+    next: "Melden Sie sich erneut an, um den Admin-Bereich weiter zu nutzen.",
+    help: "#/admin/login",
+  },
   "HTTP 404": {
     title: "Nicht gefunden",
     cause: "Die Adresse oder die Session existiert auf diesem Server nicht.",
@@ -118,7 +130,7 @@ export function resolveErrorKey(raw) {
   if (!s) return "generic";
   if (ERRORS[s]) return s;
   const upper = s.toUpperCase();
-  const http = upper.match(/\bHTTP\s*(\d{3})\b/) || s.match(/\b(403|404|429|500)\b/);
+  const http = upper.match(/\bHTTP\s*(\d{3})\b/) || s.match(/\b(401|403|404|429|500)\b/);
   if (http) {
     const code = http[1] || http[0];
     const key = `HTTP ${code}`;
@@ -131,6 +143,7 @@ export function resolveErrorKey(raw) {
   if (lower.includes("reconnect")) return "reconnecting";
   if (lower.includes("session nicht gefunden") || lower.includes("not found")) return "session_not_found";
   if (lower.includes("team-konto") || lower.includes("auth_required")) return "auth_required";
+  if (lower.includes("session abgelaufen") || lower.includes("nicht angemeldet")) return "session_expired";
   if (lower.includes("permission_denied") || lower.includes("keine berechtigung")) return "permission_denied";
   if (lower.includes("admin") || lower.includes("forbidden") || lower.includes("gesperrt")) return "admin_lock";
   if (lower.includes("rate")) return "rate";

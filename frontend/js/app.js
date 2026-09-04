@@ -5,7 +5,7 @@
  *   initPoll / updatePollResults / initWordCloud / updateWordCloud
  */
 
-import { RealtimeClient, api } from "./websocket.js?v=nav20";
+import { RealtimeClient, api } from "./websocket.js?v=nav61";
 import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRatingResults, renderRatingInput } from "./poll.js";
 import { initQA, updateQA, destroyQA } from "./qa.js";
 import {
@@ -44,8 +44,9 @@ import {
   isAuthLoaded,
   canAccessAdminHash,
   logout,
-} from "./authClient.js?v=nav48";
-import { showLoginPage } from "./loginPage.js?v=nav48";
+  takeSessionExpiredNotice,
+} from "./authClient.js?v=nav61";
+import { showLoginPage } from "./loginPage.js?v=nav61";
 import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav59";
 import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
@@ -70,6 +71,7 @@ import {
   renderPresentStrip,
   applyMockDeck,
 } from "./deck.js";
+import { normalizeSessionSlides } from "./sessionSync.js?v=nav61";
 import {
   mountPresenterStats,
   refreshPresenterStats,
@@ -463,8 +465,8 @@ function bindGlobal() {
   });
   document.getElementById("btn-auth-logout")?.addEventListener("click", async () => {
     await logout();
-    location.hash = "#/";
-    route("/");
+    teardownRealtime();
+    navigate("/");
   });
   document.addEventListener("keydown", onHotkeys);
   bindPanic(els.panicButton, {
@@ -1403,6 +1405,7 @@ function connectRealtime(role) {
   rt.on("slide", (payload) => {
     if (!ctx.session) return;
     ctx.session.activeSlideIndex = payload.index;
+    normalizeSessionSlides(ctx.session);
     if (payload.slide) {
       const incoming = ctx.role === "join" ? stripSlideSecrets(payload.slide) : payload.slide;
       ctx.session.slides[payload.index] = { ...ctx.session.slides[payload.index], ...incoming };
@@ -1647,6 +1650,7 @@ function applySession(payload) {
   const session = payload?.session || payload;
   const clientRole = payload?.clientRole;
   if (!session) return;
+  normalizeSessionSlides(session);
   if (session.serverNow) ctx.eventClockSkew = session.serverNow - Date.now();
   if (session.eventMeta?.countdownDismissed) ctx.eventCountdownSkipped = true;
   if (clientRole) {
@@ -2944,6 +2948,7 @@ function applyDeckEvent(payload) {
     const prev = new Map((ctx.session.slides || []).map((s) => [s.id, s]));
     ctx.session.slides = payload.slides.map((s) => ({ ...(prev.get(s.id) || {}), ...s }));
     ctx.session.activeSlideIndex = payload.activeSlideIndex ?? 0;
+    normalizeSessionSlides(ctx.session);
     if (ctx.role === "join") stripPresenterSecrets(ctx.session);
     persistLocal(ctx.session);
     if (ctx.role === "present") renderActiveSlide();

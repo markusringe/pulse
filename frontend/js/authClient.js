@@ -15,6 +15,8 @@ const state = {
   stepUpUntil: null,
   /** Legacy-Zugriff per ADMIN_SECRET / X-Admin-Key (ohne Cookie-Login). */
   viaSecret: false,
+  /** Einmal-Hinweis: Session war abgelaufen (401 auf /auth/me). */
+  sessionExpired: false,
 };
 
 async function fetchJson(path, opts = {}) {
@@ -62,6 +64,7 @@ async function loadAuthInner(epoch) {
   const me = await fetchJson("/auth/me");
   if (epoch !== authLoadEpoch) return state;
   if (me.ok) {
+    state.sessionExpired = false;
     state.user = me.data?.user || null;
     state.nav = me.data?.nav?.length
       ? me.data.nav
@@ -77,6 +80,7 @@ async function loadAuthInner(epoch) {
   } else if (state.user && Date.now() < loginFreshUntil) {
     /* Frisch eingeloggt — /auth/me kann einen Tick hinterherhinken. */
   } else {
+    if (me.status === 401 && state.user) state.sessionExpired = true;
     state.user = null;
     state.nav = [];
     state.stepUpUntil = null;
@@ -336,6 +340,23 @@ export async function logout() {
   state.nav = [];
   state.stepUpUntil = null;
   state.viaSecret = false;
+  state.sessionExpired = false;
+}
+
+/** Einmal-Meldung „Session abgelaufen“ für Login-Seite / Boot. */
+export function takeSessionExpiredNotice() {
+  const flag = state.sessionExpired;
+  state.sessionExpired = false;
+  return flag;
+}
+
+/** Session serverseitig ungültig — z. B. nach 401 in fetchWithAuth. */
+export function markSessionExpired() {
+  state.sessionExpired = true;
+  state.user = null;
+  state.nav = [];
+  state.stepUpUntil = null;
+  state.viaSecret = false;
 }
 
 export async function changePassword(currentPassword, newPassword) {
@@ -427,11 +448,8 @@ export async function ensureAdminAccess(hash) {
 export async function fetchWithAuth(path, opts = {}) {
   const r = await fetchJson(path, opts);
   if (r.status === 401 && state.enabled) {
-    state.user = null;
-    state.nav = [];
-    state.stepUpUntil = null;
-    state.viaSecret = false;
-    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav59");
+    markSessionExpired();
+    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav61");
     await showAdminLoginModal("/admin");
     throw new Error("Session abgelaufen");
   }

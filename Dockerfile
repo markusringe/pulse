@@ -25,6 +25,8 @@ COPY lib ./lib
 COPY frontend ./frontend
 COPY --from=css-builder /app/frontend/css/pulse.css ./frontend/css/pulse.css
 COPY server.js ./
+# Diagnose und Bootstrap-Tests im Container (npm run pulse:diagnose / auth:diagnose / test:bootstrap)
+COPY scripts/diagnose-pulse.js scripts/diagnose-auth.js scripts/test-bootstrap.js scripts/test-reconnect-sync.js ./scripts/
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
   && mkdir -p /app/data/ssl \

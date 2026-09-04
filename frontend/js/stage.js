@@ -7,11 +7,12 @@
  * Notizen kommen serverseitig nicht an (revealNotes: false).
  */
 
-import { RealtimeClient, api } from "./websocket.js?v=nav8";
+import { RealtimeClient, api } from "./websocket.js?v=nav61";
 import { t } from "./i18n.js?v=nav13";
 import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRatingResults } from "./poll.js";
 import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
+import { normalizeSessionSlides } from "./sessionSync.js?v=nav61";
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js?v=nav1";
 import { stageStatusMessage } from "./interactionPresenter.js?v=nav55";
 
@@ -88,6 +89,7 @@ function connectStage(code) {
 
   rt.on("session", (payload) => {
     session = payload.session || payload;
+    normalizeSessionSlides(session);
     if (payload.serverNow != null) clockSkew = payload.serverNow - Date.now();
     else if (session?.serverNow) clockSkew = session.serverNow - Date.now();
     renderStage();
@@ -99,6 +101,7 @@ function connectStage(code) {
   rt.on("slide", (payload) => {
     if (!session) return;
     session.activeSlideIndex = payload.index;
+    normalizeSessionSlides(session);
     if (payload.slide) {
       session.slides[payload.index] = { ...session.slides[payload.index], ...payload.slide };
     }
