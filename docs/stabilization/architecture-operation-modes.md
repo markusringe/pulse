@@ -1,6 +1,6 @@
 # ADR: Betriebsmodi Einzelinstanz vs. Cluster
 
-Stand: v1.5.21 · Status: **angenommen (Stabilisierung)** · Feature-Freeze aktiv
+Stand: v1.5.22 · Status: **angenommen (Stabilisierung)** · Feature-Freeze aktiv
 
 ## Kontext
 
