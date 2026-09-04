@@ -250,8 +250,8 @@ let interactionBarCtrl = null;
 let interactionTickTimer = null;
 /** Timeout bis poll:update die Stimme bestätigt — danach einmal Retry. */
 let voteConfirmTimer = 0;
-/** rAF-Coalescing für Teilnehmer-Folien-Render bei schnellen Wechseln. */
-let joinSlideRaf = 0;
+/** Fallback-Polling für verpasste WS-Folienwechsel (Mobile/Tab-Wechsel). */
+let joinSlideSyncTimer = 0;
 
 /** @type {{ session: any, role: string, rt: RealtimeClient | null, sim: number }} */
 const ctx = {
@@ -1350,6 +1350,8 @@ function connectRealtime(role) {
   const rt = new RealtimeClient(url, {
     /* Teilnehmer dürfen nie in den Demo-Mock — sonst gehen Stimmen am echten Server vorbei. */
     mockWhenOffline: role === "presenter",
+    /* Teilnehmer: häufigerer Heartbeat — Pong trägt activeSlideIndex als Sync-Fallback. */
+    heartbeatMs: role === "participant" ? 4000 : 20000,
   });
   ctx.rt = rt;
 
@@ -1396,6 +1398,17 @@ function connectRealtime(role) {
   rt.on("pong", (payload) => {
     const now = payload?.serverNow ?? payload?.ts;
     if (now != null) ctx.eventClockSkew = Number(now) - Date.now();
+    /* Heartbeat-Fallback: verpasster WS-Folienwechsel (Mobile-Hintergrund). */
+    if (ctx.role === "join" && payload?.activeSlideIndex != null && ctx.session) {
+      const remoteIdx = Number(payload.activeSlideIndex);
+      if (Number.isFinite(remoteIdx) && remoteIdx !== ctx.session.activeSlideIndex) {
+        handleRemoteSlide({
+          index: remoteIdx,
+          slide: ctx.session.slides?.[remoteIdx],
+          stateVersion: payload.stateVersion,
+        });
+      }
+    }
   });
   rt.on("poll:update", (payload) => {
     patchSlideResults(payload);
@@ -1473,6 +1486,15 @@ function connectRealtime(role) {
       if (slide?.id === currentSlide()?.id) renderActiveSlide();
       else interactionBarCtrl?.render();
     } else if (ctx.role === "join") {
+      /* Interaction-Event kann vor slide eintreffen — Index an slideId ausrichten. */
+      const active = currentSlide();
+      if (active?.id !== payload.slideId) {
+        const idx = ctx.session.slides.findIndex((s) => s.id === payload.slideId);
+        if (idx >= 0) {
+          ctx.session.activeSlideIndex = idx;
+          normalizeSessionSlides(ctx.session);
+        }
+      }
       renderJoinSlide();
     }
     applyIncoming(ctx.session, payload);
@@ -1690,6 +1712,12 @@ function connectRealtime(role) {
   });
 
   rt.connect();
+  if (role === "participant") {
+    bindJoinVisibilityResync();
+    startJoinSlideSync();
+  } else {
+    stopJoinSlideSync();
+  }
 }
 
 function teardownRealtime() {
@@ -1697,8 +1725,7 @@ function teardownRealtime() {
   clearInteractionTick();
   window.clearTimeout(voteConfirmTimer);
   voteConfirmTimer = 0;
-  if (joinSlideRaf) cancelAnimationFrame(joinSlideRaf);
-  joinSlideRaf = 0;
+  stopJoinSlideSync();
   ctx.pendingVoteSlideId = null;
   ctx.pendingVotePayload = null;
   destroyPresenterStats();
@@ -1714,7 +1741,7 @@ function teardownRealtime() {
 }
 
 function applySession(payload) {
-  const session = payload?.session || payload;
+  let session = payload?.session || payload;
   const clientRole = payload?.clientRole;
   if (!session) return;
   normalizeSessionSlides(session);
@@ -1734,6 +1761,13 @@ function applySession(payload) {
   }
   if (ctx.role === "join") {
     stripPresenterSecrets(session);
+    const prev = ctx.session;
+    const incomingVer = Number(session.stateVersion) || 0;
+    const localVer = Number(prev?.stateVersion) || 0;
+    /* Voll-Session nie hinter frischem WS-Folienwechsel zurücksetzen. */
+    if (prev && incomingVer < localVer) {
+      session = { ...session, activeSlideIndex: prev.activeSlideIndex, stateVersion: localVer };
+    }
     ctx.session = session;
   } else {
     const prev = new Map((ctx.session?.slides || []).map((s) => [s.id, s]));
@@ -2251,7 +2285,8 @@ async function publishSlideChange(index) {
   };
   const viaWs = ctx.rt?.send("slide", payload);
   const needsRest = viaWs === false || ctx.rt?.mock;
-  if (!needsRest || !isLiveServer()) return;
+  const canUseApi = typeof location !== "undefined" && location.protocol !== "file:";
+  if (!needsRest || !canUseApi) return;
   try {
     const res = await api.setSlide(ctx.session.code, index, {
       expectedVersion: ctx.session.stateVersion ?? 0,
@@ -2290,21 +2325,70 @@ function handleRemoteSlide(payload) {
   });
   persistLocal(ctx.session);
   if (ctx.role === "join") {
-    const slide = currentSlide();
-    if (slide && els.joinQuestion) els.joinQuestion.textContent = slide.question || "";
-    scheduleJoinSlideRender();
+    refreshJoinSlideUi();
   } else if (ctx.role === "present") {
     renderActiveSlide();
   }
 }
 
-/** Teilnehmer-UI nach Folienwechsel im nächsten Frame vollständig rendern. */
+/**
+ * Teilnehmer-UI sofort nach Folienwechsel aktualisieren (ohne rAF — Mobile-Safari verzögert sonst).
+ */
+function refreshJoinSlideUi() {
+  const slide = currentSlide();
+  if (slide && els.joinQuestion) els.joinQuestion.textContent = slide.question || "";
+  renderJoinSlide({ preserveFeedback: true });
+}
+
+/** Deck-/Lobby-Events: gleiche Sofort-Aktualisierung wie bei slide. */
 function scheduleJoinSlideRender() {
-  if (joinSlideRaf) return;
-  joinSlideRaf = requestAnimationFrame(() => {
-    joinSlideRaf = 0;
-    if (ctx.role === "join") renderJoinSlide({ preserveFeedback: true });
+  refreshJoinSlideUi();
+}
+
+/** Tab sichtbar: Folienindex vom Server nachziehen (WS kann im Hintergrund hängen). */
+function bindJoinVisibilityResync() {
+  if (bindJoinVisibilityResync.bound) return;
+  bindJoinVisibilityResync.bound = true;
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && ctx.role === "join" && ctx.session?.code) {
+      void syncJoinSlideFromServer();
+    }
   });
+}
+
+/** Leichtes REST-Polling als Fallback für verpasste WS-slide-Events. */
+function startJoinSlideSync() {
+  stopJoinSlideSync();
+  if (ctx.role !== "join" || !ctx.session?.code) return;
+  joinSlideSyncTimer = window.setInterval(() => {
+    void syncJoinSlideFromServer();
+  }, 2500);
+}
+
+function stopJoinSlideSync() {
+  if (joinSlideSyncTimer) window.clearInterval(joinSlideSyncTimer);
+  joinSlideSyncTimer = 0;
+}
+
+/**
+ * Aktiven Folienindex per REST abgleichen — nur bei Abweichung UI neu rendern.
+ */
+async function syncJoinSlideFromServer() {
+  if (ctx.role !== "join" || !ctx.session?.code) return;
+  try {
+    const data = await api.getSession(ctx.session.code);
+    const remote = data?.session;
+    if (!remote || remote.activeSlideIndex == null) return;
+    const remoteIdx = Number(remote.activeSlideIndex);
+    if (!Number.isFinite(remoteIdx) || remoteIdx === ctx.session.activeSlideIndex) return;
+    handleRemoteSlide({
+      index: remoteIdx,
+      slide: remote.slides?.[remoteIdx],
+      stateVersion: remote.stateVersion,
+    });
+  } catch (err) {
+    console.debug("[join] Slide-Sync fehlgeschlagen", err);
+  }
 }
 
 function resetResults() {

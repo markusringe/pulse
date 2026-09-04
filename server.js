@@ -1909,7 +1909,14 @@ async function onWsMessage(client, data) {
   if (!data || typeof data !== "object") return;
   const { type, payload = {} } = data;
   if (type === "ping") {
-    client.send({ type: "pong", ts: Date.now(), serverNow: Date.now() });
+    const live = client.sessionCode ? sessions.get(client.sessionCode) : null;
+    client.send({
+      type: "pong",
+      ts: Date.now(),
+      serverNow: Date.now(),
+      activeSlideIndex: live?.activeSlideIndex,
+      stateVersion: live ? sessionVersion.getVersion(live) : undefined,
+    });
     return;
   }
   if (type === "batch" && Array.isArray(payload.updates)) {
@@ -2168,6 +2175,10 @@ function announceSlide(session) {
     payload: { index, slide, internal: true, stateVersion: sessionVersion.getVersion(session) },
     stateVersion: sessionVersion.getVersion(session),
   });
+  /* Zweites Signal für Clients, die das slide-Event verpasst haben (Mobile-Hintergrund). */
+  if (slide && interactionState.isInteractiveType(slide.type)) {
+    announceInteraction(session, slide);
+  }
 }
 
 async function joinSession(client, payload = {}) {
