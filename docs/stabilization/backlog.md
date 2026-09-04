@@ -11,7 +11,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | ID | Thema | Beschreibung | Status | Fix/Notiz |
 |----|-------|--------------|--------|-----------|
 | B-001 | Auth | Klick „Administration“ ohne sichtbare Reaktion | **behoben (lokal)** | nav59: Modal-Fallback, Route-Trigger, try/catch |
-| B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | teilweise | v1.4.6: Env-Sync, `auth:diagnose`, `admin:reset` — VPS verifizieren |
+| B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | **teilweise** | v1.4.9: `test:bootstrap` — VPS: `auth:diagnose` |
 | B-003 | Auth | Redirect-Schleife Login ↔ Onboarding | behoben | v1.4.5: eine authClient-Instanz |
 | B-004 | Rechte | Teamrechte serverseitig umgehbar | **teilweise** | `test-api-permissions.js`: fremdes Team/Event, User-Anlage |
 | B-005 | Live | Antworten vor Interaktionsstart | prüfen | `test-interaction-state.js` — manuell verifizieren |
@@ -31,7 +31,8 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | C-006 | Mobile | Startseite/Join nicht nutzbar | **teilweise** | v1.4.8: Admin-Icon sichtbar, Drawer-Fokus, Overflow |
 | C-007 | Mobile | Overlays blockieren Klicks | teilweise (Modal z-index) |
 | C-008 | WS | Synchronisierung fehlerhaft nach Reconnect | offen |
-| C-009 | Security | CORS `*` bei Cookie-Auth | OBS — prüfen Block 10 |
+| C-009 | Security | CORS `*` bei Cookie-Auth | **behoben** | v1.4.9: lib/cors.js — nur Same-Host + Whitelist |
+| B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | **teilweise** | test:bootstrap + auth:diagnose — VPS verifizieren |
 | C-010 | Cache | JS/CSS 24h Cache ohne Query-Bust nach Update | OBS — `?v=` in index.html Pflicht |
 
 ---

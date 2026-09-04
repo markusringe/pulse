@@ -43,6 +43,7 @@ const emailApi = require("./lib/emailApi");
 const backupService = require("./lib/backupService");
 const backupApi = require("./lib/backupApi");
 const teamApi = require("./lib/teamApi");
+const { corsHeadersForRequest, corsHeaders } = require("./lib/cors");
 const teamService = require("./lib/teamService");
 const autoBackup = require("./lib/autoBackup");
 
@@ -117,13 +118,13 @@ async function onHttpRequest(req, res) {
     /* Let's Encrypt HTTP-01 muss ohne Auth und ohne HTTPS-Redirect erreichbar sein. */
     if (ssl.serveChallenge(url.pathname, res)) return;
     if (req.method === "OPTIONS") {
-      res.writeHead(204, corsHeaders());
+      res.writeHead(204, corsHeaders(req));
       res.end();
       return;
     }
     /* Nur Klartext-HTTP umleiten, sobald ein aktives Zertifikat liegt. */
     if (!req.socket.encrypted && ssl.shouldRedirectHttp(url)) {
-      res.writeHead(301, { Location: ssl.httpsLocation(req, url), ...corsHeaders() });
+      res.writeHead(301, { Location: ssl.httpsLocation(req, url), ...corsHeaders(req) });
       res.end();
       return;
     }
@@ -3375,7 +3376,7 @@ function sendAttachment(res, status, obj, filename) {
   const body = JSON.stringify(obj, null, 2);
   compress.writeEncoded(res, status, body, "application/json; charset=utf-8", res._pulseReq, {
     "Content-Disposition": `attachment; filename="${filename}"`,
-    ...corsHeaders(),
+    ...corsHeaders(res._pulseReq),
   });
 }
 
@@ -3501,16 +3502,8 @@ function cacheControlFor(ext) {
   return "public, max-age=3600";
 }
 
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Admin-Key, X-Client-Id",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  };
-}
-
 function send(res, status, obj) {
-  compress.writeEncoded(res, status, JSON.stringify(obj), "application/json; charset=utf-8", res._pulseReq, corsHeaders());
+  compress.writeEncoded(res, status, JSON.stringify(obj), "application/json; charset=utf-8", res._pulseReq, corsHeaders(res._pulseReq));
 }
 
 function observe(req, url, status, started) {
