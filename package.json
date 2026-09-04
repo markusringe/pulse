@@ -1,6 +1,6 @@
 {
   "name": "pulse",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "private": true,
   "description": "Pulse — Live-Interaktion für Umfragen, Wortwolken, Q&A und Quiz (Vanilla JS + Node.js)",
   "main": "server.js",

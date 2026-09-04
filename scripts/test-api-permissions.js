@@ -11,15 +11,10 @@ const os = require("os");
 const http = require("http");
 
 const ROOT = path.join(__dirname, "..");
-const DATA_DIR = path.join(ROOT, "data");
-const EVENTS_FILE = path.join(DATA_DIR, "events.json");
+const { pickPort, makeIsolatedDataDir, serverTestEnv } = require("./test-server-env");
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
-}
-
-function pickPort() {
-  return 36000 + (process.pid % 24000);
 }
 
 /** Set-Cookie-Header zu Cookie-Request-String. */
@@ -83,12 +78,12 @@ function waitForHealth(port, attempts = 50) {
   });
 }
 
-/** Als Admin oder Benutzer per Kennwort anmelden. */
-async function loginPassword(port, email, password) {
+/** Als Admin per Kennwort anmelden (PIN-Modus erlaubt adminLogin). */
+async function loginPassword(port, email, password, adminLogin = false) {
   const r = await httpRequest("POST", `http://127.0.0.1:${port}/api/auth/login-password`, {
     email,
     password,
-    adminLogin: true,
+    adminLogin,
     persistent: true,
   });
   assert(r.status === 200, `Login ${email} → 200 (war ${r.status}: ${r.json.error || ""})`);
@@ -97,42 +92,54 @@ async function loginPassword(port, email, password) {
   return cookie;
 }
 
-/** events.json für Test sichern und leeren. */
-function backupEventsFile() {
-  if (fs.existsSync(EVENTS_FILE)) return fs.readFileSync(EVENTS_FILE);
-  return null;
-}
-
-function restoreEventsFile(backup) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (backup != null) fs.writeFileSync(EVENTS_FILE, backup);
-  else if (fs.existsSync(EVENTS_FILE)) fs.unlinkSync(EVENTS_FILE);
+/** Teammember/Viewer: PIN über Dev-Mailbox (AUTH_DEV_MAILBOX=1). */
+async function loginViaDevPin(port, email) {
+  const pinReq = await httpRequest("POST", `http://127.0.0.1:${port}/api/auth/request-pin`, { email });
+  assert(pinReq.status === 200, `PIN anfordern ${email} (${pinReq.status}: ${pinReq.json.error || ""})`);
+  const box = await httpRequest("GET", `http://127.0.0.1:${port}/api/auth/dev-mailbox`);
+  assert(box.status === 200, "Dev-Mailbox erreichbar");
+  const preview = box.json.messages?.[0]?.preview || "";
+  const pin = preview.match(/\b(\d{6})\b/)?.[1];
+  assert(pin, `PIN in Dev-Mailbox (${preview.slice(0, 60) || "leer"})`);
+  const r = await httpRequest("POST", `http://127.0.0.1:${port}/api/auth/verify-pin`, {
+    email,
+    pin,
+    persistent: true,
+  });
+  assert(r.status === 200, `PIN-Login ${email} → 200 (war ${r.status}: ${r.json.error || ""})`);
+  const cookie = cookiesFromResponse(r.headers);
+  assert(cookie.includes("pulse_auth"), "Session-Cookie gesetzt");
+  return cookie;
 }
 
 (async () => {
   const port = pickPort();
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-api-perm-"));
-  const dbPath = path.join(tmpDir, "pulse.db");
-  const eventsBackup = backupEventsFile();
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(EVENTS_FILE, JSON.stringify({ events: [] }));
+  const tmpDir = makeIsolatedDataDir("pulse-api-perm-");
+  const dbPath = path.join(tmpDir, "data", "pulse.db");
+  fs.writeFileSync(
+    path.join(tmpDir, "data", "email-config.json"),
+    JSON.stringify({ provider: "none", updatedAt: Date.now() })
+  );
 
-  const env = {
-    ...process.env,
+  const env = serverTestEnv({
     PORT: String(port),
-    NODE_ENV: "test",
     SQLITE_PATH: dbPath,
     USER_AUTH_ENABLED: "1",
     AUTH_DEV_MAILBOX: "1",
+    SMTP_HOST: "",
+    SMTP_FROM: "",
+    SMTP_PASS: "",
     BOOTSTRAP_ADMIN_EMAIL: "admin@test.local",
     BOOTSTRAP_ADMIN_PASSWORD: "ApiTest123!",
     BOOTSTRAP_ADMIN_NAME: "API Test Admin",
     ADMIN_SECRET: "api-perm-test-secret",
-    REDIS_URL: "",
-    IP_BLOCK: "0",
-  };
+  });
 
-  const child = spawn(process.execPath, ["server.js"], { cwd: ROOT, env, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(process.execPath, [path.join(ROOT, "server.js")], {
+    cwd: tmpDir,
+    env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
   try {
     await waitForHealth(port);
@@ -145,7 +152,7 @@ function restoreEventsFile(backup) {
     for (const [label, method, pathSuffix, body] of [
       ["users", "GET", "/api/users", null],
       ["events POST", "POST", "/api/events", { title: "X", teamId: "t1" }],
-      ["branding", "PUT", "/api/branding", { branding: { appName: "X" } }],
+      ["branding", "POST", "/api/branding", { appName: "X" }],
       ["backups", "GET", "/api/backups", null],
     ]) {
       const r = await httpRequest(method, `${base}${pathSuffix}`, body);
@@ -153,7 +160,7 @@ function restoreEventsFile(backup) {
     }
 
     /* --- Setup: Admin, Teams, Member, Event --- */
-    const adminCookie = await loginPassword(port, "admin@test.local", "ApiTest123!");
+    const adminCookie = await loginPassword(port, "admin@test.local", "ApiTest123!", true);
 
     const teamA = await httpRequest("POST", `${base}/api/teams`, { name: "Team Alpha" }, adminCookie);
     assert(teamA.status === 201, `Team A anlegen (${teamA.status})`);
@@ -199,7 +206,7 @@ function restoreEventsFile(backup) {
     assert(eventId && teamBSessionCode, "Event-ID und Session-Code Team B");
 
     /* --- Teammitglied: fremdes Team / Event --- */
-    const memberCookie = await loginPassword(port, "member-a@test.local", "MemberPass123!");
+    const memberCookie = await loginViaDevPin(port, "member-a@test.local");
 
     const foreignTeam = await httpRequest("GET", `${base}/api/teams/${teamBId}`, null, memberCookie);
     assert(foreignTeam.status === 403, `Fremdes Team lesen → 403 (war ${foreignTeam.status})`);
@@ -232,7 +239,7 @@ function restoreEventsFile(backup) {
 
     /* --- Teammember: keine Instanz-Administration --- */
     for (const [label, method, pathSuffix, body] of [
-      ["branding", "PUT", "/api/branding", { branding: { appName: "Hack" } }],
+      ["branding", "POST", "/api/branding", { appName: "Hack" }],
       ["backups", "GET", "/api/backups", null],
       ["settings export", "GET", "/api/settings/export", null],
       ["teams POST", "POST", "/api/teams", { name: "Illegales Team" }],
@@ -303,7 +310,7 @@ function restoreEventsFile(backup) {
       adminCookie
     );
     assert(viewerUser.status === 201, `Viewer anlegen (${viewerUser.status})`);
-    const viewerCookie = await loginPassword(port, "viewer@test.local", "ViewerPass123!");
+    const viewerCookie = await loginViaDevPin(port, "viewer@test.local");
     const viewerEvent = await httpRequest(
       "POST",
       `${base}/api/events`,
@@ -319,7 +326,6 @@ function restoreEventsFile(backup) {
     console.log(`API-Permissions-Tests OK (Port ${port})`);
   } finally {
     child.kill("SIGTERM");
-    restoreEventsFile(eventsBackup);
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch {
