@@ -2,7 +2,7 @@
 
 Anleitung zum lokalen Testen und zum Produktivbetrieb. Voraussetzungen, Schnellstart per Skript, manuelle Schritte und Docker Compose.
 
-**Stand:** Programmversion **v1.5.16** · Ist-Zustand aus dem Repository (Node ≥ 22, npm, optional Docker Compose).
+**Stand:** Programmversion **v1.5.17** · Ist-Zustand aus dem Repository (Node ≥ 22, npm, optional Docker Compose).
 
 ---
 
