@@ -68,7 +68,19 @@ curl -sS https://<domain>/api/health/ready | jq '{ok, version, checks: .checks|m
 **Rollback (automatisch):** Bei Readiness-Timeout stellt der Updater v1.1 Git und `pulse-app:<vorherige-version>` wieder her.  
 **Rollback (manuell):** `PULSE_IMAGE_TAG=1.5.10 docker compose up -d --no-build` nach `git checkout v1.5.10` — Pre-Update-Backup unter `backups/vps-update-*` prüfen.
 
-## Incident: asset_manifest fehlgeschlagen
+## Rollback-Drill (Abnahme v1.5.11+)
+
+Einmal pro Release-Zyklus außerhalb laufender Veranstaltungen:
+
+```bash
+cd /opt/pulse
+sudo ./scripts/rollback-drill.sh --yes
+cat backups/rollback-drill-*.json | tail -1
+```
+
+Erwartung: Rollback auf `pulse-app:<vorherige-version>` → Ready `ok:true` → Remote-Smoke → Wiederherstellung auf Zielversion → Protokoll `outcome: success`. Details: `docs/stabilization/smoke-checklist.md`.
+
+---
 
 - Symptom: Container startet nicht (Production) oder Ready 503, Check `asset_manifest` false
 - Ursache: fehlendes/kaputtes `frontend/asset-manifest.json` im Image

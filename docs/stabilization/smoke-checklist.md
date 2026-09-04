@@ -87,16 +87,37 @@ In DevTools prüfen — **keine** dieser Fehler:
 
 ## Rollback-Drill (v1.5.11+, einmal pro Release-Zyklus)
 
-**Ziel:** Bei fehlgeschlagenem Update kehrt Prod automatisch zur vorherigen Version zurück.
+**Ziel:** Nachweis, dass versionierte Images (`pulse-app:<version>`) per `--no-build` starten, Readiness `ok:true` liefert und danach die Zielversion wiederhergestellt wird.
 
-1. Vor Update: Version notieren (z. B. v1.5.11), `docker images | grep pulse-app`
-2. Update auf neue Version starten
-3. **Optional Staging:** absichtlich kaputtes Manifest simulieren → Build muss **abbrechen**, alte Container laufen
-4. Bei Readiness-Fail: Updater v1.1 führt Rollback aus → `pulse-app:<alte-version>` startet
-5. Prüfen: `curl …/api/health/ready` → `ok:true`, Version = alte Version
-6. Remote-Smoke gegen alte Version
+**Skript:** `scripts/rollback-drill.sh` · Test: `npm run test:rollback-drill`
 
----
+```bash
+# Auf dem VPS (Wartungsfenster, keine laufende Veranstaltung):
+cd /opt/pulse
+sudo ./scripts/rollback-drill.sh --yes
+# Protokoll: backups/rollback-drill-*.json
+```
+
+Ablauf im Skript:
+
+1. Backup `data/` + `.env`
+2. Baseline: Ready + Version + `docker images | grep pulse-app`
+3. Rollback: `PULSE_IMAGE_TAG=<alt>` · `compose up -d --no-build --force-recreate`
+4. Prüfen: `/api/health/ready` → `ok:true`, Version = alte Version, Remote-Smoke
+5. Wiederherstellung auf Zielversion (Default: package.json)
+6. Remote-Smoke gegen Zielversion
+
+**Hinweis:** Beim Recreate gibt es eine **kurze Unterbrechung** (kein Zero-Downtime). Buildfehler-Rollback (Updater v1.1) hält alte Container ohne Recreate — separater Test optional.
+
+| Schritt | Status | Notiz |
+|---------|--------|-------|
+| Skript + Pfadtest | ✓ | `rollback-drill.sh`, `test:rollback-drill-path.sh` |
+| Prod-Baseline Remote-Smoke | ✓ | 16/16, v1.5.11 (2026-09-04) |
+| VPS-Drill ausgeführt | ✓ | **2026-09-04T19:16:55Z**, `outcome: success` |
+| Rollback v1.5.10 | ✓ | Ready `ok:true`, Health-Version 1.5.10 |
+| Wiederherstellung v1.5.11 | ✓ | Ready `ok:true`, Remote-Smoke 16/16 (lokal) |
+| Protokoll | ✓ | `backups/rollback-drill-2026-09-04T19-16-55Z.json` auf VPS |
+| Downtime | ~ | ca. 10–20 s Cutover; Skript recreated nur App + nginx |
 
 ## Startseite & Join
 
@@ -180,7 +201,7 @@ docker images | grep pulse-app
 | Remote-Smoke 16/16 | ✓ (v1.5.11) |
 | `asset_manifest` Ready | ✓ |
 | Automatisierter Rollback (Code) | ✓ (v1.5.11) |
-| Rollback-Drill Prod | ✗ |
+| Rollback-Drill Prod | ✓ (2026-09-04, success) |
 | Browser-Pflichtpfad (19 Schritte) | ✗ |
 | Admin/Login/Rollen Prod | ✗ (SMTP) |
-| Gesamt Freigabe | **RC Pilot** — Browser + Rollback-Drill offen |
+| Gesamt Freigabe | **RC Pilot** — Browser-Pflichtpfad + Admin/Login Prod offen |

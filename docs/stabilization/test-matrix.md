@@ -5,7 +5,7 @@
 | Bereich | Automatisiert | Skript | Manuell |
 |---------|---------------|--------|---------|
 | Installation | teilweise | `test:install`, `test-install-vps-path.sh` | VPS-Install |
-| Update | teilweise | `test-update-vps-path.sh`, `test:update-rollback` | VPS-Update + Rollback-Drill |
+| Update | teilweise | `test-update-vps-path.sh`, `test:update-rollback`, `test:rollback-drill`, `rollback-drill.sh` (VPS) | VPS-Update + Rollback-Drill |
 | Asset-Manifest | ja | `test:asset-manifest`, `npm run build` | Readiness `asset_manifest` |
 | Remote-Smoke | ja | `smoke:remote` | Prod nach Deploy |
 | Bootstrap-Admin | ja | `test:auth` | Installer + Erstlogin |

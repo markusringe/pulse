@@ -43,6 +43,8 @@
     "test:state-version": "node scripts/test-state-version.js",
     "test:asset-manifest": "node scripts/test-asset-manifest.js",
     "test:update-rollback": "bash scripts/test-update-rollback-path.sh",
+    "test:rollback-drill": "bash scripts/test-rollback-drill-path.sh",
+    "rollback-drill": "bash scripts/rollback-drill.sh",
     "test:qr": "node scripts/test-qr.js",
     "test:install-vps": "bash scripts/test-install-vps-path.sh",
     "bootstrap:admin": "node scripts/bootstrap-admin.js",

@@ -103,5 +103,6 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 5. ~~Phase 6: Update/Rollback (C-014)~~ — **erledigt** (v1.5.11, `test:update-rollback`)
 6. ~~Smoke-Checkliste manuell abhaken (`smoke-checklist.md`)~~ — **teilweise** (2026-09-04, s. Checkliste — Admin/Rollen offen wegen PIN-Mail)
 7. ~~**v1.5.11** auf Prod deployen~~ — **erledigt** (2026-09-04, Remote-Smoke 16/16)
-8. Rollback-Drill auf Staging + Browser-Pflichtpfad (19 Schritte)
-9. SSH-Key auf VPS rotieren (Key im Chat exponiert)
+8. ~~Rollback-Drill auf Staging~~ — **erledigt** (Prod 2026-09-04, `outcome: success`)
+9. Browser-Pflichtpfad (19 Schritte)
+10. SSH-Key auf VPS rotieren (Key erneut im Chat exponiert)
