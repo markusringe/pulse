@@ -702,6 +702,11 @@ export const api = {
       return { ok: false, status: 0, data: { error: "Netzwerkfehler" } };
     }
   },
+
+  /** Backup-ZIP und zugehörige Metadaten (.json) entfernen. */
+  async backupsDelete(filename) {
+    return requestResult("DELETE", `/backups/${encodeURIComponent(filename)}`);
+  },
 };
 
 async function request(method, path, body) {

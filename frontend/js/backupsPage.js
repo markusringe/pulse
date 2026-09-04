@@ -75,6 +75,7 @@ function renderBackupTable(backups) {
         <td class="backup-actions" data-label="Aktionen">
           <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-backup-download="${esc(b.filename)}">Download</button>
           <button type="button" class="btn ghost btn-sm btn-warning pulse-btn-ghost" data-backup-restore="${esc(b.filename)}">Wiederherstellen</button>
+          <button type="button" class="btn ghost btn-sm pulse-btn-ghost" data-backup-delete="${esc(b.filename)}">Löschen</button>
         </td>
       </tr>`;
     })
@@ -135,6 +136,25 @@ async function onCreateBackup() {
 /** Backup-Datei herunterladen. */
 function downloadBackup(filename) {
   window.location.href = `/api/backups/download/${encodeURIComponent(filename)}`;
+}
+
+/**
+ * Backup unwiderruflich löschen (Bestätigung + Step-Up wie bei Restore).
+ * @param {string} filename
+ */
+async function deleteBackup(filename) {
+  if (!filename) return;
+  if (!confirm(`Backup „${filename}“ unwiderruflich löschen?`)) return;
+  setMsg("Backup wird gelöscht…");
+  const r = await withStepUp(() => api.backupsDelete(filename));
+  if (!r?.ok) {
+    setMsg(r?.data?.error || "Löschen fehlgeschlagen.", true);
+    showToast("Löschen fehlgeschlagen", "error");
+    return;
+  }
+  await loadBackups();
+  setMsg("Backup gelöscht.");
+  showToast("Backup gelöscht", "success");
 }
 
 let restoreDialogEl = null;
@@ -317,6 +337,11 @@ function onTableClick(ev) {
   const restore = ev.target.closest("[data-backup-restore]");
   if (restore) {
     void restoreBackup(restore.getAttribute("data-backup-restore"));
+    return;
+  }
+  const del = ev.target.closest("[data-backup-delete]");
+  if (del) {
+    void deleteBackup(del.getAttribute("data-backup-delete"));
   }
 }
 
