@@ -93,6 +93,8 @@ assert(!ssl.serveChallenge("/admin/ssl", res), "kein Challenge-Pfad");
 assert(ssl.isSecureRequest({ headers: { "x-forwarded-proto": "https" }, socket: {} }), "Proxy HTTPS");
 assert(!ssl.isSecureRequest({ headers: { "x-forwarded-proto": "http" }, socket: {} }), "Proxy HTTP");
 assert(ssl.isSecureRequest({ headers: {}, socket: { encrypted: true } }), "direktes TLS");
+const healthUrl = new URL("http://x/api/health/ready");
+assert(!ssl.shouldRedirectHttp(healthUrl), "Readiness nicht redirecten");
 ssl._challenges.delete("test-token");
 
 const info = ssl.httpsInfo();
