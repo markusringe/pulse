@@ -5,7 +5,7 @@
 
 import { api } from "./websocket.js?v=nav44";
 import { withStepUp } from "./stepUp.js?v=nav47";
-import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav48";
+import { loadAuth, applyAdminNavVisibility } from "./authClient.js?v=nav62";
 import { syncAdminNav } from "./adminNav.js?v=nav44";
 
 function $(id) {

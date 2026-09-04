@@ -6,7 +6,7 @@
 import { api } from "./websocket.js?v=nav20";
 import { t, applyDom, onLang, i18nReady } from "./i18n.js?v=nav13";
 import { syncAdminNav } from "./adminNav.js?v=nav42";
-import { canCreateEvents, isAdminUser, isUserAuthEnabled } from "./authClient.js?v=nav48";
+import { canCreateEvents, isAdminUser, isUserAuthEnabled } from "./authClient.js?v=nav62";
 import { typeIcon, typeLabel } from "./deck.js";
 import { scaleEventImageFile, mountCountdown, remainingMs } from "./eventCountdown.js?v=nav49";
 import {

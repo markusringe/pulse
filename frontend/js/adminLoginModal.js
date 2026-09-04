@@ -3,8 +3,8 @@
  * Firefox: showModal() muss in der User-Geste erfolgen — Dialog daher sofort öffnen.
  */
 
-import { loadAuth, getAuthUser, isAuthEnabled } from "./authClient.js?v=nav48";
-import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav48";
+import { loadAuth, getAuthUser, isAuthEnabled } from "./authClient.js?v=nav62";
+import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav62";
 
 const ADMIN_REDIRECT_KEY = "pulse:admin-redirect";
 
@@ -170,7 +170,8 @@ export async function showAdminLoginModal(targetHash = "/admin") {
           idPrefix: "admin-login-",
           adminLogin: true,
           showCancel: true,
-          onSuccess: (redirectHash) => {
+          onSuccess: async (redirectHash) => {
+            await loadAuth();
             redirectAfterLogin = redirectHash || `#${destination}`;
             dlg.close("ok");
           },

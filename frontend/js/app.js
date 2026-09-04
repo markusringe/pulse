@@ -45,9 +45,9 @@ import {
   canAccessAdminHash,
   logout,
   takeSessionExpiredNotice,
-} from "./authClient.js?v=nav61";
-import { showLoginPage } from "./loginPage.js?v=nav61";
-import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav59";
+} from "./authClient.js?v=nav62";
+import { showLoginPage } from "./loginPage.js?v=nav62";
+import { showAdminLoginModal, isAdminLoginModalOpen, rememberAdminRedirect } from "./adminLoginModal.js?v=nav62";
 import { showUsersPage } from "./usersAdmin.js?v=nav43";
 import { showTeamsPage } from "./teamsPage.js?v=nav43";
 import { showProfilePage } from "./profilePage.js?v=nav30";

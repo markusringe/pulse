@@ -11,7 +11,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | ID | Thema | Beschreibung | Status | Fix/Notiz |
 |----|-------|--------------|--------|-----------|
 | B-001 | Auth | Klick „Administration“ ohne sichtbare Reaktion | **behoben (lokal)** | nav59: Modal-Fallback, Route-Trigger, try/catch |
-| B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | **teilweise** | v1.4.9: `test:bootstrap` — VPS: `auth:diagnose` |
+| B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | **teilweise** | v1.5.1: eine authClient-Instanz (nav62) + sync:install-password |
 | B-003 | Auth | Redirect-Schleife Login ↔ Onboarding | behoben | v1.4.5: eine authClient-Instanz |
 | B-004 | Rechte | Teamrechte serverseitig umgehbar | **teilweise** | `test-api-permissions.js`: fremdes Team/Event, User-Anlage |
 | B-005 | Live | Antworten vor Interaktionsstart | **behoben (Unit)** | `test-interaction-state.js` + Server-Gate in applyVote |

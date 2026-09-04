@@ -2,9 +2,9 @@
  * Login-Seite (#/admin/login): Vollseiten-Anmeldung für Admin-Bereich.
  */
 
-import { getAuthUser, isAuthEnabled, hasAdminAccess, loadAuth, takeSessionExpiredNotice } from "./authClient.js?v=nav61";
-import { initLoginForm } from "./adminLoginForm.js?v=nav48";
-import { consumeAdminRedirect } from "./adminLoginModal.js?v=nav48";
+import { getAuthUser, isAuthEnabled, hasAdminAccess, loadAuth, takeSessionExpiredNotice } from "./authClient.js?v=nav62";
+import { initLoginForm } from "./adminLoginForm.js?v=nav62";
+import { consumeAdminRedirect } from "./adminLoginModal.js?v=nav62";
 import { explainError } from "./help.js?v=help9";
 
 /** Login-UI auf der Vollseite initialisieren. */
@@ -20,7 +20,8 @@ export async function showLoginPage() {
     title: "Anmelden",
     idPrefix: "login-",
     adminLogin: true,
-    onSuccess: (redirectHash) => {
+    onSuccess: async (redirectHash) => {
+      await loadAuth();
       location.hash = redirectHash || consumeAdminRedirect("#/admin/events");
     },
   });

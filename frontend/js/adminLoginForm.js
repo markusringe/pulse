@@ -16,7 +16,7 @@ import {
   isPinLoginAvailable,
   needsAuthBootstrap,
   getDevMailbox,
-} from "./authClient.js?v=nav48";
+} from "./authClient.js?v=nav62";
 
 /** Laufender Formularzustand pro Container-Instanz. */
 const instances = new WeakMap();
@@ -294,6 +294,7 @@ async function onVerifyPin(container, state) {
     return;
   }
   setError(container, state, "");
+  await loadAuth();
   disposeLoginForm(container);
   state.options.onSuccess?.("#/admin/events");
 }
@@ -339,6 +340,8 @@ async function onPasswordLogin(container, state) {
     setError(container, state, r.data?.error || "Anmeldung fehlgeschlagen.");
     return;
   }
+  /* Session-Cookie und /auth/me in derselben authClient-Instanz nachziehen (Router nutzt dieselbe). */
+  await loadAuth();
   disposeLoginForm(container);
   if (r.data?.bootstrapCompleted) {
     if (r.data.requiresPinSetup) sessionStorage.setItem("pulse:requires-pin-setup", "1");
