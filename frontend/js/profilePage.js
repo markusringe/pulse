@@ -2,7 +2,7 @@
  * Benutzerprofil (#/admin/profile): Anzeigename und Kennwort ändern.
  */
 
-import { getAuthUser, updateProfile, changePassword, roleLabel } from "./authClient.js?v=nav32";
+import { getAuthUser, updateProfile, changePassword, roleLabel } from "./authClient.js?v=nav48";
 
 /** Profilseite rendern und Formulare binden. */
 export async function showProfilePage() {

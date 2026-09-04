@@ -14,7 +14,7 @@ import {
   loadAuth,
   canManageUsers,
   applyAdminNavVisibility,
-} from "./authClient.js?v=nav43";
+} from "./authClient.js?v=nav48";
 import { withStepUp, ensureStepUp } from "./stepUp.js?v=nav43";
 import { syncAdminNav } from "./adminNav.js?v=nav43";
 

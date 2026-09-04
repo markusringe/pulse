@@ -3,8 +3,8 @@
  * Firefox: showModal() muss in der User-Geste erfolgen — Dialog daher sofort öffnen.
  */
 
-import { loadAuth, getAuthUser, isAuthEnabled } from "./authClient.js?v=nav47";
-import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav47";
+import { loadAuth, getAuthUser, isAuthEnabled } from "./authClient.js?v=nav48";
+import { initLoginForm, disposeLoginForm } from "./adminLoginForm.js?v=nav48";
 
 const ADMIN_REDIRECT_KEY = "pulse:admin-redirect";
 

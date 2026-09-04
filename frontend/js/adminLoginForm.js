@@ -16,7 +16,7 @@ import {
   isPinLoginAvailable,
   needsAuthBootstrap,
   getDevMailbox,
-} from "./authClient.js?v=nav47";
+} from "./authClient.js?v=nav48";
 
 /** Laufender Formularzustand pro Container-Instanz. */
 const instances = new WeakMap();
@@ -33,9 +33,10 @@ const instances = new WeakMap();
 
 /** Welcher Anmelde-Modus aktiv ist. */
 function resolveLoginMode(options = {}) {
-  if (isBootstrapPasswordLogin() || needsAuthBootstrap()) return "bootstrap";
-  /* Administratoren melden sich immer mit Kennwort an (auch wenn SMTP/PIN für andere aktiv ist). */
+  if (needsAuthBootstrap()) return "bootstrap";
+  /* Admin-Bereich nach abgeschlossener Erstinstallation: Kennwort, kein Bootstrap-Hinweis. */
   if (options.adminLogin) return "password";
+  if (isBootstrapPasswordLogin()) return "bootstrap";
   if (isPasswordLoginMode() && !isPinLoginAvailable()) return "password";
   return "pin";
 }
@@ -303,8 +304,10 @@ async function onPasswordLogin(container, state) {
   const pwInput = el(container, state.idPrefix, "password");
   state.email = (emailInput?.value || "").trim().toLowerCase();
   const password = pwInput?.value || "";
+  const adminFlow = Boolean(state.options.adminLogin);
   const bootstrapFlow =
-    state.loginMode === "bootstrap" || isBootstrapPasswordLogin() || needsAuthBootstrap();
+    !adminFlow &&
+    (state.loginMode === "bootstrap" || needsAuthBootstrap() || isBootstrapPasswordLogin());
   const minLen = bootstrapFlow ? 4 : 8;
   if (!state.email.includes("@")) {
     setError(container, state, "Bitte geben Sie eine gültige E-Mail-Adresse ein.");
@@ -323,8 +326,6 @@ async function onPasswordLogin(container, state) {
   setError(container, state, "");
   const persistent = el(container, state.idPrefix, "persistent-pw")?.checked !== false;
 
-  /** Bootstrap zuerst, bei Bedarf Fallback auf allgemeinen Kennwort-Login. */
-  const adminFlow = Boolean(state.options.adminLogin);
   let r = bootstrapFlow
     ? await bootstrapLogin(state.email, password, persistent)
     : await loginPassword(state.email, password, persistent, adminFlow);

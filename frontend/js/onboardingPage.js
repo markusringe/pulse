@@ -9,7 +9,7 @@ import {
   isAdminUser,
   refreshAuthMe,
   completeOnboardingBackup,
-} from "./authClient.js?v=nav45";
+} from "./authClient.js?v=nav48";
 
 function $(id) {
   return document.getElementById(id);

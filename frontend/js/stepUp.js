@@ -8,7 +8,7 @@ import {
   submitStepUpPin,
   hasValidStepUp,
   refreshAuthMe,
-} from "./authClient.js?v=nav47";
+} from "./authClient.js?v=nav48";
 
 let dialogEl = null;
 

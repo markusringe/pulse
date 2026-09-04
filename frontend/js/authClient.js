@@ -32,17 +32,23 @@ async function fetchJson(path, opts = {}) {
 
 /** Auth-Status und aktuellen Benutzer laden (dedupliziert bei parallelen Aufrufen). */
 let authLoadPromise = null;
+/** Laufende Anfrage — veraltete /auth/me-Antworten ignorieren. */
+let authLoadEpoch = 0;
+/** Zeitstempel nach erfolgreichem Login (Cookie kann kurz verzögert ankommen). */
+let loginFreshUntil = 0;
 
 export async function loadAuth() {
   if (authLoadPromise) return authLoadPromise;
-  authLoadPromise = loadAuthInner().finally(() => {
+  const epoch = ++authLoadEpoch;
+  authLoadPromise = loadAuthInner(epoch).finally(() => {
     authLoadPromise = null;
   });
   return authLoadPromise;
 }
 
-async function loadAuthInner() {
+async function loadAuthInner(epoch) {
   const status = await fetchJson("/auth/status");
+  if (epoch !== authLoadEpoch) return state;
   state.enabled = Boolean(status.data?.enabled);
   state.needsBootstrap = Boolean(status.data?.needsBootstrap);
   state.bootstrapPasswordLogin = Boolean(status.data?.bootstrapPasswordLogin);
@@ -54,6 +60,7 @@ async function loadAuthInner() {
     return state;
   }
   const me = await fetchJson("/auth/me");
+  if (epoch !== authLoadEpoch) return state;
   if (me.ok) {
     state.user = me.data?.user || null;
     state.nav = me.data?.nav?.length
@@ -67,6 +74,8 @@ async function loadAuthInner() {
     if (state.viaSecret && !state.user) {
       state.nav = NAV_FALLBACK.admin;
     }
+  } else if (state.user && Date.now() < loginFreshUntil) {
+    /* Frisch eingeloggt — /auth/me kann einen Tick hinterherhinken. */
   } else {
     state.user = null;
     state.nav = [];
@@ -75,6 +84,11 @@ async function loadAuthInner() {
   }
   state.loaded = true;
   return state;
+}
+
+/** Nach erfolgreichem Login kurz gegen überschreibende loadAuth()-Lauf schützen. */
+function markLoginFresh() {
+  loginFreshUntil = Date.now() + 5000;
 }
 
 /** Ob der Auth-Status mindestens einmal vom Server geladen wurde. */
@@ -223,6 +237,7 @@ export async function verifyPin(email, pin, persistent = true) {
     body: { email, pin, persistent },
   });
   if (r.ok) {
+    markLoginFresh();
     state.user = r.data.user;
     state.nav = r.data.nav?.length ? r.data.nav : NAV_FALLBACK[r.data.user?.role] || [];
     state.stepUpUntil = r.data.stepUpUntil || Date.now() + 15 * 60 * 1000;
@@ -240,6 +255,7 @@ export async function bootstrapLogin(email, password, persistent = true) {
     body: { email, password, persistent },
   });
   if (r.ok) {
+    markLoginFresh();
     state.user = r.data.user;
     state.nav = r.data.nav?.length
       ? r.data.nav
@@ -264,6 +280,7 @@ export async function loginPassword(email, password, persistent = true, adminLog
     body: { email, password, persistent, adminLogin: Boolean(adminLogin) },
   });
   if (r.ok) {
+    markLoginFresh();
     state.user = r.data.user;
     state.nav = r.data.nav?.length
       ? r.data.nav
@@ -407,7 +424,7 @@ export async function fetchWithAuth(path, opts = {}) {
     state.nav = [];
     state.stepUpUntil = null;
     state.viaSecret = false;
-    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav47");
+    const { showAdminLoginModal } = await import("./adminLoginModal.js?v=nav48");
     await showAdminLoginModal("/admin");
     throw new Error("Session abgelaufen");
   }
