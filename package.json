@@ -23,6 +23,7 @@
     "test:events": "node scripts/test-events.js",
     "test:auth": "node scripts/test-auth.js && node scripts/test-auth-http.js",
     "test:smoke": "node scripts/test-smoke.js",
+    "smoke:remote": "node scripts/smoke-remote-url.js",
     "test:permissions": "node scripts/test-permissions.js",
     "test:routes": "node scripts/test-routes.js",
     "test:performance": "node scripts/test-performance.js",
