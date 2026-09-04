@@ -300,7 +300,7 @@ Remote One-Liner:
 curl -fsSL https://raw.githubusercontent.com/markusringe/pulse/main/scripts/update-vps-ubuntu.sh | sudo bash
 ```
 
-Optionen: `--tag v1.4.5` (festes Release), `--npm` / `--docker`, `--yes`, `--skip-backup`, `--json`.  
+Optionen: `--tag v1.4.6` (festes Release), `--npm` / `--docker`, `--yes`, `--skip-backup`, `--json`.  
 Erkennt automatisch Docker-Stack (Standard) oder npm-Modus.
 
 ### Lokal (Git + npm)
