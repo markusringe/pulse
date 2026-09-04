@@ -42,6 +42,8 @@ const { ensureBootstrapAdmin, bootstrapCredentials } = require("./lib/bootstrapA
 const { ensureDemoEvent } = require("./lib/demoEventSeed");
 const updateService = require("./lib/updateService");
 const emailApi = require("./lib/emailApi");
+const { handleMailgunWebhook } = require("./lib/email/mailgunWebhook");
+const outboxWorker = require("./lib/email/outboxWorker");
 const backupService = require("./lib/backupService");
 const backupApi = require("./lib/backupApi");
 const teamApi = require("./lib/teamApi");
@@ -486,6 +488,10 @@ async function buildHealthPayload(full = true) {
     .catch((err) => console.warn("[sendmail]", err.message || err));
   updateService.onServerBoot().catch((err) => console.error("[update-boot]", err));
   updateService.startBackgroundChecks();
+  /* Outbox-Worker: fällige Mailgun/SMTP-Queue-Einträge abarbeiten */
+  setInterval(() => {
+    outboxWorker.tick(emailService.getOutboxWorkerDeps(), 15).catch((err) => console.error("[email-outbox]", err));
+  }, 30_000);
   });
 })();
 
@@ -498,6 +504,10 @@ async function handleApi(req, res, url) {
     return;
   }
   const parts = url.pathname.split("/").filter(Boolean);
+  if (parts[1] === "webhooks" && parts[2] === "mailgun") {
+    await handleMailgunWebhook(req, res, readJson, send);
+    return;
+  }
   if (req.method === "GET" && parts[1] === "health") {
     const sub = parts[2];
     if (sub === "live") {

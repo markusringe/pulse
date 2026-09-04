@@ -37,8 +37,11 @@ const health = emailService.healthInfo();
 assert(health.provider === "smtp", "emailService lädt Datei-Konfiguration");
 assert(emailService.canSendPin(), "SMTP als konfiguriert erkannt");
 
+emailConfigStore.save({ provider: "mailgun", from: "noreply@mg.test.local" });
+emailService.reloadConfig();
+assert(emailService.canSendPin(), "Dev: mailgun ohne Env nutzt Capture");
+
 emailConfigStore.save({ provider: "none", smtpPass: "" });
-/* Produktionsmodus ohne Dev-Mailbox und ohne SMTP_*-Env — sonst bleibt PIN aktiv. */
 const prevNodeEnv = process.env.NODE_ENV;
 const prevDevMailbox = process.env.AUTH_DEV_MAILBOX;
 const prevSmtpHost = process.env.SMTP_HOST;

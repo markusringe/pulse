@@ -839,7 +839,7 @@
             <h1>E-Mail-Versand</h1>
           </div>
         </header>
-        <p class="muted">SMTP, Sendmail oder kein Versand. Ohne E-Mail-Anbindung erfolgt die Anmeldung per Kennwort.</p>
+        <p class="muted">SMTP, Sendmail, Mailgun oder kein Versand. Mailgun-Secrets nur über Umgebungsvariablen.</p>
         <p id="email-status" class="muted" role="status"></p>
         <form id="email-form" class="panel pulse-card pulse-admin-form" onsubmit="return false">
           <label class="field">
@@ -848,6 +848,7 @@
               <option value="none">Kein E-Mail-Versand (nur Kennwort-Login)</option>
               <option value="smtp">SMTP</option>
               <option value="sendmail">Sendmail</option>
+              <option value="mailgun">Mailgun (EU)</option>
             </select>
           </label>
           <div id="email-none-panel" class="email-provider-panel">
@@ -878,6 +879,24 @@
           <div id="email-sendmail-panel" class="email-provider-panel" hidden>
             <label class="field"><span>Sendmail-Pfad</span><input id="email-sendmail-path" value="/usr/bin/sendmail" /></label>
             <label class="field"><span>Absender-E-Mail</span><input id="email-sendmail-from" type="email" /></label>
+          </div>
+          <div id="email-mailgun-panel" class="email-provider-panel" hidden>
+            <p class="hint muted">
+              API-Key und Domain über <code>MAILGUN_API_KEY</code>, <code>MAILGUN_DOMAIN</code> (EU:
+              <code>MAILGUN_API_BASE=https://api.eu.mailgun.net</code>).
+            </p>
+            <p id="email-mailgun-env" class="muted" role="status"></p>
+            <label class="field">
+              <span>Bestätigte Admin-E-Mail (Testversand)</span>
+              <input id="email-confirmed-admin" type="email" autocomplete="email" />
+            </label>
+            <label class="field"><span>Absender-E-Mail (Mailgun-Domain)</span><input id="email-mailgun-from" type="email" /></label>
+            <div class="btn-row">
+              <button type="button" class="btn ghost" id="email-dns-refresh">DNS-Einträge laden</button>
+              <button type="button" class="btn ghost" id="email-dns-verify">DNS prüfen (Mailgun)</button>
+            </div>
+            <div id="email-dns-table" class="email-dns-table muted" role="region" aria-live="polite"></div>
+            <p class="hint muted">DMARC-Start: <code>v=DMARC1; p=none</code> — später auf <code>p=quarantine</code> oder <code>p=reject</code> verschärfen.</p>
           </div>
           <label class="field"><span>Absender-Name</span><input id="email-from-name" value="Team Townhall" /></label>
           <div class="pulse-admin-form-sticky">

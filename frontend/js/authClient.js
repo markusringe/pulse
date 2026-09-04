@@ -414,6 +414,14 @@ export async function sendTestEmail(body = {}) {
   return fetchJson("/email/test", { method: "POST", body });
 }
 
+export async function getEmailDomainDns() {
+  return fetchJson("/email/domain");
+}
+
+export async function verifyEmailDomain() {
+  return fetchJson("/email/domain/verify", { method: "POST", body: {} });
+}
+
 /**
  * Admin-Routen: bei aktivierter Benutzerverwaltung Login erzwingen.
  * @param {string} hash
