@@ -70,17 +70,13 @@ assert(updateService.effectiveRepo() === "markusringe/pulse", "effectiveRepo aus
 
 delete process.env.UPDATE_REPO;
 process.env.UPDATE_ENABLED = "true";
-delete require.cache[require.resolve("../lib/updateService")];
-const fallbackRepo = require("../lib/updateService");
-assert(fallbackRepo.effectiveRepo() === "markusringe/pulse", "effectiveRepo Fallback DEFAULT_REPO");
-assert(fallbackRepo.updatesEnabled(), "Updates mit DEFAULT_REPO aktiv");
+assert(updateService.effectiveRepo() === "markusringe/pulse", "effectiveRepo Fallback DEFAULT_REPO");
+assert(updateService.updatesEnabled(), "Updates mit DEFAULT_REPO aktiv");
 
 delete process.env.UPDATE_REPO;
 process.env.UPDATE_ENABLED = "false";
-delete require.cache[require.resolve("../lib/updateService")];
-const disabled = require("../lib/updateService");
-assert(!disabled.configuredRepo(), "Ohne UPDATE_REPO kein Repo");
-assert(!disabled.updatesEnabled(), "Mit UPDATE_ENABLED=false deaktiviert");
+assert(!updateService.configuredRepo(), "Ohne UPDATE_REPO kein Repo");
+assert(!updateService.updatesEnabled(), "Mit UPDATE_ENABLED=false deaktiviert");
 
 process.chdir(prevCwd);
 fs.rmSync(tmpRoot, { recursive: true, force: true });

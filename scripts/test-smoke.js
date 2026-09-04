@@ -10,13 +10,10 @@ const os = require("os");
 const http = require("http");
 
 const ROOT = path.join(__dirname, "..");
+const { pickPort, makeIsolatedDataDir, serverTestEnv } = require("./test-server-env");
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
-}
-
-function pickPort() {
-  return 35000 + (process.pid % 25000);
 }
 
 function httpGet(url, timeoutMs = 8000) {
@@ -57,14 +54,11 @@ function waitForHealth(port, attempts = 40) {
   const port = pickPort();
   assert(port !== 3000, "Smoke-Port darf nicht 3000 sein");
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-smoke-"));
+  const tmpDir = makeIsolatedDataDir("pulse-smoke-");
   const dbPath = path.join(tmpDir, "pulse.db");
-  fs.mkdirSync(path.join(tmpDir, "ssl"), { recursive: true });
 
-  const env = {
-    ...process.env,
+  const env = serverTestEnv({
     PORT: String(port),
-    NODE_ENV: "test",
     SQLITE_PATH: dbPath,
     USER_AUTH_ENABLED: "1",
     AUTH_DEV_MAILBOX: "1",
@@ -72,18 +66,13 @@ function waitForHealth(port, attempts = 40) {
     BOOTSTRAP_ADMIN_PASSWORD: "SmokeTest123!",
     BOOTSTRAP_ADMIN_NAME: "Smoke Admin",
     ADMIN_SECRET: "smoke-test-secret-not-production",
-    REDIS_URL: "",
-    IP_BLOCK: "0",
-  };
-
-  const child = spawn(process.execPath, ["server.js"], {
-    cwd: ROOT,
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
   });
 
-  let stderr = "";
-  child.stderr.on("data", (c) => (stderr += c));
+  const child = spawn(process.execPath, [path.join(ROOT, "server.js")], {
+    cwd: tmpDir,
+    env,
+    stdio: "ignore",
+  });
 
   try {
     await waitForHealth(port);
@@ -106,13 +95,16 @@ function waitForHealth(port, attempts = 40) {
 
     console.log(`Smoke-Tests OK (Port ${port})`);
   } finally {
-    child.kill("SIGTERM");
+    try {
+      child.kill("SIGTERM");
+    } catch {
+      /* ignore */
+    }
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch {
       /* temp */
     }
-    if (stderr && process.env.DEBUG_SMOKE) console.error(stderr);
   }
 })().catch((err) => {
   console.error("Smoke-Test fehlgeschlagen:", err.message);

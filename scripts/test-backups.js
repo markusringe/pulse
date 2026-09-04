@@ -21,6 +21,7 @@ fs.writeFileSync(
 
 process.env.BACKUP_DIR = path.join(tmpRoot, "data", "backups");
 
+const projectVersion = require("../package.json").version;
 const backupService = require("../lib/backupService");
 
 function assert(cond, msg) {
@@ -44,7 +45,7 @@ function assert(cond, msg) {
 
   const valid = await backupService.validateBackupZip(zipPath);
   assert(valid.valid, "ZIP gültig");
-  assert(valid.metadata.appVersion === "1.0.0", "Metadaten Version");
+  assert(valid.metadata.appVersion === projectVersion, "Metadaten Version");
   assert(valid.groups?.length > 0, "Gruppen-Katalog");
 
   await backupService.restoreFromBackup(zipPath, {
@@ -55,8 +56,9 @@ function assert(cond, msg) {
   assert(branding.appName === "Test", "Selektives Branding-Restore");
 
   const version = backupService.analyzeBackupVersion(valid.metadata);
-  assert(version.currentVersion === "1.0.0", "Aktuelle Version");
-  assert(version.status === "match", "Version match");
+  assert(version.backupVersion === projectVersion, "Backup-Version aus Projekt-Metadaten");
+  assert(version.currentVersion === "1.0.0", "Installations-Version aus Test-cwd");
+  assert(version.status === "backup_newer", "Backup neuer als Test-Installation");
 
   const list = backupService.listBackups();
   assert(list.length === 1, "Ein Backup in Liste");

@@ -19,13 +19,31 @@ assert(/<title>/.test(html), "title vorhanden");
 assert(html.includes('name="viewport"'), "viewport meta");
 
 const inputs = [...html.matchAll(/<input[^>]*>/gi)].map((m) => m[0]);
+/** Prüft, ob das Input-Tag innerhalb eines offenen <label> liegt (auch ohne id). */
+function hasWrappedLabel(source, inp) {
+  const idx = source.indexOf(inp);
+  if (idx < 0) return false;
+  const before = source.slice(Math.max(0, idx - 800), idx);
+  const labelStart = before.lastIndexOf("<label");
+  const labelEnd = before.lastIndexOf("</label>");
+  return labelStart > labelEnd;
+}
 for (const inp of inputs) {
   if (/type=["']hidden["']/i.test(inp)) continue;
-  const hasLabel =
-    /aria-label=/i.test(inp) ||
-    /aria-labelledby=/i.test(inp) ||
-    html.includes(`for="${inp.match(/id=["']([^"']+)["']/)?.[1]}"`);
-  assert(hasLabel, `Input ohne Label/ARIA: ${inp.slice(0, 80)}`);
+  const id = inp.match(/id=["']([^"']+)["']/)?.[1];
+  const hasExplicitFor = id && html.includes(`for="${id}"`);
+  const hasAria = /aria-label=/i.test(inp) || /aria-labelledby=/i.test(inp);
+  /** Verschachteltes Label (<label>…<input id>…</label>) ist barrierefrei gültig. */
+  const hasNestedLabel =
+    id &&
+    new RegExp(
+      `<label[^>]*>[\\s\\S]*?id=["']${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`,
+      "i"
+    ).test(html);
+  assert(
+    hasExplicitFor || hasAria || hasNestedLabel || hasWrappedLabel(html, inp),
+    `Input ohne Label/ARIA: ${inp.slice(0, 80)}`
+  );
 }
 
 assert(html.includes("admin-login-dialog") || html.includes("view-login"), "Login-Container definiert");

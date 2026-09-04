@@ -27,6 +27,8 @@ const stored = hashPassword("geheim");
 assert(verifyPassword("geheim", stored), "Passwort ok");
 assert(!verifyPassword("falsch", stored), "Passwort falsch");
 
+/* IP-Sperre ist standardmäßig aus (IP_BLOCK=0 in Docker) — für Cap-Test explizit aktivieren. */
+rate.setIpBlockEnabled(true);
 const fake = {};
 for (let i = 0; i < 100; i++) assert(rate.addSocket("ip1", { i }), "ws " + i);
 assert(!rate.addSocket("ip1", fake), "101. Verbindung abgelehnt");

@@ -38,8 +38,25 @@ assert(health.provider === "smtp", "emailService lädt Datei-Konfiguration");
 assert(emailService.canSendPin(), "SMTP als konfiguriert erkannt");
 
 emailConfigStore.save({ provider: "none", smtpPass: "" });
+/* Produktionsmodus ohne Dev-Mailbox und ohne SMTP_*-Env — sonst bleibt PIN aktiv. */
+const prevNodeEnv = process.env.NODE_ENV;
+const prevDevMailbox = process.env.AUTH_DEV_MAILBOX;
+const prevSmtpHost = process.env.SMTP_HOST;
+const prevSmtpFrom = process.env.SMTP_FROM;
+process.env.NODE_ENV = "production";
+process.env.AUTH_DEV_MAILBOX = "0";
+delete process.env.SMTP_HOST;
+delete process.env.SMTP_FROM;
 emailService.reloadConfig();
 assert(!emailService.canSendPin(), "none deaktiviert PIN-Versand");
+process.env.NODE_ENV = prevNodeEnv;
+if (prevDevMailbox !== undefined) process.env.AUTH_DEV_MAILBOX = prevDevMailbox;
+else delete process.env.AUTH_DEV_MAILBOX;
+if (prevSmtpHost !== undefined) process.env.SMTP_HOST = prevSmtpHost;
+else delete process.env.SMTP_HOST;
+if (prevSmtpFrom !== undefined) process.env.SMTP_FROM = prevSmtpFrom;
+else delete process.env.SMTP_FROM;
+emailService.reloadConfig();
 
 console.log("test-email-config: OK");
 fs.rmSync(tmpDir, { recursive: true, force: true });

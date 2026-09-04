@@ -226,17 +226,31 @@ assert(userDb.supported, "SQLite userDb verfügbar");
   assert(permissions.canCreateEvent({ role: "editor", status: "active" }), "editor darf Events");
   assert(!permissions.canCreateEvent({ role: "viewer", status: "active" }), "viewer nicht Events");
 
-  /* Event-Zugriff */
+  /* Event-Zugriff (Team-basiert seit v1.4.x) */
   const ev = {
+    id: "ev_team",
+    teamId: "team_owner",
+    visibility: "private",
     ownerUserId: "usr_owner",
     editorUserIds: [],
-    presenterUserIds: ["usr_pres"],
+    presenterUserIds: [],
     viewerUserIds: [],
   };
-  const editorAccess = permissions.eventAccess({ id: "usr_owner", role: "editor", status: "active" }, ev);
-  assert(editorAccess.edit && editorAccess.present, "Owner-Editor Vollzugriff");
-  const viewerAccess = permissions.eventAccess({ id: "usr_pres", role: "viewer", status: "active" }, ev);
-  assert(viewerAccess.present && !viewerAccess.edit, "Viewer present only");
+  const ownerCtx = { userTeamIds: ["team_owner"] };
+  const editorAccess = permissions.eventAccess(
+    { id: "usr_owner", role: "editor", status: "active" },
+    ev,
+    [],
+    ownerCtx
+  );
+  assert(editorAccess.edit && editorAccess.present, "Editor im Event-Team: Vollzugriff");
+  const viewerAccess = permissions.eventAccess(
+    { id: "usr_pres", role: "viewer", status: "active" },
+    { ...ev, visibility: "public" },
+    [],
+    {}
+  );
+  assert(viewerAccess.view && !viewerAccess.present && !viewerAccess.edit, "Viewer: nur public lesen");
 
   /* Rate-Limit PIN */
   pinLimiter.checkPinAttempt("rate@test.local", "ip1");

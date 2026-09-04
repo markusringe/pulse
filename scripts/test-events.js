@@ -19,7 +19,7 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tt-events-"));
 const origCwd = process.cwd();
 process.chdir(dir);
 
-const a = events.create({ title: "Townhall Ost", description: "Quartier", startAt: "2026-09-10", endAt: "2026-09-12", category: "Stadt" });
+const a = events.create({ title: "Townhall Ost", description: "Quartier", startAt: "2026-09-10", endAt: "2026-09-12", category: "Stadt", teamId: "team_test_a" });
 assert(a.id && a.joinCode.length === 6, "create id/code");
 assert(a.sessionCode === a.joinCode, "sessionCode equals joinCode");
 assert(a.status === "planned", "default planned");
@@ -44,13 +44,13 @@ assert(events.remove(a.id).statusCode === 409, "no delete while active");
 events.setStatus(a.id, "planned");
 assert(events.remove(a.id).ok, "delete planned");
 
-const future = events.create({ title: "Zukunft", startAt: "2099-01-01", endAt: "2099-01-02", status: "active" });
+const future = events.create({ title: "Zukunft", startAt: "2099-01-01", endAt: "2099-01-02", status: "active", teamId: "team_test_b" });
 const tick = events.tickStatuses(Date.parse("2026-09-02T12:00:00Z"));
 const afterTick = events.get(future.id);
 assert(afterTick.status === "planned", "tick future to planned");
 assert(tick.changed.some((c) => c.id === future.id), "tick reports change");
 
-const past = events.create({ title: "Vergangen", startAt: "2020-01-01", endAt: "2020-01-02", status: "active" });
+const past = events.create({ title: "Vergangen", startAt: "2020-01-01", endAt: "2020-01-02", status: "active", teamId: "team_test_c" });
 events.tickStatuses(Date.parse("2026-09-02T12:00:00Z"));
 assert(events.get(past.id).status === "ended", "tick past to ended");
 
@@ -146,6 +146,7 @@ const activePast = events.create({
   startAt: "2020-01-01",
   endAt: "2020-01-01",
   status: "active",
+  teamId: "team_test_d",
   startTime: "2020-01-01T10:00:00.000Z",
 });
 assert(activePast.startTime, "past startTime allowed when active");

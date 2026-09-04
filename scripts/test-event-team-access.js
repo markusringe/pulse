@@ -3,6 +3,7 @@
  * Team-basierte Event-Berechtigungen und teamId-Pflicht.
  */
 
+const nodeAssert = require("assert");
 const permissions = require("../lib/permissions");
 const eventStore = require("../lib/events");
 const fs = require("fs");
@@ -75,7 +76,7 @@ process.chdir(tmp);
 fs.mkdirSync("data", { recursive: true });
 fs.writeFileSync(path.join("data", "events.json"), JSON.stringify({ events: [] }));
 
-assert.throws(
+nodeAssert.throws(
   () => eventStore.create({ title: "Ohne Team" }, { requireTeam: true }),
   /Team ist erforderlich/,
   "Create ohne teamId schlägt fehl"
@@ -89,7 +90,7 @@ eventStore.setStatus(created.id, "active");
 assert(eventStore.get(created.id).status === "active", "Aktivierung mit teamId ok");
 
 const orphan = eventStore.create({ title: "Ohne Team Legacy" });
-assert.throws(
+nodeAssert.throws(
   () => eventStore.setStatus(orphan.id, "active"),
   /Team-Zuordnung/,
   "Aktivierung ohne teamId schlägt fehl"

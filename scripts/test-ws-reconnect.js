@@ -96,6 +96,19 @@ function waitForWsMessage(ws, type, timeoutMs = 8000) {
   });
 }
 
+/** WebSocket schließen und kurz warten. */
+function closeWs(ws) {
+  return new Promise((resolve) => {
+    if (!ws || ws.readyState === WebSocket.CLOSED) return resolve();
+    ws.addEventListener("close", () => resolve(), { once: true });
+    try {
+      ws.close();
+    } catch {
+      resolve();
+    }
+    setTimeout(resolve, 500).unref();
+  });
+}
 /** Verbindet zum Pulse-WebSocket und tritt als Teilnehmer bei. */
 async function joinParticipant(port, code) {
   const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
@@ -136,8 +149,26 @@ async function joinParticipant(port, code) {
   const child = spawn(process.execPath, ["server.js"], {
     cwd: ROOT,
     env,
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: "ignore",
   });
+
+  /** Server-Prozess zuverlässig beenden (SIGTERM reicht manchmal nicht). */
+  function stopChild() {
+    if (!child.killed) {
+      try {
+        child.kill("SIGTERM");
+      } catch {
+        /* ignore */
+      }
+      setTimeout(() => {
+        try {
+          child.kill("SIGKILL");
+        } catch {
+          /* ignore */
+        }
+      }, 1500).unref();
+    }
+  }
 
   try {
     await waitForHealth(port);
@@ -161,6 +192,7 @@ async function joinParticipant(port, code) {
     const first = await joinParticipant(port, code);
     assert(first.sessionMsg.payload?.session?.activeSlideIndex === 0, "Erster Join → Folie 0");
     first.ws.close();
+    await closeWs(first.ws);
 
     /* Presenter ändert Folie per REST, während Client getrennt ist. */
     const slideChange = await httpJson(
@@ -179,10 +211,11 @@ async function joinParticipant(port, code) {
       `Reconnect → Folie 2 (war ${second.sessionMsg.payload?.session?.activeSlideIndex})`
     );
     second.ws.close();
+    await closeWs(second.ws);
 
     console.log(`WS-Reconnect-Tests OK (Port ${port}, Session ${code})`);
   } finally {
-    child.kill("SIGTERM");
+    stopChild();
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch {

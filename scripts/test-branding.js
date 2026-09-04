@@ -145,10 +145,17 @@ for (const code of ["de", "en", "fr"]) {
   assert(dict["qa.timer.running"], `${code}: qa.timer.running`);
 }
 
-const live = JSON.parse(fs.readFileSync(path.join(root, "data/branding.json"), "utf8"));
-assert(live.primary === SAARBRUECKEN.primary, "data/branding.json primary");
-assert(live.secondary === SAARBRUECKEN.secondary, "data/branding.json secondary");
-assert(live.bg === SAARBRUECKEN.bg, "data/branding.json bg");
-assert(live.text === SAARBRUECKEN.text, "data/branding.json text");
+/* Live-branding.json: nur Defaults prüfen wenn unverändert (CI/Dev); angepasste Prod-Daten überspringen. */
+const brandingPath = path.join(root, "data/branding.json");
+if (fs.existsSync(brandingPath)) {
+  const live = JSON.parse(fs.readFileSync(brandingPath, "utf8"));
+  const isDefaultPalette =
+    String(live.primary || "").toLowerCase() === SAARBRUECKEN.primary.toLowerCase() &&
+    String(live.secondary || "").toLowerCase() === SAARBRUECKEN.secondary.toLowerCase();
+  if (isDefaultPalette) {
+    assert(live.bg === SAARBRUECKEN.bg, "data/branding.json bg");
+    assert(live.text === SAARBRUECKEN.text, "data/branding.json text");
+  }
+}
 
 console.log("Branding-Tests OK");

@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.2 · Prod noch v1.5.1 (Deploy ausstehend) · Branch `main`
+Stand: v1.5.3 · Prod noch v1.5.1 (Deploy v1.5.2+ ausstehend) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -14,8 +14,10 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 | B-002 | Auth | Bootstrap-Admin kann sich nicht anmelden (Prod) | **behoben** | v1.5.1: authClient nav62 + sync:install-password |
 | B-003 | Auth | Redirect-Schleife Login ↔ Onboarding | **behoben** | v1.4.5 / v1.5.1 |
 | B-004 | Rechte | Teamrechte serverseitig umgehbar | **teilweise** | `test-api-permissions.js` (+ Session/Viewer/Branding) |
-| B-005 | Live | Antworten vor Interaktionsstart | **behoben (Unit)** | `test-interaction-state.js` |
+| B-005 | Live | Antworten vor Interaktionsstart | **behoben** | v1.5.3: interactionState in-place + test-interaction-state |
 | B-006 | Live | Falsche aktive Folie bei Reconnect | **teilweise** | v1.5.0 clamp + v1.5.2 join; `test-ws-reconnect.js` |
+| B-007 | Live | „Interaktion starten“ ohne serverseitige Wirkung | **behoben** | v1.5.3: stale ix nach normalizeSlide |
+| B-008 | Update | loadState/effectiveRepo Endlosrekursion | **behoben** | v1.5.3: readStoredRepo + emptyConfig |
 
 ---
 
@@ -61,9 +63,22 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ---
 
+## Behoben (v1.5.x)
+
+| ID | Fix-Version | Regressionstest |
+|----|-------------|-----------------|
+| B-001 | v1.4.7 | manuell + nav59 |
+| B-002 | v1.5.1 | test-bootstrap, auth-http |
+| B-003 | v1.4.5 | test-routes |
+| B-005, B-007, B-008 | **v1.5.3** | test-interaction-state.js, test-updates.js |
+| C-009 | v1.4.9 | test-cors.js |
+| H-002 | v1.4.7 | test-routes |
+
+---
+
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` 1.5.2 · Prod `1.5.1` / `app.js?v=nav62` (nav63 nach Deploy)
+- **Version:** `package.json` 1.5.3 · Prod `1.5.1` / Deploy v1.5.2+ ausstehend
 - **Docker:** `pulse` + `pulse-b` teilen `./data`, `.env`, `REDIS_URL` ✓
 - **Diagnose:** `docker exec pulse-pulse-1 npm run pulse:diagnose` (Skripte im Image ab v1.5.0)
 
@@ -71,8 +86,8 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## Nächste Schritte (priorisiert)
 
-1. **v1.5.2 auf Prod deployen** — Deep-Link + Reconnect-join + nav63
-2. Smoke-Checkliste Live-Reconnect manuell (Presenter + Join)
-3. Block 4: Permission-Tests erweitern ✓ (Session-Folie, Viewer, Instanz-API)
+1. **v1.5.3** committen + **v1.5.2/1.5.3 auf Prod deployen**
+2. `npm test` lokal (Node 22) — siehe `docs/stabilization/test-audit-v1.5.3.md`
+3. Smoke-Checkliste Live-Reconnect + Interaktionsstart manuell
 4. Mobile Smoke 320–430 px
-5. Freeze-Abschluss: `docs/feature-freeze.md` Kriterien abhaken
+5. Freeze-Abschluss: Tag v1.5.3 nach grüner Suite
