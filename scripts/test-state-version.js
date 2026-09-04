@@ -47,6 +47,27 @@ assert(
   "stage deck bypass stale"
 );
 
+const ixSession = {
+  slides: [{ id: "s1", interaction: { seq: 2, state: "active" } }],
+  stateVersion: 10,
+};
+assert(
+  sessionVersion.acceptInteraction(ixSession, {
+    slideId: "s1",
+    interaction: { seq: 3, state: "running" },
+    stateVersion: 8,
+  }),
+  "interaction: höhere seq trotz niedrigerer stateVersion"
+);
+assert(
+  !sessionVersion.acceptInteraction(ixSession, {
+    slideId: "s1",
+    interaction: { seq: 1, state: "active" },
+    stateVersion: 99,
+  }),
+  "interaction: veraltete seq verwerfen"
+);
+
 sessionVersion.applyIncoming(session, { stateVersion: 5 });
 assert(sessionVersion.getVersion(session) === 5, "applyIncoming");
 

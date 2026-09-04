@@ -61,6 +61,44 @@ export function acceptIncoming(session, payload) {
 /** Folienwechsel/Deck/Lobby: für Teilnehmer und Stage nicht wegen stateVersion verwerfen. */
 const HIGH_PRIORITY_EVENTS = new Set(["slide", "deck", "lobby"]);
 
+/** Interaction.seq der Folie — monotoner Zähler pro Interaktionsphase. */
+export function interactionSeq(slide) {
+  return Number(slide?.interaction?.seq) || 0;
+}
+
+/**
+ * Muss Interaktionsstand vom Server übernommen werden (Abstimmungsstart auf gleicher Folie)?
+ * @param {object | null | undefined} localSlide
+ * @param {object | null | undefined} remoteSlide
+ */
+export function interactionNeedsSync(localSlide, remoteSlide) {
+  if (!localSlide || !remoteSlide || localSlide.id !== remoteSlide.id) return false;
+  const remoteSeq = interactionSeq(remoteSlide);
+  const localSeq = interactionSeq(localSlide);
+  if (remoteSeq > localSeq) return true;
+  if (remoteSeq < localSeq) return false;
+  const rs = remoteSlide.interaction?.state;
+  const ls = localSlide.interaction?.state;
+  return rs != null && rs !== ls;
+}
+
+/**
+ * Interaction-Events für Teilnehmer: interaction.seq hat Vorrang vor stateVersion.
+ * @param {{ slides?: object[], stateVersion?: number } | null | undefined} session
+ * @param {{ slideId?: string, interaction?: { seq?: number }, stateVersion?: number } | null | undefined} payload
+ * @returns {boolean}
+ */
+export function acceptInteraction(session, payload) {
+  if (!payload?.slideId || !payload?.interaction) return acceptIncoming(session, payload);
+  const slide = session?.slides?.find((s) => s.id === payload.slideId);
+  if (!slide) return acceptIncoming(session, payload);
+  const incomingSeq = Number(payload.interaction.seq) || 0;
+  const localSeq = interactionSeq(slide);
+  if (incomingSeq > localSeq) return true;
+  if (incomingSeq < localSeq) return false;
+  return acceptIncoming(session, payload);
+}
+
 /**
  * Strukturelle Events rollenabhängig filtern — Presenter behält stale-Schutz.
  * @param {{ stateVersion?: number } | null | undefined} session

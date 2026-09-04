@@ -1910,11 +1910,17 @@ async function onWsMessage(client, data) {
   const { type, payload = {} } = data;
   if (type === "ping") {
     const live = client.sessionCode ? sessions.get(client.sessionCode) : null;
+    const activeSlide = live?.slides?.[live.activeSlideIndex];
     client.send({
       type: "pong",
       ts: Date.now(),
       serverNow: Date.now(),
       activeSlideIndex: live?.activeSlideIndex,
+      activeSlideId: activeSlide?.id,
+      interaction:
+        activeSlide && interactionState.isInteractiveType(activeSlide.type)
+          ? interactionState.publicSnapshot(activeSlide)
+          : undefined,
       stateVersion: live ? sessionVersion.getVersion(live) : undefined,
     });
     return;

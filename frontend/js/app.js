@@ -74,7 +74,7 @@ import {
   renderPresentStrip,
   applyMockDeck,
 } from "./deck.js";
-import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming, applySlidePayload } from "./sessionSync.js";
+import { normalizeSessionSlides, acceptIncoming, acceptStructural, acceptInteraction, applyIncoming, applySlidePayload, interactionNeedsSync } from "./sessionSync.js";
 import {
   mountPresenterStats,
   refreshPresenterStats,
@@ -1398,15 +1398,21 @@ function connectRealtime(role) {
   rt.on("pong", (payload) => {
     const now = payload?.serverNow ?? payload?.ts;
     if (now != null) ctx.eventClockSkew = Number(now) - Date.now();
-    /* Heartbeat-Fallback: verpasster WS-Folienwechsel (Mobile-Hintergrund). */
-    if (ctx.role === "join" && payload?.activeSlideIndex != null && ctx.session) {
-      const remoteIdx = Number(payload.activeSlideIndex);
-      if (Number.isFinite(remoteIdx) && remoteIdx !== ctx.session.activeSlideIndex) {
-        handleRemoteSlide({
-          index: remoteIdx,
-          slide: ctx.session.slides?.[remoteIdx],
-          stateVersion: payload.stateVersion,
-        });
+    /* Heartbeat-Fallback: Folienindex und Interaktionsstand (Abstimmungsstart). */
+    if (ctx.role === "join" && ctx.session) {
+      if (payload?.activeSlideIndex != null) {
+        const remoteIdx = Number(payload.activeSlideIndex);
+        if (Number.isFinite(remoteIdx) && remoteIdx !== ctx.session.activeSlideIndex) {
+          handleRemoteSlide({
+            index: remoteIdx,
+            slide: ctx.session.slides?.[remoteIdx],
+            stateVersion: payload.stateVersion,
+          });
+          return;
+        }
+      }
+      if (payload?.activeSlideId && payload?.interaction) {
+        applyJoinInteractionUpdate(payload.activeSlideId, payload.interaction, payload.stateVersion);
       }
     }
   });
@@ -1473,31 +1479,12 @@ function connectRealtime(role) {
   });
   rt.on("interaction", (payload) => {
     if (!ctx.session || !payload?.slideId) return;
-    if (!acceptIncoming(ctx.session, payload)) return;
-    const slide = ctx.session.slides.find((s) => s.id === payload.slideId);
-    if (slide && payload.interaction) {
-      slide.interaction = { ...slide.interaction, ...payload.interaction };
-      if (payload.interaction.state === "running") resetJoinTimerAnnouncements(slide.id);
-    }
-    if (payload.serverNow) ctx.eventClockSkew = payload.serverNow - Date.now();
-    persistLocal(ctx.session);
-    syncInteractionTick();
-    if (ctx.role === "present") {
-      if (slide?.id === currentSlide()?.id) renderActiveSlide();
-      else interactionBarCtrl?.render();
-    } else if (ctx.role === "join") {
-      /* Interaction-Event kann vor slide eintreffen — Index an slideId ausrichten. */
-      const active = currentSlide();
-      if (active?.id !== payload.slideId) {
-        const idx = ctx.session.slides.findIndex((s) => s.id === payload.slideId);
-        if (idx >= 0) {
-          ctx.session.activeSlideIndex = idx;
-          normalizeSessionSlides(ctx.session);
-        }
-      }
-      renderJoinSlide();
-    }
-    applyIncoming(ctx.session, payload);
+    const accepted =
+      ctx.role === "join"
+        ? acceptInteraction(ctx.session, payload)
+        : acceptIncoming(ctx.session, payload);
+    if (!accepted) return;
+    applyJoinInteractionUpdate(payload.slideId, payload.interaction, payload.stateVersion, payload.serverNow);
   });
   rt.on("event_meta", (payload) => {
     if (!ctx.session || !payload?.eventMeta) return;
@@ -1909,10 +1896,9 @@ function renderJoinSlide(opts = {}) {
     return;
   }
   els.joinQuestion.textContent = slide.question;
-  if (!opts.preserveFeedback) {
+  if (!opts.preserveFeedback && joinInputsBlocked(slide)) {
+    /* Interaktionsstatus nur in #join-interaction-hint — nicht doppelt in #join-feedback. */
     setJoinFeedback("");
-    const ixMsg = joinStatusMessage(slide);
-    if (ixMsg) setJoinFeedback(ixMsg, { state: "info" });
   }
   resetJoinTimerAnnouncements(slide.id);
   const inputBlocked = joinInputsBlocked(slide) || Boolean(s.paused);
@@ -2371,7 +2357,44 @@ function stopJoinSlideSync() {
 }
 
 /**
- * Aktiven Folienindex per REST abgleichen — nur bei Abweichung UI neu rendern.
+ * Interaktions-Update vom Server (WS, Pong oder REST) in Session und UI übernehmen.
+ * @param {string} slideId
+ * @param {object} interaction
+ * @param {number | undefined} stateVersion
+ * @param {number | undefined} serverNow
+ */
+function applyJoinInteractionUpdate(slideId, interaction, stateVersion, serverNow) {
+  if (!ctx.session || !slideId || !interaction) return;
+  const slide = ctx.session.slides.find((s) => s.id === slideId);
+  if (!slide) return;
+  const remoteProbe = { id: slideId, interaction };
+  if (!interactionNeedsSync(slide, remoteProbe)) return;
+
+  slide.interaction = { ...slide.interaction, ...interaction };
+  if (interaction.state === "running") resetJoinTimerAnnouncements(slide.id);
+  if (serverNow) ctx.eventClockSkew = serverNow - Date.now();
+  applyIncoming(ctx.session, { stateVersion });
+  persistLocal(ctx.session);
+  syncInteractionTick();
+
+  if (ctx.role === "present") {
+    if (slide.id === currentSlide()?.id) renderActiveSlide();
+    else interactionBarCtrl?.render();
+  } else if (ctx.role === "join") {
+    const active = currentSlide();
+    if (active?.id !== slideId) {
+      const idx = ctx.session.slides.findIndex((s) => s.id === slideId);
+      if (idx >= 0) {
+        ctx.session.activeSlideIndex = idx;
+        normalizeSessionSlides(ctx.session);
+      }
+    }
+    refreshJoinSlideUi();
+  }
+}
+
+/**
+ * Aktiven Folienindex und Interaktionsstand per REST abgleichen (Mobile-Fallback).
  */
 async function syncJoinSlideFromServer() {
   if (ctx.role !== "join" || !ctx.session?.code) return;
@@ -2380,12 +2403,23 @@ async function syncJoinSlideFromServer() {
     const remote = data?.session;
     if (!remote || remote.activeSlideIndex == null) return;
     const remoteIdx = Number(remote.activeSlideIndex);
-    if (!Number.isFinite(remoteIdx) || remoteIdx === ctx.session.activeSlideIndex) return;
-    handleRemoteSlide({
-      index: remoteIdx,
-      slide: remote.slides?.[remoteIdx],
-      stateVersion: remote.stateVersion,
-    });
+    if (!Number.isFinite(remoteIdx)) return;
+
+    if (remoteIdx !== ctx.session.activeSlideIndex) {
+      handleRemoteSlide({
+        index: remoteIdx,
+        slide: remote.slides?.[remoteIdx],
+        stateVersion: remote.stateVersion,
+      });
+      return;
+    }
+
+    /* Gleiche Folie — Abstimmungsstart o. ä. nachziehen. */
+    const localSlide = currentSlide();
+    const remoteSlide = remote.slides?.[remoteIdx];
+    if (localSlide && remoteSlide && interactionNeedsSync(localSlide, remoteSlide)) {
+      applyJoinInteractionUpdate(remoteSlide.id, remoteSlide.interaction, remote.stateVersion, remote.serverNow);
+    }
   } catch (err) {
     console.debug("[join] Slide-Sync fehlgeschlagen", err);
   }
@@ -2547,7 +2581,6 @@ function updateJoinInteractionHint(slide) {
   const srLive = document.getElementById("join-interaction-sr");
   const typeHint = document.getElementById("join-timer-type-hint");
   if (!slide) return;
-  const blocked = joinInputsBlocked(slide);
   const msg = joinStatusMessage(slide);
   let text = msg;
   let remSec = 0;
@@ -2570,7 +2603,6 @@ function updateJoinInteractionHint(slide) {
     typeHint.textContent = typeMsg;
     typeHint.hidden = !typeMsg;
   }
-  if (blocked && msg) setJoinFeedback(msg, { state: "info" });
 }
 
 function patchCurrentSlide(fields) {
