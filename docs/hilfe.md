@@ -409,4 +409,4 @@ Im Browser: Drucken → „Als PDF sichern“. Version und Datum im Guide-Kopf.
 
 ---
 
-*Bei Abweichungen gilt der Stand der HTML-Artikel unter `frontend/help/` (Programmversion **v1.4.5**, Katalog-Version in `articles.json`).*
+*Bei Abweichungen gilt der Stand der HTML-Artikel unter `frontend/help/` (Programmversion **v1.4.6**, Katalog-Version in `articles.json`).*
