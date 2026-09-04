@@ -1,6 +1,6 @@
 # Manuelle Smoke-Checkliste — Stabilisierungsrelease
 
-Stand: **v1.5.11** · Prod `https://pulse.ringe.us` · **Deploy v1.5.11 ausstehend** (Prod noch v1.5.10)
+Stand: **v1.5.11** · Prod `https://pulse.ringe.us` · geprüft **2026-09-04**
 
 Browser: Chrome (Desktop) + iOS Safari / Android Chrome (Kernabläufe). Mobil-Emulation: 320 / 375 / 430 px.
 
@@ -16,9 +16,7 @@ npm run test:update-rollback
 curl -fsS https://pulse.ringe.us/api/health/ready | jq '.ok, .checks[] | select(.id=="asset_manifest")'
 ```
 
-**Prod v1.5.10 (2026-09-04):** Remote-Smoke **16/16 OK** — Version, `asset_manifest`, gehashtes JS `immutable`, `__PULSE_ASSET_H__`.
-
-**Prod v1.5.11:** nach Deploy wiederholen (erwartet 16/16 + Version 1.5.11).
+**Prod v1.5.11 (2026-09-04):** Remote-Smoke **16/16 OK** — Version 1.5.11, `pulse-app:1.5.11`, Rollback-Image `pulse-app:1.5.10` gesichert, Backup `vps-update-2026-09-04T19-05-47Z`.
 
 ---
 
@@ -149,8 +147,7 @@ In DevTools prüfen — **keine** dieser Fehler:
 
 - [ ] Backup erstellen und herunterladen
 - [—] Restore nur in Testinstanz
-- [x] Deploy v1.5.10 — Backup `vps-update-2026-09-04T19-00-11Z`, Ready OK
-- [ ] Deploy v1.5.11 + Rollback-Drill
+- [x] Deploy v1.5.11 — Backup `vps-update-2026-09-04T19-05-47Z`, Ready OK, `pulse-app:1.5.10` Rollback-Image
 
 ---
 
@@ -180,7 +177,7 @@ docker images | grep pulse-app
 
 | Kriterium | Status |
 |-----------|--------|
-| Remote-Smoke 16/16 | ✓ (v1.5.10) |
+| Remote-Smoke 16/16 | ✓ (v1.5.11) |
 | `asset_manifest` Ready | ✓ |
 | Automatisierter Rollback (Code) | ✓ (v1.5.11) |
 | Rollback-Drill Prod | ✗ |
