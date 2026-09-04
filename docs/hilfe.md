@@ -1,7 +1,7 @@
 # Pulse — Benutzerhilfe
 
 Zusammenfassung der In-App-Hilfe (`#/help`, `#/admin/help`) als druckbares Markdown-Dokument.  
-**Stand:** Programmversion **v1.5.24** · Hilfe-Katalog **Version 11** · **26 Artikel** · 2026-09-04.
+**Stand:** Programmversion **v1.5.27** · Hilfe-Katalog **Version 12** · **27 Artikel** · 2026-09-04.
 
 Die interaktive Hilfe mit Rollenfilter, Suche, Tour und Feedback liegt im Frontend unter `frontend/help/`. Dieses Dokument spiegelt die gleiche Struktur für Admins, Redaktion und Schulungsunterlagen.
 
@@ -31,6 +31,7 @@ Die interaktive Hilfe mit Rollenfilter, Suche, Tour und Feedback liegt im Fronte
 18. [Glossar](#18-glossar)
 19. [Druck-Guides](#19-druck-guides)
 20. [Verwandte Dokumente](#20-verwandte-dokumente)
+21. [Software und Systemlandschaft](#21-software-und-systemlandschaft)
 
 ---
 
@@ -121,7 +122,7 @@ flowchart TB
 | **Bewertungsskala** | 5 / 7 / 10 Stufen |
 | **Lobby** | Warteraum bis Start |
 | **Reaktionen** | Emojis, nicht gespeichert |
-| **Events** | Join nur bei Status *aktiv* |
+| **Events** | Geplante Veranstaltungen; bei *geplant* Wartehinweis auf Join-Seite, Stimmen erst bei *aktiv* |
 | **Dynamisches Formular** | Admin zeigt nur passende Blöcke je Folientyp (`#/admin`) |
 
 ---
@@ -131,7 +132,7 @@ flowchart TB
 ### Teilnehmende (~5 Min.)
 
 1. Code/QR → `#/join/<code>`
-2. Bei Events: Status *aktiv* abwarten
+2. Bei Events *geplant*: Join-Seite mit Wartehinweis — abstimmen erst bei Status *aktiv*
 3. Lobby → warten auf Start
 4. Nach Folientyp abstimmen; Q&A upvoten; Reaktionen in Daumenzone
 5. Offline-Banner: WLAN prüfen, neu laden
@@ -209,10 +210,10 @@ flowchart TB
 
 | Status | Bedeutung |
 |---|---|
-| **Geplant** | Sichtbar, Join gesperrt |
-| **Aktiv** | Join freigegeben |
+| **Geplant** | Sichtbar auf Startseite; Join-Seite öffnet sich mit Wartehinweis — **Abstimmen** erst nach *aktiv* (manuell oder Startdatum) |
+| **Aktiv** | Volle Teilnahme — Join, Stimmen, Q&A |
 | **Abgeschlossen** | Ergebnisse; Join weiter möglich |
-| **Archiviert** | Nicht auf Startseite; Join blockiert |
+| **Archiviert** | Nicht auf Startseite; Teilnahme blockiert |
 
 Optional: **Startuhrzeit** (Countdown auf Leinwand/Presenter), **Event-Grafik** hinter dem Countdown. Folien kopieren aus anderer Session (max. 40). Event löschen nur bei *geplant* oder *archiviert*.
 
@@ -281,7 +282,9 @@ Daten in `./data/` (`pulse.db`, JSON, `ssl/`). Zugangsdaten VPS: `INSTALL-CREDEN
 
 **Laufender Betrieb:** `#/admin/backups` oder regelmäßig `./data/` sichern.
 
-**Updates (VPS):** `sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.11 --yes` — mit Backup, versionierten Docker-Images (`pulse-app:<version>`) und automatischem Rollback bei Readiness-Fehler. Nach Deploy: `npm run smoke:remote`.
+**Updates (VPS):** `sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.27 --yes` — mit Backup, versionierten Docker-Images (`pulse-app:<version>`) und automatischem Rollback bei Readiness-Fehler. Nach Deploy: `npm run smoke:remote`.
+
+**Lasttests (Ops):** `npm run load-test` — siehe [Software und Systemlandschaft](#21-software-und-systemlandschaft).
 
 **Frontend-Build:** Vor jedem Production-Start `npm run build` (CSS + `asset-manifest.json`). Gehashte Assets verhindern Cache-Mischversionen nach Updates.
 
@@ -318,7 +321,7 @@ Ausführlich: `#/admin/help/auth-login` und `frontend/help/auth-login.html`.
 
 ## 16. Häufige Fragen (FAQ)
 
-**Konto nötig?** — **Teilnehmende:** Nein. **Administration:** Ja, wenn Benutzerverwaltung aktiv ist (PIN-Login). **Session vs. Event?** — Gleicher Code, Event = Hülle. **Join gesperrt?** — Status *geplant*/*archiviert*. **Probe?** — Kein kopierbarer Join-Link in UI. **Picker vs. MC?** — MC: 2–6 Optionen; Picker: 10–50 mit Suche/Kategorien — `#/help/picker`.
+**Konto nötig?** — **Teilnehmende:** Nein. **Administration:** Ja, wenn Benutzerverwaltung aktiv ist (PIN-Login). **Session vs. Event?** — Gleicher Code, Event = Hülle. **Join bei geplant?** — Seite sichtbar, Wartehinweis; Stimmen erst bei *aktiv*. **Archiviert?** — Teilnahme blockiert. **Probe?** — Kein kopierbarer Join-Link in UI. **Picker vs. MC?** — MC: 2–6 Optionen; Picker: 10–50 mit Suche/Kategorien — `#/help/picker`.
 
 ---
 
@@ -327,7 +330,7 @@ Ausführlich: `#/admin/help/auth-login` und `frontend/help/auth-login.html`.
 ### Teilnehmer können nicht joinen
 
 ```
-Start → Event aktiv? → Nein → Status auf aktiv
+Start → Event aktiv? → Nein (geplant) → Wartehinweis; Status auf aktiv oder Startzeit abwarten
      → Code 6 Ziffern? → Nein → von Leinwand kopieren
      → Server/HTTPS ok? → Nein → Healthcheck / SSL
      → Lobby? → Ja → „Los geht's“
@@ -357,7 +360,7 @@ DNS → Port 80 → Zertifikat aktiv → ACME-Challenge → kein Staging
 
 ### Bürgerversammlung (~200 TN, ~90 Min.)
 
-Event aktiv, Deck: MC + Wolken + Q&A, Wortfilter, Lobby. QR groß, Status vor Start prüfen.
+Event aktiv, Deck: MC + Wolken + Q&A, Wortfilter, Lobby. QR groß; bei Status *geplant* sehen Teilnehmende Wartehinweis — vor Live-Start auf *aktiv* setzen.
 
 ### Team-Meeting mit Quiz (~30 Min.)
 
@@ -407,10 +410,61 @@ Im Browser: Drucken → „Als PDF sichern“. Version und Datum im Guide-Kopf.
 | Dokument | Inhalt |
 |---|---|
 | `docs/installation.md` | Installation |
-| `docs/projektdokumentation.md` | Technische Spezifikation |
+| `docs/projektdokumentation.md` | Technische Spezifikation, Software-Stack, APIs |
 | `docs/verfahrensverzeichnis.md` | DSGVO Art. 30 |
-| `frontend/help/articles.json` | Hilfe-Katalog v11 · Programm v1.5.24 (26 Artikel) |
+| `frontend/help/articles.json` | Hilfe-Katalog v12 · Programm v1.5.27 (27 Artikel) |
 
 ---
 
-*Bei Abweichungen gilt der Stand der HTML-Artikel unter `frontend/help/` (Programmversion **v1.5.11**, Katalog-Version **11** in `articles.json`).*
+## 21. Software und Systemlandschaft
+
+> In-App: `#/help/tech-stack` · Ausführlich: `docs/projektdokumentation.md` Abschnitt 2.
+
+### Software-Stack
+
+| Schicht | Technologie |
+|---|---|
+| Anwendung | Node.js ≥ 22 (`server.js`) |
+| Frontend | Vanilla JavaScript (ES-Module), Hash-Routing |
+| Daten | SQLite (`data/pulse.db`), JSON (`events.json`, `branding.json`, …) |
+| Optional | PostgreSQL (`DATABASE_URL`), Redis (`REDIS_URL`) |
+| Proxy | nginx 1.27 (TLS, WebSocket, `ip_hash`) |
+| Container | Docker Compose (`pulse`, `pulse-b`, redis, nginx, optional Prometheus/Grafana) |
+| TLS | Let’s Encrypt via `acme-client` |
+
+Kein Express, kein Socket.io, kein React/Vue im Laufzeitpfad.
+
+### Zusammenspiel (Produktion)
+
+```mermaid
+flowchart LR
+  B[Browser] --> N[nginx :443]
+  N --> P1[pulse]
+  N --> P2[pulse-b]
+  P1 <-->|Redis Fanout| P2
+  P1 --> D[(./data)]
+  P2 --> D
+```
+
+- **Einzelinstanz:** `npm start` oder `docker-compose.single.yml` — ein Prozess, Redis optional.
+- **Cluster (Compose-Standard):** zwei App-Container + Redis; gemeinsames Volume `./data`. WebSockets bleiben per `ip_hash` an einer Instanz.
+- **Health:** `GET /api/health` und `GET /api/health/ready` (Deploy/Rollback).
+
+### Datenfluss (Kurz)
+
+1. REST lädt Session (`GET /api/sessions/:code`).
+2. WebSocket `join` → Antwort `session`.
+3. Stimmen/Q&A über WS; Server persistiert und broadcastet (100 ms Batch; bei Cluster über Redis).
+
+### Lasttests
+
+```bash
+npm run load-test
+node scripts/load-test.js --participants=300 --allow-remote --url=https://<domain> --code=<code>
+```
+
+Gates: Join-P95 ≤ 800 ms, Fehlerquote ≤ 1 %. Prod-Tests nur mit `--allow-remote` und Test-Session.
+
+---
+
+*Bei Abweichungen gilt der Stand der HTML-Artikel unter `frontend/help/` (Programmversion **v1.5.27**, Katalog-Version **12** in `articles.json`).*

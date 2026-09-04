@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "app": "Pulse",
   "categories": [
     {
@@ -115,7 +115,35 @@
         "folie",
         "diagramm"
       ],
-      "bodyText": "Event Session Deck Folie Join-Code sessionCode Admin-Schlüssel Lobby Reveal Metadaten pulse.db data events.json Beispiel Bürgerversammlung kein Set"
+      "bodyText": "Event Session Deck Folie Join-Code sessionCode Admin-Schlüssel Lobby Reveal Metadaten pulse.db data events.json Beispiel Bürgerversammlung kein Set Software Systemlandschaft nginx Redis Docker"
+    },
+    {
+      "id": "tech-stack",
+      "slug": "tech-stack",
+      "category": "admin",
+      "roles": [
+        "admin"
+      ],
+      "title": "Software & Systemlandschaft",
+      "titleEn": "Software & system landscape",
+      "titleFr": "Logiciels et paysage système",
+      "summary": "Node, SQLite, Redis, nginx, Docker, Prometheus/Grafana — wie die Komponenten zusammenhängen.",
+      "tags": [
+        "software",
+        "architektur",
+        "docker",
+        "nginx",
+        "redis",
+        "sqlite",
+        "postgresql",
+        "prometheus",
+        "grafana",
+        "websocket",
+        "betrieb",
+        "cluster",
+        "lasttest"
+      ],
+      "bodyText": "Node.js Vanilla JS SQLite PostgreSQL Redis nginx Docker Compose Prometheus Grafana WebSocket REST load-test single cluster PULSE_OPERATION_MODE ip_hash pulse pulse-b Health Readiness ACME Let's Encrypt Datenfluss Join Vote Fanout"
     },
     {
       "id": "getting-started",
@@ -591,7 +619,7 @@
         "join",
         "flowchart"
       ],
-      "bodyText": "WebSocket reconnect Session nicht gefunden Event Join gesperrt geplant archiviert Admin gesperrt Offline-Banner Demo HTTP 403 Rate-Limit Lobby Notfall SSL Wildcard Let’s Encrypt installation docker compose ADMIN_SECRET install-vps healthcheck Flowchart Debug-Checkliste"
+      "bodyText": "WebSocket reconnect Session nicht gefunden Event Join geplant Wartehinweis archiviert Admin gesperrt Offline-Banner Demo HTTP 403 Rate-Limit Lobby Notfall SSL nginx Redis Docker load-test software Systemlandschaft healthcheck Flowchart Debug-Checkliste"
     },
     {
       "id": "glossary",

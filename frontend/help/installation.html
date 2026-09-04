@@ -16,10 +16,12 @@
   <h3>Docker Compose (lokal oder Server)</h3>
   <ul>
     <li><code>./scripts/install.sh --docker</code> — baut Images, seedet <code>data/</code>, startet den Stack</li>
-    <li>Stack: zwei App-Instanzen (<code>pulse</code>, <code>pulse-b</code>), Redis, nginx (Port 80/443), optional Prometheus und Grafana (Port 3001)</li>
-    <li>Pulse erreichbar über <code>http://&lt;host&gt;/</code> (nginx)</li>
+    <li>Stack (Standard): zwei App-Instanzen (<code>pulse</code>, <code>pulse-b</code>), Redis, nginx (Port 80/443), optional Prometheus und Grafana (Port 3001)</li>
+    <li>Einzelinstanz: <code>docker compose -f docker-compose.single.yml up -d</code> — ein Container, Redis optional</li>
+    <li>Pulse erreichbar über <code>https://&lt;host&gt;/</code> (nginx terminiert TLS)</li>
     <li>Daten liegen im Host-Verzeichnis <code>./data</code> (SQLite <code>pulse.db</code>, Branding, Events, SSL unter <code>data/ssl/</code>)</li>
   </ul>
+  <p>Software-Stack und Zusammenspiel: <a href="#/help/tech-stack">Software &amp; Systemlandschaft</a>.</p>
 
   <h3>VPS Ubuntu (Produktion)</h3>
   <p>Auf einem frischen <strong>Ubuntu 22.04 / 24.04</strong> Server (als root oder mit <code>sudo</code>):</p>
@@ -38,7 +40,7 @@ sudo ./scripts/install-vps-ubuntu.sh</code></pre>
   <p>DNS auf den Server zeigen lassen, Port 80 von außen erreichbar, dann in der Admin-Oberfläche <a href="#/admin/ssl">SSL</a> (Let’s Encrypt HTTP-01). Details: <a href="#/help/ssl">SSL-Hilfe</a>.</p>
 
   <h3>Updates (VPS)</h3>
-  <p><code>sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.11 --yes</code> — Backup, Git-Pull, Docker-Build mit <code>pulse-app:&lt;version&gt;</code>, Readiness-Check, automatischer Rollback bei Fehler. Details: <a href="#/help/updates">Updates-Hilfe</a>.</p>
+  <p><code>sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.27 --yes</code> — Backup, Git-Pull, Docker-Build mit <code>pulse-app:&lt;version&gt;</code>, Readiness-Check, automatischer Rollback bei Fehler. Nach Deploy: <code>npm run smoke:remote</code>. Details: <a href="#/help/updates">Updates-Hilfe</a>.</p>
 
   <h3>Instanz-Admin vs. Session-Admin</h3>
   <ul>

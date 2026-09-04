@@ -2,7 +2,7 @@
 
 **Ist-Zustand / Spezifikation**
 
-**Stand:** Programmversion **v1.5.24** · Ist-Zustand aus dem Quellcode, 2026-09-04.
+**Stand:** Programmversion **v1.5.27** · Ist-Zustand aus dem Quellcode, 2026-09-04.
 **Kein Soll-Konzept:** Nur Funktionen und Technik, die im Repository tatsächlich vorhanden sind.  
 **Produktname:** Pulse. Technische Präfixe: `data/pulse.db`, `pulse:session:…`, Docker-Services `pulse` / `pulse-b`.
 
@@ -45,6 +45,91 @@ Aus Branding- und Privacy-Defaults (`lib/branding.js`, `lib/privacy.js`): **öff
 | Node | `engines.node`: **>= 22**. Docker-Image: `node:22-alpine`. |
 
 Ablauf: Browser lädt statische Dateien aus `frontend/`. REST unter `/api/…` für Session-Anlage, Events, Admin, Export, Health. Live-Ereignisse über `ws://…/ws` bzw. `wss://`. Broadcasts werden in `server.js` gebündelt (`BATCH_INTERVAL_MS`, Standard 100 ms).
+
+### 2.1 Software-Stack (Ist)
+
+| Komponente | Technologie | Version / Hinweis |
+|---|---|---|
+| Laufzeit | **Node.js** | ≥ 22 (`engines` in `package.json`; Docker: `node:22-alpine`) |
+| Frontend | **Vanilla JavaScript** (ES-Module), gebautes CSS (Tailwind) | Hash-Routing, kein SPA-Framework |
+| HTTP-Server | **`node:http` / `node:https`** in `server.js` | Kein Express/Koa |
+| Echtzeit | **WebSocket** (RFC 6455, Handshake in `server.js`) | Client: `frontend/js/websocket.js`; kein Socket.io |
+| Primäre DB | **SQLite** (`node:sqlite`, `DatabaseSync`) | Datei `data/pulse.db` (Sessions, optional Benutzerverwaltung) |
+| Optionale DB | **PostgreSQL** (`pg`, `lib/postgres.js`) | `DATABASE_URL` — für Cluster empfohlen |
+| Live-Bus | **Redis** 7 (`redis:7-alpine`) oder In-Prozess | `lib/bus.js` (natives RESP, kein redis-npm); Kanalpräfix `pulse:room:` |
+| Reverse-Proxy | **nginx** 1.27 | TLS, WebSocket-Upgrade, `ip_hash` (Compose: `deploy/nginx.conf`) |
+| Container | **Docker Engine + Compose** | `Dockerfile`, `docker-compose.yml`, `docker-compose.single.yml` |
+| TLS / ACME | **acme-client** (npm) | Let’s Encrypt HTTP-01, Admin-UI `#/admin/ssl` |
+| Monitoring | **Prometheus** v2.55, **Grafana** 11 | Optional im Compose-Stack; Metriken `GET /metrics` |
+| Kompression | **gzip / Brotli** (`node:zlib`, `lib/compress.js`) | Statische Assets und JSON-APIs |
+
+Weitere npm-Abhängigkeiten sind minimal (kein ORM, kein Frontend-Build-Framework im Laufzeitpfad — Build: Tailwind CLI, Asset-Manifest).
+
+### 2.2 Komponenten-Zusammenspiel
+
+```mermaid
+flowchart TB
+  subgraph clients [Browser]
+    P[Teilnehmer Join]
+    R[Presenter / Stage]
+    A[Admin UI]
+  end
+
+  subgraph edge [Edge]
+    N[nginx :80 / :443]
+  end
+
+  subgraph app [Pulse App Container]
+    N1[pulse Node :3000]
+    N2[pulse-b Node :3000]
+  end
+
+  subgraph data [Persistenz Host-Volume ./data]
+    DB[(pulse.db SQLite)]
+    EV[events.json]
+    BR[branding.json]
+  end
+
+  subgraph bus [Optional]
+    RD[(Redis Pub/Sub)]
+  end
+
+  subgraph obs [Optional]
+    PR[Prometheus]
+    GF[Grafana :3001]
+  end
+
+  P --> N
+  R --> N
+  A --> N
+  N -->|REST /api/* WS /ws ip_hash| N1
+  N --> N2
+  N1 <-->|Live-Fanout| RD
+  N2 <-->|Live-Fanout| RD
+  N1 --> DB
+  N2 --> DB
+  N1 --> EV
+  N2 --> EV
+  PR -->|scrape /metrics| N1
+  GF --> PR
+```
+
+**Einzelprozess** (`npm start`, `docker-compose.single.yml`): ein Node-Prozess, Redis optional — Live-State nur im Prozess.
+
+**Compose-Standard** (`docker-compose.yml`): **zwei** App-Services (`pulse`, `pulse-b`), **Redis Pflicht**, gemeinsames Volume `./data`. nginx terminiert HTTPS und hält WebSocket-Clients per **`ip_hash`** an einer Instanz. SQLite auf gemeinsamem Volume ist nicht multi-writer-hart — für hohe Parallelität **PostgreSQL** (`DATABASE_URL`).
+
+Diagnose: `GET /api/health` (Version, Speicher, Event-Loop, Redis-Ping) und `GET /api/health/ready` (Readiness für Deploy). Betriebsmodi: `lib/operationMode.js`, Doku `docs/stabilization/architecture-operation-modes.md`.
+
+### 2.3 Datenfluss Join → Vote → Broadcast
+
+1. **REST** `GET /api/sessions/:code` — öffentliche Session inkl. Deck (ohne versteckte Reveal-Felder).
+2. **WebSocket** `join` mit `code`, `role`, `clientId` — Antwort `session` mit Folien und `eventMeta` (Status, Countdown).
+3. Bei Events: **`participantEventGate`** (`server.js`) prüft **`deriveStatus`** (Kalender + gespeicherter Status). Geplant/archiviert: **Eingaben** (Vote, Word, Q&A) blockiert mit Fehlercode `event_planned` / `event_archived`; Join-Seite bleibt sichtbar mit Wartehinweis (`events.joinClosed` in i18n).
+4. **Vote** / **word** / … — Persistenz in SQLite (entprellt), Broadcast gebündelt (`BATCH_INTERVAL_MS`), bei Cluster zusätzlich Redis-Fanout an die andere Instanz.
+
+### 2.4 Session-Datenmodell (Kurz)
+
+Siehe Abschnitt 3 und Hilfe `#/help/architecture`: **Event** (Metadaten in `events.json`) = **Session** (Live-Daten in `pulse.db`) = **ein Join-Code** = **ein Deck** (max. 40 Folien).
 
 ---
 
@@ -344,7 +429,7 @@ Serverseitige State-Machine in `lib/interactionState.js` für alle interaktiven 
 ### 3.23 Hilfe / Tour
 
 - Hash `#/help`, `#/help/<slug>`, `#/admin/help`. Katalog `frontend/help/articles.json`, HTML-Artikel unter `frontend/help/`.
-- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**26 Artikel**, Stand Katalog **Version 11**, Programm **v1.5.24**).
+- **Markdown-Auszug für Druck/Schulung:** `docs/hilfe.md` (**27 Artikel**, Stand Katalog **Version 12**, Programm **v1.5.27**).
 - Suche (UND-Tokens, Kategorie) in `frontend/js/help.js` / `lib/helpIndex.js`.
 - Erstnutzer-Tour (nach Consent), Tooltips (`frontend/js/tooltips.js`), Mini-Hilfe, Tastaturhilfe, Feedback ja/nein nur in **localStorage** (`pulse:help-feedback`) — **kein** Server-Upload.
 - In den Hilfe-HTML-Dateien stehen **Platzhalter „Video folgt“**, keine eingebetteten Videos.
@@ -399,12 +484,12 @@ Statistik wird **nicht** in `events.json` gespeichert, sondern zur Laufzeit aus 
 
 #### Status
 
-| Status | Startseite | Teilnehmer-Join (WS) | Bemerkung |
-|---|---|---|---|
-| `planned` | sichtbar, Join-UI aus (`joinEnabled: false`) | blockiert | Staff (`presenter`/`stage`) darf beitreten |
-| `active` | sichtbar, Join an | erlaubt | Session zum Join-Code |
-| `ended` | unter „Vergangen“ (`resultsOnly`) | erlaubt | Ergebnisse / bestehende Session |
-| `archived` | nicht gelistet | blockiert | `GET /api/events/:id` ohne Admin → 404 |
+| Status | Startseite | Teilnehmer-Join (WS) | Eingaben (Vote, Q&A, …) | Bemerkung |
+|---|---|---|---|---|
+| `planned` | sichtbar, `joinEnabled: false` auf Karte | **erlaubt** (Session sichtbar, Wartehinweis) | blockiert (`participantEventGate`, `event_planned`) | Effektivstatus auch über `deriveStatus` (Startdatum) |
+| `active` | sichtbar, Join an | erlaubt | erlaubt | Session zum Join-Code |
+| `ended` | unter „Vergangen“ (`resultsOnly`) | erlaubt | erlaubt | Ergebnisse / bestehende Session |
+| `archived` | nicht gelistet | **erlaubt** (Hinweis) | blockiert (`event_archived`) | `GET /api/events/:id` ohne Admin → 404 |
 
 **Statuspflege:** `tickEventStatuses()` stündlich und beim Start. Archiviert bleibt unangetastet. Änderungen ins Audit (`event.autoStatus`), **kein** E-Mail-Versand.
 
@@ -440,7 +525,7 @@ Event löschen nur bei Status `planned` oder `archived`.
 
 - `GET /api/events` → `{ upcoming, past }` mit `joinUrl` (`…#/join/<sessionCode>`), `copyText`, `joinEnabled`, `resultsOnly`, QR-Daten.
 - Teilnehmer-Link zeigt immer auf die **Session**, nicht auf eine Event-ID.
-- `joinSession` prüft Event-Status über `eventByJoinCode` (geplant/archiviert blockiert Nicht-Staff).
+- `joinSession` lädt/legt Event-Sessions via `ensureEventSession` an; **WS-Join** auch bei `planned`/`archived` (Warteraum). **Eingaben** prüft `participantEventGate` mit `eventStore.deriveStatus`.
 
 #### Statistik und Export
 
@@ -683,6 +768,26 @@ Start ohne Compose: `npm start` / `npm run start:prod`.
 5. Kein Wildcard, keine IP, kein localhost — HTTP-01 stellt das nicht aus.
 
 Erneuerung: stündlicher Timer in `server.js` ruft `ssl.renewDue()` auf.
+
+### 6.4 Last- und Stabilitätstests
+
+Reproduzierbarer Lasttest: `scripts/load-test.js`.
+
+```bash
+npm run load-test
+node scripts/load-test.js --participants=300
+node scripts/load-test.js --participants=500 --batch-size=500 --url=https://<domain> --allow-remote --code=<code>
+node scripts/load-test.js --participants=500 --duration-minutes=2 --url=https://<domain> --allow-remote --code=<code>
+bash scripts/load-test-scenarios.sh quick
+```
+
+| Metrik | Standard-Gate (Env) |
+|---|---|
+| Join P95 | `LOAD_GATE_P95_JOIN_MS=800` |
+| Vote P95 | `LOAD_GATE_P95_VOTE_MS=500` |
+| Fehlerquote | `LOAD_GATE_ERROR_RATE=0.01` |
+
+`--allow-remote` nur für bewusste Prod-Tests; `--batch-size` parallele Verbindungen pro Welle (Standard 10). Baselines: `docs/stabilization/load-baseline-*.json`.
 
 ---
 

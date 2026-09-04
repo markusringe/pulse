@@ -1,0 +1,101 @@
+<article class="help-article-body" data-article="tech-stack">
+  <h2>Software &amp; Systemlandschaft</h2>
+  <p>Überblick für Admins und IT: welche Software Pulse nutzt, wie die Komponenten zusammenhängen und welche Betriebsmodi es gibt. Technische Details: <code>docs/projektdokumentation.md</code>.</p>
+
+  <nav class="help-toc" aria-label="Auf dieser Seite">
+    <strong>Auf dieser Seite</strong>
+    <ul>
+      <li><a href="#software">Software-Stack</a></li>
+      <li><a href="#zusammenspiel">Wie die Systeme zusammenhängen</a></li>
+      <li><a href="#datenfluss">Datenfluss: Join und Live-Update</a></li>
+      <li><a href="#betriebsmodi">Betriebsmodi</a></li>
+      <li><a href="#lasttest">Last- und Stabilitätstests</a></li>
+    </ul>
+  </nav>
+
+  <h3 id="software">Software-Stack</h3>
+  <table class="help-table">
+    <thead><tr><th>Schicht</th><th>Software</th><th>Rolle</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Anwendung</strong></td><td>Node.js ≥ 22 (<code>node:22-alpine</code> im Docker-Image)</td><td>HTTP-API, WebSocket, Business-Logik in <code>server.js</code></td></tr>
+      <tr><td><strong>Frontend</strong></td><td>Vanilla JavaScript (ES-Module), Tailwind-CSS-Build</td><td>Single-Page-App mit Hash-Routing (<code>#/join</code>, <code>#/present</code>, …) — kein React/Vue</td></tr>
+      <tr><td><strong>Datenbank</strong></td><td>SQLite (<code>node:sqlite</code>) — Standard</td><td>Sessions, Stimmen, SSL-Metadaten; Pfad <code>data/pulse.db</code></td></tr>
+      <tr><td><strong>Datenbank (optional)</strong></td><td>PostgreSQL (<code>pg</code>)</td><td>Empfohlen für Cluster-Betrieb mit mehreren App-Instanzen</td></tr>
+      <tr><td><strong>Event-Bus</strong></td><td>Redis 7 (<code>redis:7-alpine</code>) oder In-Prozess</td><td>Live-Fanout zwischen mehreren Node-Prozessen (Stimmen, Folienwechsel)</td></tr>
+      <tr><td><strong>Reverse-Proxy</strong></td><td>nginx 1.27 (<code>nginx:1.27-alpine</code>)</td><td>TLS-Terminierung, Ports 80/443, WebSocket-Upgrade, <code>ip_hash</code> für Sticky Sessions</td></tr>
+      <tr><td><strong>Container</strong></td><td>Docker Engine + Compose Plugin</td><td>Standard-Deployment auf VPS; Daten in Host-Volume <code>./data</code></td></tr>
+      <tr><td><strong>Monitoring (optional)</strong></td><td>Prometheus v2.55, Grafana 11</td><td>Metriken unter <code>/metrics</code>; Grafana-UI typisch Port 3001</td></tr>
+      <tr><td><strong>TLS</strong></td><td>Let’s Encrypt via <code>acme-client</code></td><td>HTTP-01 in der Admin-Oberfläche (<code>#/admin/ssl</code>)</td></tr>
+      <tr><td><strong>E-Mail (optional)</strong></td><td>SMTP oder Mailgun-Outbox</td><td>PIN-Login für Instanz-Benutzer (<code>USER_AUTH_ENABLED=1</code>)</td></tr>
+    </tbody>
+  </table>
+  <p>Weitere npm-Abhängigkeiten: <code>acme-client</code> (Zertifikate). Kompression (gzip/Brotli) und WebSocket-Handshake sind eingebaut — kein Express, kein Socket.io.</p>
+
+  <h3 id="zusammenspiel">Wie die Systeme zusammenhängen</h3>
+  <div class="help-arch-diagram" role="img" aria-label="Browser, nginx, Pulse-App, Redis, SQLite und optionale Monitoring-Dienste">
+    <div class="help-arch-layer help-arch-layer--event">
+      <strong>Browser (Teilnehmer / Presenter / Admin)</strong>
+      <span class="muted">HTTPS · statische Dateien · REST <code>/api/*</code> · WebSocket <code>/ws</code></span>
+    </div>
+    <div class="help-arch-arrow" aria-hidden="true">↓</div>
+    <div class="help-arch-layer help-arch-layer--session">
+      <strong>nginx</strong>
+      <span class="muted">Port 80/443 · TLS · WebSocket-Upgrade · Sticky Routing (<code>ip_hash</code>)</span>
+    </div>
+    <div class="help-arch-arrow" aria-hidden="true">↓</div>
+    <div class="help-arch-slides">
+      <div class="help-arch-slide"><strong>pulse</strong> · Node-App :3000</div>
+      <div class="help-arch-slide"><strong>pulse-b</strong> · zweite Instanz (Cluster)</div>
+    </div>
+    <div class="help-arch-arrow" aria-hidden="true">↕ Redis Pub/Sub (Live-Fanout)</div>
+    <div class="help-arch-layer help-arch-layer--deck">
+      <strong>Persistenz &amp; Konfiguration</strong>
+      <span class="muted"><code>./data/pulse.db</code> · <code>events.json</code> · <code>branding.json</code> · <code>ssl/</code></span>
+    </div>
+    <div class="help-arch-arrow" aria-hidden="true">↔ optional</div>
+    <div class="help-arch-slides">
+      <div class="help-arch-slide muted">Prometheus scrapt <code>/metrics</code></div>
+      <div class="help-arch-slide muted">Grafana Dashboards (Port 3001)</div>
+    </div>
+  </div>
+  <ul>
+    <li><strong>Ein Prozess (<code>npm start</code> oder <code>docker-compose.single.yml</code>):</strong> Redis optional — Live-Events bleiben im Speicher des einen Node-Prozesses.</li>
+    <li><strong>Compose-Standard (<code>docker-compose.yml</code>):</strong> zwei App-Container (<code>pulse</code>, <code>pulse-b</code>) teilen <code>./data</code> und <code>REDIS_URL</code>. nginx verteilt Anfragen; WebSockets bleiben pro Client an einer Instanz (<code>ip_hash</code>).</li>
+    <li><strong>Health:</strong> <code>GET /api/health</code> (Version, Speicher, Event-Loop) und <code>GET /api/health/ready</code> (Readiness für Deploy/Rollback).</li>
+  </ul>
+
+  <h3 id="datenfluss">Datenfluss: Join und Live-Update</h3>
+  <ol class="help-steps">
+    <li>Teilnehmende öffnen <code>#/join/&lt;code&gt;</code> — der Browser lädt die Session per REST (<code>GET /api/sessions/&lt;code&gt;</code>).</li>
+    <li>Parallel baut die App eine WebSocket-Verbindung zu <code>wss://…/ws</code> auf und sendet <code>join</code> mit Rolle <em>participant</em>.</li>
+    <li>Der Server antwortet mit <code>session</code> (Folien, aktive Folie, Event-Metadaten). Bei geplanten Events: Seite sichtbar, Stimmen erst nach Status <em>aktiv</em> (Wartehinweis statt Fehlerbanner).</li>
+    <li>Stimmen, Wörter und Q&amp;A laufen über WebSocket (<code>vote</code>, <code>word</code>, …); der Server persistiert in SQLite und broadcastet gebündelt (Standard 100&nbsp;ms) an alle Clients der Session.</li>
+    <li>Bei mehreren App-Instanzen publiziert der bearbeitende Prozess über Redis; die andere Instanz leitet an ihre WebSocket-Clients weiter.</li>
+  </ol>
+
+  <h3 id="betriebsmodi">Betriebsmodi</h3>
+  <table class="help-table">
+    <thead><tr><th>Modus</th><th>Typisch</th><th>Redis</th><th>Datenbank</th></tr></thead>
+    <tbody>
+      <tr><td><strong>single</strong></td><td>Dev, kleine VPS, eine Veranstaltung</td><td>optional</td><td>SQLite</td></tr>
+      <tr><td><strong>cluster</strong></td><td>Compose-Standard, hohe Teilnehmerzahl</td><td>pflicht</td><td>PostgreSQL empfohlen; SQLite nur mit Warnung (<code>PULSE_ALLOW_SQLITE_CLUSTER</code>)</td></tr>
+    </tbody>
+  </table>
+  <p>Steuerung über <code>PULSE_OPERATION_MODE</code> und <code>PULSE_EXPECT_INSTANCES</code> in <code>.env</code>. Details: <code>docs/stabilization/architecture-operation-modes.md</code>.</p>
+
+  <h3 id="lasttest">Last- und Stabilitätstests</h3>
+  <p>Vor Releases und nach Deploy können Admins/Entwickler reproduzierbare Lasttests fahren:</p>
+  <pre><code>npm run load-test
+node scripts/load-test.js --participants=300 --allow-remote --url=https://&lt;domain&gt;
+node scripts/load-test.js --participants=500 --batch-size=500 --allow-remote --url=https://&lt;domain&gt;
+node scripts/load-test.js --participants=500 --duration-minutes=2 --allow-remote --url=https://&lt;domain&gt;</code></pre>
+  <p>Messgrößen: Join-Latenz (WebSocket), Vote-Latenz, Fehlerquote, Health während des Laufs. Release-Gates: Join-P95 ≤ 800&nbsp;ms, Vote-P95 ≤ 500&nbsp;ms, Fehlerquote ≤ 1&nbsp;%. Produktions-Lasttests nur mit <code>--allow-remote</code> und eigener Test-Session — nicht gegen Live-Publikums-Events.</p>
+
+  <nav class="help-see-also" aria-label="Siehe auch">
+    <strong>Siehe auch:</strong>
+    <a href="#/help/architecture">Session-Architektur</a> ·
+    <a href="#/help/installation">Installation</a> ·
+    <a href="#/help/troubleshooting">Fehlerbehebung</a> ·
+    <code>docs/projektdokumentation.md</code>
+  </nav>
+</article>

@@ -2,7 +2,7 @@
 
 **Anwendung:** Pulse  
 **Verantwortliche Stelle:** Landeshauptstadt Saarbrücken  
-**Stand:** 2026-09-04 · **Programmversion:** v1.5.24
+**Stand:** 2026-09-04 · **Programmversion:** v1.5.27
 **Fassung:** 5 (Entwurf)
 
 > **Entwurf für die/den Datenschutzbeauftragte/n — keine Rechtsberatung.**  
@@ -226,7 +226,7 @@ Es gelten DSGVO, BDSG und für öffentliche Stellen des Saarlandes das **Saarlä
 |---|---|
 | Bezeichnung | Hilfe, Tour, Druck-Guides |
 | Zwecke | Nutzerführung (Presenter, Teilnehmende, Admins); keine Verarbeitung personenbezogener Daten auf dem Server |
-| Datenkategorien | Hilfe-Inhalte in `frontend/help/` (HTML, Katalog `articles.json`, **Version 11**, Programm **v1.5.24**; u. a. Auth/Login, Picker, Interaktionssteuerung, Backups, Updates/Rollback). Markdown-Spiegel: `docs/hilfe.md` (Programmversion im Kopf). Feedback ja/nein nur in `localStorage` (`pulse:help-feedback`, s. 5.3). Erstnutzer-Tour: `pulse:tour-done` / `pulse:tour-later`. |
+| Datenkategorien | Hilfe-Inhalte in `frontend/help/` (HTML, Katalog `articles.json`, **Version 12**, Programm **v1.5.27**; u. a. Auth/Login, Picker, Interaktionssteuerung, Backups, Updates/Rollback). Markdown-Spiegel: `docs/hilfe.md` (Programmversion im Kopf). Feedback ja/nein nur in `localStorage` (`pulse:help-feedback`, s. 5.3). Erstnutzer-Tour: `pulse:tour-done` / `pulse:tour-later`. |
 | Empfänger | Keine Übermittlung an Dritte; statische Dateien vom gleichen Server |
 | Löschung | Lokal auf dem Endgerät |
 
