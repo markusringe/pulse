@@ -16,6 +16,8 @@ npm run test:update-rollback
 curl -fsS https://pulse.ringe.us/api/health/ready | jq '.ok, .checks[] | select(.id=="asset_manifest")'
 ```
 
+**Prod v1.5.37 (2026-09-05):** Sonderfolien Presenter/Stage — siehe **`abnahme-sonderfolien-v1.5.37.md`** (Dock, Folienleiste, Beamer, Screen-Share).
+
 **Prod v1.5.11 (2026-09-04):** Remote-Smoke **16/16 OK** — Version 1.5.11, `pulse-app:1.5.11`, Rollback-Image `pulse-app:1.5.10` gesichert, Backup `vps-update-2026-09-04T19-05-47Z`.
 
 ---
