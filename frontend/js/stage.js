@@ -2,7 +2,8 @@
  * Präsentationsansicht (Screen-Sharing): reine Leseansicht.
  *
  * Hash #/stage/:code und Alias #/present-view/:code.
- * Eigene WebSocket-Verbindung mit Rolle `stage` — nur join/ping, keine Stimmen.
+ * Eigene WebSocket-Verbindung mit Rolle `stage` — join/ping; berechtigte Presenter
+ * dürfen Sonderfolien per FAB steuern (keine Keyboard-Shortcuts).
  * Kein LocalStorage. Ergebnisse folgen `resultsVisible` (Teaser ohne Balken).
  * Notizen kommen serverseitig nicht an (revealNotes: false).
  */
@@ -18,6 +19,7 @@ import { activeSpecialSlideKind, mountSpecialSlide, isCountdownSpecialActive, ge
 import { drawQrCode, joinUrlFromLocation } from "./qrRender.js";
 import { stageStatusMessage } from "./interactionPresenter.js";
 import { syncHelpFabVisibility } from "./help.js";
+import { syncStageSpecialSlideNav, destroyStageSpecialSlideNav } from "./stageSpecialSlideNav.js";
 
 /** @type {RealtimeClient | null} */
 let rt = null;
@@ -33,6 +35,10 @@ const stageClientId = `stage-${Math.random().toString(36).slice(2, 10)}`;
 /** @type {{ stop: () => void } | null} */
 let eventCountdownCtl = null;
 let countdownSkipped = false;
+/** Presenter/Admin darf Sonderfolien von der Stage steuern (serverseitig bestätigt). */
+let stageCanControlSpecialSlides = false;
+/** @type {boolean} Screen-Share ohne Steuer-UI (?share=1). */
+let stageShareMode = false;
 
 /**
  * Stage-View starten. Wird von app.js beim Hash #/stage/:code aufgerufen.
@@ -46,6 +52,7 @@ export async function enterStage(code) {
   countdownSkipped = false;
   /* Screen-Sharing-Modus: größere Typo, weniger Animation (URL ?share=1). */
   const share = new URLSearchParams(location.search).get("share") === "1";
+  stageShareMode = share;
   root.dataset.stageMode = share ? "share" : "";
   branding = (await api.getBranding())?.branding || {};
   applyChrome(branding);
@@ -65,9 +72,12 @@ export function leaveStage() {
   cancelAnimationFrame(clockRaf);
   clockRaf = 0;
   stopEventCountdown();
+  destroyStageSpecialSlideNav();
   rt?.disconnect();
   rt = null;
   session = null;
+  stageCanControlSpecialSlides = false;
+  stageShareMode = false;
   lastSlideKey = "";
   countdownSkipped = false;
   destroyPoll();
@@ -96,6 +106,7 @@ function connectStage(code) {
 
   rt.on("session", (payload) => {
     session = payload.session || payload;
+    stageCanControlSpecialSlides = Boolean(payload.capabilities?.specialSlideControl);
     normalizeSessionSlides(session);
     if (session.stateVersion == null) session.stateVersion = 0;
     applyIncoming(session, session);
@@ -217,8 +228,13 @@ function connectStage(code) {
     banner.textContent = payload?.message || t("stage.reconnect");
   });
   rt.on("open", () => {
-    /* Einzige Send-Calls: join (und intern ping). */
-    rt.send("join", { code, role: "stage", clientId: stageClientId });
+    /* Join inkl. Admin-Key falls vorhanden — serverseitige Sonderfolien-Berechtigung. */
+    rt.send("join", {
+      code,
+      role: "stage",
+      clientId: stageClientId,
+      adminKey: api.adminKey || undefined,
+    });
   });
   rt.connect();
 }
@@ -309,6 +325,14 @@ function renderStage() {
   const frame = document.getElementById("stage-frame");
   const pause = document.getElementById("stage-pause");
   if (!frame) return;
+
+  syncStageSpecialSlideNav({
+    session,
+    canControl: stageCanControlSpecialSlides,
+    shareMode: stageShareMode,
+    emit: (type, payload) => rt?.send(type, payload),
+  });
+
   if (pause) {
     pause.hidden = !session?.paused;
     const p = pause.querySelector("p");

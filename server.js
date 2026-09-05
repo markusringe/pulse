@@ -1938,8 +1938,11 @@ function applySpecialSlide(session, kindRaw) {
  * @param {{ role?: string }} [client]
  */
 function applyEventCountdownControl(session, payload = {}, client = {}) {
-  if (client.role !== "presenter") return { error: "forbidden" };
   const action = String(payload.action || "start_now");
+  const mayControl =
+    client.role === "presenter" ||
+    (client.role === "stage" && client.stageCanControl && action === "set_current_special_slide");
+  if (!mayControl) return { error: "forbidden" };
   if (action === "start_now" || action === "ended") {
     return applyEventCountdownStart(session, payload, client);
   }
@@ -2423,16 +2426,18 @@ async function joinSession(client, payload = {}) {
   const auth = await getAuth(client.req || {}, payload);
   const byKey = verifyAdminKey(adminKey, session.adminHash);
   const byPw = Boolean(session.passwordHash && verifyPassword(payload.password, session.passwordHash));
-  let byAuth = wantPresenter ? await canPresentSession(auth, session) : false;
+  let byAuth = wantPresenter || wantStage ? await canPresentSession(auth, session) : false;
   /* Fallback: Event per Join-Code, falls eventId in der Session noch fehlte. */
-  if (wantPresenter && !byKey && !byPw && !byAuth && ev) {
+  if ((wantPresenter || wantStage) && !byKey && !byPw && !byAuth && ev) {
     byAuth = await canPresentSession(auth, { ...session, eventId: ev.id });
   }
   const linkedEvent = ev || (session.eventId ? eventStore.get(session.eventId) : null);
   const eventSession = Boolean(linkedEvent || session.eventId);
   if (wantStage) {
-    /* Leinwand: keine Auth, nicht als Teilnehmer zählen, keine Notizen. */
+    /* Leinwand: keine Auth-Pflicht, nicht als Teilnehmer zählen, keine Notizen.
+     * Angemeldete Presenter/Admins dürfen Sonderfolien direkt von der Stage steuern. */
     client.role = "stage";
+    client.stageCanControl = Boolean(byKey || byPw || byAuth);
   } else if (wantPresenter && !byKey && !byPw && !byAuth) {
     client.send({
       type: "error",
@@ -2459,6 +2464,9 @@ async function joinSession(client, payload = {}) {
     payload: {
       session: publicSession(session, publicOptsForClient(client)),
       clientRole: client.role,
+      capabilities: {
+        specialSlideControl: client.role === "presenter" || Boolean(client.stageCanControl),
+      },
     },
   });
   announce(code, { type: "participants", payload: { count: session.participants.size } });
