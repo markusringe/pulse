@@ -32,7 +32,7 @@ assert(presenterJs.includes("syncPresenterSpecialSlideButtons"), "Presenter-Sync
 assert(deckJs.includes("deck-chip-special"), "Sonderfolien-Chips in Folienleiste fehlen");
 assert(deckJs.includes("onGotoSpecial"), "onGotoSpecial-Handler in deck.js fehlt");
 assert(appJs.includes("gotoSpecialSlide"), "gotoSpecialSlide in app.js fehlt");
-assert(presenterJs.includes("data-pss-kind"), "Sonderfolien-Buttons im Presenter fehlen");
+assert(coreJs.includes("data-pss-kind"), "Sonderfolien-Buttons in specialSlideNavCore fehlen");
 assert(coreJs.includes("confirmSpecialSlideEnd"), "End-Bestätigungsdialog fehlt");
 assert(coreJs.includes("updateSpecialSlideButtons"), "Button-Zustands-Sync fehlt");
 
