@@ -1,6 +1,6 @@
 # Abnahme-Checkliste — Sonderfolien & Presenter/Stage (v1.5.37+)
 
-**Stand:** 2026-09-05 · Prod `https://pulse.ringe.us` · Zielversion **v1.5.37**  
+**Stand:** 2026-09-05 · Prod `https://pulse.ringe.us` · Zielversion **v1.5.40**  
 **Architektur:** Presenter = Steuerung · Stage = reine Ausgabe  
 **Ergänzt:** `smoke-checklist.md` (allgemeiner Pilot-Gate), `prod-freigabe-checkliste.md`
 
@@ -13,14 +13,18 @@ Legende: `[ ]` offen · `[x]` OK · `[!]` Fehler (Ticket/Commit notieren)
 ```bash
 npm run test:presenter-special-slide-dock
 npm run test:event-special-slides
-npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.37
+npm run test:special-slides-remote -- --url https://pulse.ringe.us --expect-version 1.5.40
+npm run test:special-slides-ws
+npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.40
 ```
 
 | # | Erwartung | Status |
 |---|-----------|--------|
-| 0.1 | `test-presenter-special-slide-dock` → OK | [ ] |
-| 0.2 | Remote-Smoke 16/16, Version 1.5.37 | [ ] |
+| 0.1 | `test-presenter-special-slide-dock` → OK | [x] |
+| 0.2 | Remote-Smoke 16/16, Version 1.5.40 | [ ] |
 | 0.3 | `/api/health/ready` → `"ok": true` | [x] |
+| 0.4 | `test-special-slides-remote` 15/15 | [ ] |
+| 0.5 | `test-special-slides-ws` → OK | [ ] |
 
 ---
 
@@ -149,7 +153,7 @@ Viewport **375 px** (iOS Safari) und **Android Chrome**.
 | Feld | Wert |
 |------|------|
 | Datum | |
-| Version Prod | v1.5.37 |
+| Version Prod | v1.5.40 |
 | Tester | |
 | Browser | Chrome ___ · Firefox ___ · Safari ___ |
 | Beamer | Ja / Nein |

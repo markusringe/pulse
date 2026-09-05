@@ -36,6 +36,10 @@ assert(coreJs.includes("data-pss-kind"), "Sonderfolien-Buttons in specialSlideNa
 assert(coreJs.includes("confirmSpecialSlideEnd"), "End-Bestätigungsdialog fehlt");
 assert(coreJs.includes("updateSpecialSlideButtons"), "Button-Zustands-Sync fehlt");
 
+const stylesCss = read("frontend/css/styles.css");
+assert(stylesCss.includes(".deck-chip-special-label"), "Mobil-Styles für Sonder-Chips fehlen");
+assert(stylesCss.includes("display: none"), "Icon-only Mobil-Modus für Sonder-Chips fehlt");
+
 /* Stage: keine Steuer-UI */
 assert(!indexHtml.includes("stage-special-slide-nav"), "Stage darf keinen Nav-Host haben");
 assert(!fs.existsSync(path.join(root, "frontend/js/stageSpecialSlideNav.js")), "stageSpecialSlideNav.js muss entfernt sein");

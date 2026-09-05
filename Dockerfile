@@ -26,7 +26,7 @@ COPY scripts/build-asset-manifest.js ./scripts/build-asset-manifest.js
 RUN node scripts/build-asset-manifest.js
 COPY server.js ./
 # Diagnose und Bootstrap-Tests im Container (npm run pulse:diagnose / auth:diagnose / test:bootstrap)
-COPY scripts/diagnose-pulse.js scripts/diagnose-auth.js scripts/test-bootstrap.js scripts/test-reconnect-sync.js scripts/test-presenter-special-slide-dock.js scripts/bootstrap-admin.js scripts/sync-install-password.js ./scripts/
+COPY scripts/diagnose-pulse.js scripts/diagnose-auth.js scripts/test-bootstrap.js scripts/test-reconnect-sync.js scripts/test-presenter-special-slide-dock.js scripts/test-special-slides-remote.js scripts/smoke-remote-url.js scripts/bootstrap-admin.js scripts/sync-install-password.js ./scripts/
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
   && mkdir -p /app/data/ssl \
