@@ -75,6 +75,8 @@ async function refreshHelpVersionLine() {
 
 /** @type {object | null} */
 let catalog = null;
+/** Cache-Schlüssel: Admin-Route + Auth-Identität (API-Antwort hängt davon ab). */
+let catalogCacheKey = null;
 let bound = false;
 let tourStep = 0;
 /** Verhindert Doppelstart, während drawTour noch auf #/admin umleitet. */
@@ -400,11 +402,34 @@ function updateContextPanel() {
     .join("")}</ul>`;
 }
 
-async function loadCatalog() {
-  if (catalog) return catalog;
+/**
+ * Hilfe-Katalog laden — primär /api/help/articles (serverseitige Rollenfilterung),
+ * Fallback auf statisches articles.json (Offline/Tests).
+ * @param {boolean} [admin=false]
+ */
+async function loadCatalog(admin = false) {
+  await loadAuth();
+  const cacheKey = `${admin ? "1" : "0"}:${getCurrentUser()?.id || ""}:${isAuthViaSecret() ? "1" : "0"}`;
+  if (catalog && catalogCacheKey === cacheKey) return catalog;
+
+  catalogCacheKey = cacheKey;
+  catalog = null;
+
+  try {
+    const params = new URLSearchParams({ adminRoute: admin ? "1" : "0" });
+    const res = await fetch(`/api/help/articles?${params.toString()}`, { credentials: "include" });
+    if (res.ok) {
+      catalog = await res.json();
+      return catalog;
+    }
+  } catch {
+    /* API nicht erreichbar — statischer Fallback */
+  }
+
   try {
     const res = await fetch(ARTICLES_URL);
     catalog = await res.json();
+    catalog.source = "static";
   } catch {
     catalog = { articles: [], categories: [] };
   }
@@ -428,7 +453,7 @@ async function applyAutoHelpRole(admin) {
 }
 
 async function renderHelp(slug, admin) {
-  const data = await loadCatalog();
+  const data = await loadCatalog(admin);
   await refreshHelpVersionLine();
   await loadAuth();
   const articles = data.articles || [];
@@ -458,7 +483,7 @@ async function renderHelp(slug, admin) {
   if (slug) {
     const meta = articles.find((a) => a.id === slug || a.slug === slug);
     if (!meta) {
-      main.innerHTML = `<p>Artikel nicht gefunden. <a href="#/${admin ? "admin/" : ""}help">Zur Übersicht</a></p>`;
+      main.innerHTML = `<p>Artikel nicht gefunden oder kein Zugriff. <a href="#/${admin ? "admin/" : ""}help">Zur Übersicht</a></p>`;
       return;
     }
     let html = await loadArticleHtml(meta.id);

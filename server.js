@@ -47,6 +47,7 @@ const outboxWorker = require("./lib/email/outboxWorker");
 const backupService = require("./lib/backupService");
 const backupApi = require("./lib/backupApi");
 const teamApi = require("./lib/teamApi");
+const helpApi = require("./lib/helpApi");
 const { corsHeadersForRequest, corsHeaders } = require("./lib/cors");
 const teamService = require("./lib/teamService");
 const autoBackup = require("./lib/autoBackup");
@@ -546,6 +547,18 @@ async function handleApi(req, res, url) {
   if (req.method === "GET" && parts[1] === "branding" && parts.length === 2) {
     send(res, 200, { branding: brandingStore.load() });
     return;
+  }
+  if (parts[1] === "help") {
+    const handled = await helpApi.handleHelpApi({
+      req,
+      res,
+      parts,
+      send,
+      getAuth,
+      userDb,
+      url,
+    });
+    if (handled) return;
   }
   if (req.method === "POST" && parts[1] === "branding" && parts.length === 2) {
     const body = await readJson(req);
@@ -3983,6 +3996,7 @@ function cacheControlFor(ext, reqUrl, webPath) {
 function cacheControlForApi(pathname) {
   if (pathname.startsWith("/api/health")) return "no-cache";
   if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/users")) return "no-store, private";
+  if (pathname.startsWith("/api/help")) return "no-store, private";
   if (pathname.startsWith("/api/teams")) return "no-store, private";
   if (pathname.startsWith("/api/backups")) return "no-store, private";
   if (pathname.startsWith("/api/email")) return "no-store, private";

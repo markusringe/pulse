@@ -14,6 +14,9 @@ const {
 } = require("../lib/helpIndex");
 const {
   resolveHelpRoleFromAuth,
+  resolveViewerCeiling,
+  articleVisibleToViewer,
+  clampFilterRole,
   getVisibleRoleFilterIds,
   articleMatchesHelpRole,
   getRoleBadgeDefs,
@@ -108,6 +111,14 @@ assert(teamRole && teamRole.label === "Team", "Presenter-Label ist Team");
 
 const catsWithIcon = (catalog.categories || []).filter((c) => c.icon);
 assert(catsWithIcon.length >= 10, "Kategorien mit icon-Feld");
+
+assert(!articleVisibleToViewer({ roles: ["admin"] }, "participant"), "Admin-Artikel unsichtbar für Teilnehmer");
+assert(clampFilterRole("presenter", "admin") === "", "Filter-Clamping Presenter");
+
+const helpApiPath = path.join(__dirname, "../lib/helpApi.js");
+const helpCatalogPath = path.join(__dirname, "../lib/helpCatalog.js");
+assert(fs.existsSync(helpApiPath), "lib/helpApi.js vorhanden");
+assert(fs.existsSync(helpCatalogPath), "lib/helpCatalog.js vorhanden");
 
 const wc = filterArticles(articles, { query: "wortwolke" });
 assert(

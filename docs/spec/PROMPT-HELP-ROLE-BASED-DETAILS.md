@@ -120,25 +120,34 @@ getRoleBadgeDefs(article)
 - Kein `roleCache` Backend
 - Kein Modal-Redesign (`renderHelpModal` — Hash-Routing bleibt)
 
-## 4. Phase 2 (Backlog)
+## 4. Phase 2 (umgesetzt)
 
 ### API
 
 ```
-GET /api/help/articles?role=admin|presenter|participant
+GET /api/help/articles?adminRoute=0|1&role=admin|presenter|participant
+GET /api/help/articles/:id?adminRoute=0|1
 ```
 
-- Server filtert Artikel-Metadaten nach Session-Rolle.
-- Response-Cache pro Rolle (`roleCache`, TTL z. B. 5 min).
-- **Sicherheit:** Frontend-Filter allein reicht nicht für vertrauliche Inhalte — Phase 2 für echte Zugriffskontrolle.
+- Server filtert Artikel-Metadaten nach **Sichtbarkeits-Obergrenze** (Auth) und optionalem Rollenfilter.
+- Response-Cache pro Obergrenze + Filter (`roleCache`, TTL 5 min, invalidiert bei `articles.json`-mtime).
+- **Sicherheit:** Nicht berechtigte Artikel fehlen in der API-Antwort; direkte Hash-URLs zeigen „Kein Zugriff“.
+- HTML-Partials unter `/help/*.html` bleiben statisch — Metadaten-Gate in `help.js` verhindert Anzeige.
+
+### Module
+
+| Datei | Aufgabe |
+|-------|---------|
+| `lib/helpCatalog.js` | Katalog laden, `roleCache`, `buildHelpArticlesResponse` |
+| `lib/helpApi.js` | REST-Handler `/api/help/articles` |
+| `frontend/js/help.js` | `loadCatalog()` via API, Fallback `articles.json` |
 
 ### Migration Phase 1 → 2
 
-1. Backup: `frontend/help/articles.json`, `frontend/js/help.js`
-2. API-Route in `server.js`, Auth-Middleware wie Admin-Routen
-3. `help.js`: `loadCatalog()` optional auf API umstellen (Fallback JSON)
-4. Tests: `scripts/test-help-api.js`
-5. Manuell: Admin / Editor / Gast auf `#/admin/help`
+1. ~~API-Route in `server.js`~~
+2. ~~`help.js`: API mit Fallback~~
+3. Tests: `npm run test:help-api`
+4. Manuell: Admin / Editor / Gast auf `#/admin/help`
 
 ## 5. CSS
 

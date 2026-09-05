@@ -56,6 +56,39 @@ export function resolveHelpRoleFromAuth(ctx = {}) {
   return "participant";
 }
 
+/** @param {object} ctx */
+export function resolveViewerCeiling(ctx = {}) {
+  const viewerRole = resolveHelpRoleFromAuth(ctx);
+  if (viewerRole === "admin") return "admin";
+  if (viewerRole === "presenter") return "presenter";
+  return "participant";
+}
+
+/** @param {string} ceilingRole */
+export function rolesAllowedForCeiling(ceilingRole) {
+  const ceiling = normalizeHelpRoleId(ceilingRole) || "participant";
+  if (ceiling === "admin") return ["admin", "presenter", "participant"];
+  if (ceiling === "presenter") return ["presenter", "participant"];
+  return ["participant"];
+}
+
+/** @param {object} article @param {string} ceilingRole */
+export function articleVisibleToViewer(article, ceilingRole) {
+  const allowed = rolesAllowedForCeiling(ceilingRole);
+  return normalizeArticleRoles(article?.roles).some((role) => allowed.includes(role));
+}
+
+/** @param {string} ceilingRole @param {string} requestedRole */
+export function clampFilterRole(ceilingRole, requestedRole) {
+  const ceiling = normalizeHelpRoleId(ceilingRole) || "participant";
+  const requested = normalizeHelpRoleId(requestedRole);
+  if (!requested) return "";
+  const cRank = HELP_ROLE_RANK[ceiling] || 1;
+  const rRank = HELP_ROLE_RANK[requested] || 0;
+  if (!rRank || rRank > cRank) return "";
+  return requested;
+}
+
 /** @param {string} viewerRole */
 export function getVisibleRoleFilterIds(viewerRole) {
   const role = normalizeHelpRoleId(viewerRole);
