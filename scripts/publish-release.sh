@@ -4,40 +4,41 @@
 #
 # Beispiel:
 #   export GITHUB_TOKEN=ghp_...
-#   ./scripts/publish-release.sh v1.0.0
+#   ./scripts/publish-release.sh v1.5.35
+#   ./scripts/publish-release.sh v1.5.35 docs/stabilization/CHANGELOG-v1.5.35.md
 
 set -euo pipefail
 
 TAG="${1:-v1.0.0}"
+BODY_FILE="${2:-}"
 REPO="${UPDATE_REPO:-markusringe/pulse}"
+NAME="${RELEASE_NAME:-Pulse ${TAG}}"
 
 if [ -z "${GITHUB_TOKEN:-}" ]; then
   echo "GITHUB_TOKEN fehlt — Release manuell anlegen:"
   echo "  https://github.com/${REPO}/releases/new?tag=${TAG}"
+  if [ -n "$BODY_FILE" ] && [ -f "$BODY_FILE" ]; then
+    echo "  Text aus: $BODY_FILE"
+  fi
   exit 1
 fi
 
-BODY=$(cat <<EOF
+if [ -n "$BODY_FILE" ] && [ -f "$BODY_FILE" ]; then
+  BODY="$(cat "$BODY_FILE")"
+else
+  BODY=$(cat <<EOF
 ## Pulse ${TAG}
 
-### Features
-- Live-Interaktion: Umfragen, Wortwolke, Q&A, Quiz, Ranking, Picker
-- Events mit Join-Codes und Session-Deck-Editor
-- Branding, Datenschutz, SSL (Let's Encrypt)
-- Benutzerverwaltung mit E-Mail-PIN-Login
-- Automatisches Update-System über GitHub Releases (\`#/admin/updates\`)
-
-### Hinweise
-- Semantische Versionierung ab v1.0.0
-- Updates: \`UPDATE_REPO=${REPO}\` in \`.env\` setzen
+Siehe \`docs/stabilization/\` für detaillierte Release-Notes.
 EOF
 )
+fi
 
-payload=$(TAG="$TAG" BODY="$BODY" python3 - <<'PY'
+payload=$(TAG="$TAG" NAME="$NAME" BODY="$BODY" python3 - <<'PY'
 import json, os
 print(json.dumps({
   "tag_name": os.environ["TAG"],
-  "name": "Pulse " + os.environ["TAG"],
+  "name": os.environ["NAME"],
   "body": os.environ["BODY"],
   "draft": False,
   "prerelease": False,
