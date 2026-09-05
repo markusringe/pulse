@@ -35,6 +35,14 @@ let eventCountdownCtl = null;
 let countdownSkipped = false;
 
 /**
+ * Countdown-Override aus Session-Metadaten übernehmen (Kaltstart + WS session/event_meta).
+ * @param {object | null | undefined} sess
+ */
+function applyCountdownSkippedFromSession(sess) {
+  countdownSkipped = Boolean(sess?.eventMeta?.countdownDismissed);
+}
+
+/**
  * Stage-View starten. Wird von app.js beim Hash #/stage/:code aufgerufen.
  * @param {string} code
  */
@@ -54,6 +62,7 @@ export async function enterStage(code) {
   const remote = await api.getSession(code);
   if (remote?.session) {
     session = remote.session;
+    applyCountdownSkippedFromSession(session);
     if (remote.session.serverNow) clockSkew = remote.session.serverNow - Date.now();
     renderStage();
   }
@@ -99,6 +108,7 @@ function connectStage(code) {
     normalizeSessionSlides(session);
     if (session.stateVersion == null) session.stateVersion = 0;
     applyIncoming(session, session);
+    applyCountdownSkippedFromSession(session);
     if (payload.serverNow != null) clockSkew = payload.serverNow - Date.now();
     else if (session?.serverNow) clockSkew = session.serverNow - Date.now();
     renderStage();

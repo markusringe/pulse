@@ -1,9 +1,13 @@
 # Abnahme-Fortschritt — Sonderfolien v1.5.37
 
 **Datum:** 2026-09-05  
-**Prod:** https://pulse.ringe.us/ · **v1.5.40**  
+**Prod:** https://pulse.ringe.us/ · **v1.5.41**  
 **Checkliste:** `abnahme-sonderfolien-v1.5.37.md`  
-**Test-Event:** Bürgerversammlung Klimaschutz · Join-Code **241184** · Presenter `markus@ringe.us`
+**Test-Events:**
+- **241184** — Bürgerversammlung Klimaschutz (Countdown + Folien, ohne Pause/Ende)
+- **807435** — Townhall `ev_29b1623b31d6` (Countdown + Pause + Ende + Folie 1)
+
+Presenter: `markus@ringe.us` · Chrome (Prod)
 
 ---
 
@@ -11,10 +15,10 @@
 
 | # | Prüfung | Ergebnis | Notiz |
 |---|---------|----------|-------|
-| 0.1 | `test-presenter-special-slide-dock` | ✅ OK | Container v1.5.40 |
-| 0.2 | Remote-Smoke 16/16 | ✅ OK | v1.5.40 |
+| 0.1 | `test-presenter-special-slide-dock` | ✅ OK | Container v1.5.41 |
+| 0.2 | Remote-Smoke 16/16 | ✅ OK | v1.5.41 |
 | 0.3 | `/api/health/ready` | ✅ `ok: true` | |
-| 0.4 | `test-special-slides-remote` 15/15 | ✅ OK | Container v1.5.40 |
+| 0.4 | `test-special-slides-remote` 15/15 | ✅ OK | Container v1.5.41 |
 | 0.5 | `test-special-slides-ws` | ✅ OK | Presenter steuert, Stage passiv |
 | 0.6 | `test:event-special-slides` | ✅ OK | Unit (lokal/CI) |
 | — | Prod `stage.js` / `deck.js` | ✅ | Bundle-Check |
@@ -68,16 +72,77 @@
 | 4 Beamer ~3 m | ☐ |
 | 5 Screen-Share | ☐ Zoom / Teams / Meet |
 | 6 iOS / Android Gerät | ☐ (CSS/Layout Chrome simuliert ✅) |
-| 7 Regression kurz | ☐ |
-| Pause/Ende vollständig | ☐ Zweites Event mit Sonderfolien-Konfiguration |
+| 7 Regression kurz | ✅ Chrome (siehe Abschnitt 7) |
+| Pause/Ende vollständig | ✅ Townhall **807435** (siehe unten) |
 
-**Gesamt-Freigabe:** ☑ **RC Pilot** (Kernpfad Countdown + Folienwechsel + Stage-Sync OK) · ☐ Freigegeben (nach FF/Safari + Pause/Ende-Event)
+**Gesamt-Freigabe:** ☑ **RC Pilot** · ☑ **Funktional freigegeben** (alle Sonderfolien-Pfade Chrome) · ☐ Vollständig (FF/Safari/Beamer/Gerät offen)
+
+---
+
+## Manuell — Townhall 807435 (2026-09-05, Chrome)
+
+**Konfiguration (PATCH):** `pauseSlide` „Pause“, `endSlide` „Danke“, `startTime` 2099-12-01T18:00Z  
+**URLs:** `#/present/807435` · `#/stage/807435` · `#/stage/807435?share=1`
+
+### Abschnitt 2 — Presenter (Townhall ✅)
+
+| # | Ergebnis | Notiz |
+|---|----------|-------|
+| 2.1 Countdown-Chip | ✅ | Chip + Dock `aria-pressed=true` |
+| 2.2 Pause-Chip | ✅ | Chip + Dock synchron, Titel „Pause“ |
+| 2.3 Folie 1 | ✅ | „Willkommen — erste Frage“, Sonder-Chips inaktiv |
+| 2.4 Ende-Chip | ✅ | Chip aktiv nach Bestätigung |
+| 2.5 End-Dialog | ✅ | `#present-special-end-confirm`, Titel „Event wirklich beenden?“, Abbrechen + Bestätigen |
+| 2.6 Dock-Sync | ✅ | Chip ↔ Dock für Countdown, Pause, Ende; Dock-Klicks steuern Folienleiste |
+| 2.7 Hilfe `?` | ✅ | Dock-Button vorhanden |
+
+**Folienleiste:** `[⏱ Countdown] [⏸ Pause] [1] [+] [✓ Ende]`
+
+### Abschnitt 3 — Stage passiv (Townhall ✅)
+
+| # | normal | share=1 | Notiz |
+|---|--------|---------|-------|
+| 3.1 Keine Steuer-Buttons | ✅ | ✅ | 0× `[data-pss-kind]` |
+| 3.2 Keine Hilfe-FAB | ✅ | ✅ | `help-fab` hidden |
+| 3.3 Countdown | ✅ | ✅ | „Townhall“, Timer 2099 (WS-Sync) |
+| 3.4 Pause | ✅ | ✅ | Titel „Pause“, Untertitel „Kurze Unterbrechung“ |
+| 3.5 Endfolie | ✅ | ✅ | „Danke“ / „Veranstaltung beendet“ |
+| 3.6 Vollbild `#stage-fs` | ✅ | ✅ | Nur Anzeige |
+| 3.x WS-Sync Folie 1 | ✅ | ✅ | „Willkommen — erste Frage“ (nach `countdownDismissed` + WS) |
+
+**Hinweis:** Bei `startTime` in der Zukunft zeigt Stage nach **Kaltstart** ggf. noch Auto-Countdown, bis WS `event_meta`/`slide` eintrifft oder `countdownDismissed` gesetzt ist. Live-Sync nach Presenter-Aktionen: OK.
+
+### Abschnitt 6 — Mobile Presenter 375 px (Townhall ✅)
+
+| # | Ergebnis |
+|---|----------|
+| 6.1 Folienleiste scrollbar | ✅ `overflow-x: auto` |
+| 6.2 Sonder-Chips Icon-only | ✅ `.deck-chip-special-label { display: none }` |
+| 6.3 Dock-Buttons | ✅ 44 px Höhe |
+| 6.4 End-Dialog | ✅ Dialog geöffnet (Desktop); nach Event-Ende Chip `is-confirmed` |
+
+**Nach Test:** Event Townhall per Endfolie auf `ended` gesetzt; PATCH `status: active` + `currentSpecialSlide: null` zur Wiederherstellung. Stand geprüft: **`status: active`**.
+
+---
+
+## Abschnitt 7 — Regression kurz (Chrome, 2026-09-05)
+
+| # | Ergebnis | Notiz |
+|---|----------|-------|
+| 7.1 Folienwechsel Prev/Next | ✅ | **241184**: Folie 2 per Chip, Stage `#/stage/241184?share=1` folgt („Bürgerbeteiligung…“) |
+| 7.2 Countdown-Stile Editor | ⏭ | Nicht erneut geändert; Townhall `countdownStyle: classic` auf Stage sichtbar |
+| 7.3 Stage-Effekte | ✅ | Townhall `sunrise` / `high`, `#view-stage` dataset, keine JS-Fehler |
+| 7.4 Hilfe rollenbasiert | ✅ | Dock „Hilfe“ → Modal „Hilfe für Presenter“ + Link „Vollständige Hilfe“ |
+
+**Prod:** `/api/health/ready` → `ok: true`
+
+**Bugfix deployed v1.5.41:** `frontend/js/stage.js` — `countdownDismissed` beim Stage-Kaltstart aus Session-Metadaten (symmetrisch zu WS `event_meta`).
 
 ---
 
 ## Nächste Schritte
 
-1. Test-Event mit **Pause + Endfolie** anlegen → 2.2, 2.4–2.5, 3.4–3.5, 6.4 nachholen.
-2. Firefox/Safari-Stichprobe Abschnitt 2.
-3. Beamer + Screen-Share (Abschnitt 4–5) beim nächsten Pilot.
+1. Firefox/Safari-Stichprobe Abschnitt 2 (Presenter + Stage).
+2. Beamer ~3 m + Screen-Share (Abschnitt 4–5) beim nächsten Pilot.
+3. Physische Geräte iOS/Android (Abschnitt 6).
 4. Feature-Freeze 2–3 Tage — nur Bugfixes aus Abnahme.
