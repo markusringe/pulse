@@ -68,7 +68,7 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 
 | Abschnitt | Status |
 |-----------|--------|
-| 2 FF / Safari | ☐ Stichprobe |
+| 2 FF / Safari | ☐ Stichprobe → [Checkliste](abnahme-ff-safari-stichprobe.md) |
 | 4 Beamer ~3 m | ☐ |
 | 5 Screen-Share | ☐ Zoom / Teams / Meet |
 | 6 iOS / Android Gerät | ☐ (CSS/Layout Chrome simuliert ✅) |
@@ -145,7 +145,7 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 
 ## Nächste Schritte
 
-1. Firefox/Safari-Stichprobe Abschnitt 2 (Presenter + Stage).
+1. Firefox/Safari-Stichprobe → [abnahme-ff-safari-stichprobe.md](abnahme-ff-safari-stichprobe.md) (15–20 Min./Browser).
 2. Beamer ~3 m + Screen-Share (Abschnitt 4–5) beim nächsten Pilot.
 3. Physische Geräte iOS/Android (Abschnitt 6).
 4. Feature-Freeze 2–3 Tage — nur Bugfixes aus Abnahme.
