@@ -158,6 +158,18 @@ const badImg = events.create({
 });
 assert(!badImg.eventImage, "rejects non-image data url");
 
+const cd = events.create({
+  title: "Countdown Defaults",
+  startAt: "2099-06-01",
+  endAt: "2099-06-02",
+  teamId: "team_cd_def",
+});
+assert(cd.countdownStyle === "modern", "default countdownStyle modern");
+assert(cd.showStageDateTime !== false, "default showStageDateTime true");
+assert(cd.showStageQr === false, "default showStageQr false");
+const meta = events.eventMetaFor(cd.id);
+assert(meta.countdownStyle === "modern" && meta.showStageQr === false, "eventMetaFor countdown defaults");
+
 process.chdir(origCwd);
 fs.rmSync(dir, { recursive: true, force: true });
 fs.rmSync(legacyDir, { recursive: true, force: true });

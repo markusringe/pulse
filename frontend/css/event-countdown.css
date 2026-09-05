@@ -253,3 +253,156 @@
     transition: none;
   }
 }
+
+/* Statuszeile und Datum — Stage-Hierarchie */
+.event-countdown-status {
+  margin: 0;
+  font-size: clamp(1rem, 2.2vw, 1.5rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.event-countdown-datetime {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.1rem, 2.8vw, 2rem);
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.event-countdown-qr {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.event-countdown-qr-canvas {
+  display: block;
+  margin: 0 auto;
+  max-width: min(220px, 40vw);
+  height: auto;
+}
+
+/* Countdown-Stile — data-countdown-style am Host */
+.event-countdown-host[data-countdown-style="classic"] .event-countdown-bg--plain {
+  animation: none;
+  background: linear-gradient(160deg, #1a2332 0%, #2c3e50 100%);
+}
+
+.event-countdown-host[data-countdown-style="classic"] .event-countdown-panel {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  padding: 2rem;
+}
+
+.event-countdown-host[data-countdown-style="retro"] .event-countdown-num {
+  font-family: ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.06em;
+}
+
+.event-countdown-host[data-countdown-style="retro"] .event-countdown-bg--plain {
+  background: linear-gradient(135deg, #2d1b4e 0%, #c44569 55%, #f8b500 100%);
+}
+
+/* Presenter-Countdown-Leiste */
+.presenter-countdown-control {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.presenter-countdown-inner {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.presenter-countdown-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.presenter-countdown-digits {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.presenter-countdown-pill {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.presenter-countdown-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.presenter-countdown-popover {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  max-width: 28rem;
+}
+
+.presenter-countdown-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+/* Event-Editor: Stil-Karten */
+.countdown-style-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.countdown-style-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.countdown-style-card.is-selected {
+  border-color: var(--accent);
+}
+
+.countdown-style-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.countdown-style-card-preview {
+  height: 3.5rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary-color, #007cc1), var(--secondary-color, #f99700));
+}
+
+.countdown-style-card-preview[data-countdown-style="classic"] {
+  background: linear-gradient(160deg, #1a2332, #2c3e50);
+}
+
+.countdown-style-card-preview[data-countdown-style="retro"] {
+  background: linear-gradient(135deg, #2d1b4e, #f8b500);
+}
+
+.countdown-style-card-title {
+  font-weight: 650;
+}

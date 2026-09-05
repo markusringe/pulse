@@ -3,6 +3,9 @@
  * Berechnung lokal aus startTime; optional clockSkew aus serverNow.
  */
 
+/** Erlaubte Countdown-Stile (persistiert am Event). */
+export const COUNTDOWN_STYLES = ["classic", "modern", "retro"];
+
 /** Schwellen in Millisekunden. */
 export const THRESH = {
   day: 24 * 60 * 60 * 1000,
@@ -10,6 +13,60 @@ export const THRESH = {
   fiveMin: 5 * 60 * 1000,
   minute: 60 * 1000,
 };
+
+/**
+ * Countdown-Stil normalisieren (Default: modern).
+ * @param {unknown} value
+ * @returns {'classic'|'modern'|'retro'}
+ */
+export function sanitizeCountdownStyle(value) {
+  const id = String(value || "modern")
+    .trim()
+    .toLowerCase();
+  return COUNTDOWN_STYLES.includes(id) ? id : "modern";
+}
+
+/**
+ * Startzeit für die Stage formatieren (ohne Sekunden).
+ * @param {string} startTime ISO-8601
+ * @param {string} [locale='de-DE']
+ * @param {string} [timeZone]
+ * @returns {string}
+ */
+export function formatEventStartDisplay(startTime, locale = "de-DE", timeZone) {
+  const ms = Date.parse(String(startTime || ""));
+  if (!Number.isFinite(ms)) return "";
+  const d = new Date(ms);
+  const opts = timeZone ? { timeZone } : {};
+  const datePart = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    ...opts,
+  }).format(d);
+  const timePart = new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    ...opts,
+  }).format(d);
+  if (String(locale).toLowerCase().startsWith("de")) {
+    return `${datePart} · ${timePart} Uhr`;
+  }
+  return `${datePart} · ${timePart}`;
+}
+
+/**
+ * Statuszeile für Countdown-UI (Stage-Hierarchie: Eventname → Status → Ziffern).
+ * @param {number} ms Restzeit
+ * @param {{ paused?: boolean, t?: (key: string) => string }} [opts]
+ */
+export function countdownStatusLabel(ms, opts = {}) {
+  const tr = opts.t || ((k) => k);
+  if (opts.paused) return tr("countdown.status.paused");
+  if (ms <= 0) return tr("countdown.status.expired");
+  return tr("countdown.status.running");
+}
 
 /**
  * Verbleibende ms bis startTime (ISO), inkl. optionaler Client-Skew-Korrektur.
@@ -83,41 +140,66 @@ export function urgencyLevel(ms) {
 }
 
 /**
- * HTML für die Countdown-UI (ohne Event-Listener).
- * @param {{ title?: string, eventImage?: string }} meta
+ * Gemeinsame Countdown-UI — eine Render-Pipeline für Stage, Presenter-Vorschau und Startseite.
+ * @param {{ title?: string, eventImage?: string, startTime?: string, countdownStyle?: string, showStageDateTime?: boolean, showStageQr?: boolean }} meta
  * @param {number} ms
- * @param {{ showSkip?: boolean }} [opts]
+ * @param {{
+ *   variant?: 'stage'|'presenter'|'home',
+ *   showSkip?: boolean,
+ *   showStart?: boolean,
+ *   skipLabel?: string,
+ *   startLabel?: string,
+ *   continueLabel?: string,
+ *   showQr?: boolean,
+ *   joinUrl?: string,
+ *   locale?: string,
+ *   timeZone?: string,
+ *   paused?: boolean,
+ *   t?: (key: string) => string,
+ * }} [opts]
  */
-export function countdownHtml(meta, ms, opts = {}) {
+export function renderCountdownPanel(meta, ms, opts = {}) {
   const parts = splitTime(ms);
   const urgency = urgencyLevel(ms);
   const imminent = ms > 0 && ms < THRESH.fiveMin;
-  const bg = meta.eventImage
+  const variant = opts.variant || "stage";
+  const style = sanitizeCountdownStyle(meta?.countdownStyle);
+  const showDateTime =
+    variant === "stage" && meta?.showStageDateTime !== false && Boolean(meta?.startTime);
+  const locale = opts.locale || "de-DE";
+  const datetime = showDateTime ? formatEventStartDisplay(meta.startTime, locale, opts.timeZone) : "";
+  const status = countdownStatusLabel(ms, { paused: opts.paused, t: opts.t });
+  const showQr = Boolean(opts.showQr && opts.joinUrl && variant === "stage");
+
+  const bg = meta?.eventImage
     ? `<div class="event-countdown-bg" style="background-image:url('${escapeAttr(meta.eventImage)}')" aria-hidden="true"></div>`
     : `<div class="event-countdown-bg event-countdown-bg--plain" aria-hidden="true"></div>`;
 
   const digits =
     parts.totalSec < 60
-      ? `<div class="event-countdown-digits event-countdown-digits--sec"><span class="event-countdown-num">${parts.seconds}</span><span class="event-countdown-unit">Sekunden</span></div>`
+      ? `<div class="event-countdown-digits event-countdown-digits--sec"><span class="event-countdown-num">${parts.seconds}</span><span class="event-countdown-unit">${esc(opts.t?.("countdown.unit.seconds") || "Sekunden")}</span></div>`
       : parts.totalSec < 3600
         ? `<div class="event-countdown-digits">
-            <div><span class="event-countdown-num">${pad(parts.minutes)}</span><span class="event-countdown-unit">Min</span></div>
-            <div><span class="event-countdown-num">${pad(parts.seconds)}</span><span class="event-countdown-unit">Sek</span></div>
+            <div><span class="event-countdown-num">${pad(parts.minutes)}</span><span class="event-countdown-unit">${esc(opts.t?.("countdown.unit.min") || "Min")}</span></div>
+            <div><span class="event-countdown-num">${pad(parts.seconds)}</span><span class="event-countdown-unit">${esc(opts.t?.("countdown.unit.sec") || "Sek")}</span></div>
           </div>`
         : `<div class="event-countdown-digits">
-            ${parts.days ? `<div><span class="event-countdown-num">${parts.days}</span><span class="event-countdown-unit">Tage</span></div>` : ""}
-            <div><span class="event-countdown-num">${pad(parts.hours)}</span><span class="event-countdown-unit">Std</span></div>
-            <div><span class="event-countdown-num">${pad(parts.minutes)}</span><span class="event-countdown-unit">Min</span></div>
-            <div><span class="event-countdown-num">${pad(parts.seconds)}</span><span class="event-countdown-unit">Sek</span></div>
+            ${parts.days ? `<div><span class="event-countdown-num">${parts.days}</span><span class="event-countdown-unit">${esc(opts.t?.("countdown.unit.days") || "Tage")}</span></div>` : ""}
+            <div><span class="event-countdown-num">${pad(parts.hours)}</span><span class="event-countdown-unit">${esc(opts.t?.("countdown.unit.hours") || "Std")}</span></div>
+            <div><span class="event-countdown-num">${pad(parts.minutes)}</span><span class="event-countdown-unit">${esc(opts.t?.("countdown.unit.min") || "Min")}</span></div>
+            <div><span class="event-countdown-num">${pad(parts.seconds)}</span><span class="event-countdown-unit">${esc(opts.t?.("countdown.unit.sec") || "Sek")}</span></div>
           </div>`;
 
   return `
     ${bg}
-    <div class="event-countdown-panel" data-urgency="${urgency}">
-      ${meta.title ? `<p class="event-countdown-title">${esc(meta.title)}</p>` : ""}
-      ${imminent ? `<p class="event-countdown-imminent">In wenigen Augenblicken geht es los…</p>` : ""}
-      <p class="event-countdown-label">${esc(formatCountdownLabel(ms))}</p>
+    <div class="event-countdown-panel" data-urgency="${urgency}" data-variant="${esc(variant)}">
+      ${meta?.title ? `<h1 class="event-countdown-title">${esc(meta.title)}</h1>` : ""}
+      <p class="event-countdown-status" role="status">${esc(status)}</p>
+      ${imminent ? `<p class="event-countdown-imminent">${esc(opts.t?.("countdown.imminent") || "In wenigen Augenblicken geht es los…")}</p>` : ""}
       ${digits}
+      ${datetime ? `<p class="event-countdown-datetime">${esc(datetime)}</p>` : ""}
+      ${showQr ? `<div class="event-countdown-qr"><canvas class="event-countdown-qr-canvas" width="200" height="200" data-join-url="${escapeAttr(opts.joinUrl)}" aria-label="${esc(opts.t?.("countdown.qr.label") || "QR-Code zum Beitreten")}"></canvas></div>` : ""}
+      <p class="event-countdown-label sr-only">${esc(formatCountdownLabel(ms))}</p>
       <div class="event-countdown-bar" aria-hidden="true"><span style="width:${progressPct(ms)}%"></span></div>
       ${opts.showSkip ? `<button type="button" class="btn ghost event-countdown-skip" data-countdown-skip>${esc(opts.skipLabel || "Countdown überspringen")}</button>` : ""}
       ${opts.showStart ? `<div class="event-countdown-actions">
@@ -126,6 +208,11 @@ export function countdownHtml(meta, ms, opts = {}) {
       </div>` : ""}
     </div>
   `;
+}
+
+/** @deprecated Alias — bitte renderCountdownPanel verwenden. */
+export function countdownHtml(meta, ms, opts = {}) {
+  return renderCountdownPanel(meta, ms, opts);
 }
 
 function progressPct(ms) {
@@ -170,6 +257,14 @@ function escapeAttr(value) {
  *   onEnded?: () => void,
  *   syncEveryMs?: number,
  *   onSync?: () => void,
+ *   variant?: 'stage'|'presenter'|'home',
+ *   showQr?: boolean,
+ *   joinUrl?: string,
+ *   locale?: string,
+ *   timeZone?: string,
+ *   t?: (key: string) => string,
+ *   onQrCanvas?: (canvas: HTMLCanvasElement, url: string) => void,
+ *   getMeta?: () => object,
  * }} [opts]
  * @returns {{ stop: () => void, refresh: () => void }}
  */
@@ -179,19 +274,35 @@ export function mountCountdown(host, meta, opts = {}) {
   let timer = 0;
   let syncTimer = 0;
   const getSkew = opts.getSkew || (() => 0);
+  const getMeta = opts.getMeta || (() => meta);
 
   const paint = () => {
     if (stopped || !host) return;
-    const ms = remainingMs(meta.startTime, getSkew());
-    host.innerHTML = countdownHtml(meta, ms, {
+    const liveMeta = getMeta();
+    const ms = remainingMs(liveMeta.startTime, getSkew());
+    host.dataset.countdownStyle = sanitizeCountdownStyle(liveMeta.countdownStyle);
+    const showQr = opts.showQr ?? Boolean(liveMeta.showStageQr);
+    host.innerHTML = renderCountdownPanel(liveMeta, ms, {
+      variant: opts.variant || "stage",
       showSkip: opts.showSkip,
       showStart: opts.showStart,
       skipLabel: opts.skipLabel,
       startLabel: opts.startLabel,
       continueLabel: opts.continueLabel,
+      showQr,
+      joinUrl: opts.joinUrl,
+      locale: opts.locale,
+      timeZone: opts.timeZone,
+      t: opts.t,
     });
     host.hidden = false;
     host.classList.add("event-countdown-host");
+    if (showQr && opts.joinUrl) {
+      const canvas = host.querySelector(".event-countdown-qr-canvas");
+      if (canvas instanceof HTMLCanvasElement) {
+        opts.onQrCanvas?.(canvas, opts.joinUrl);
+      }
+    }
     host.querySelector("[data-countdown-skip]")?.addEventListener("click", () => {
       opts.onSkip?.();
     });

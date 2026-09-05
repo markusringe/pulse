@@ -80,6 +80,18 @@ const DE = {
   "events.field.end": "Enddatum",
   "events.field.startTime": "Startuhrzeit (Countdown)",
   "events.field.startTimeHint": "Optional. Countdown auf Startseite und Leinwand. Leer = sofort.",
+  "events.field.countdownStyle": "Countdown-Stil (Stage)",
+  "events.field.countdownStyleHint": "Wird auf der Präsentations-Leinwand (#/stage) angezeigt. Bei laufendem Event sieht das Publikum Änderungen sofort.",
+  "events.countdownStyle.classic": "Klassisch",
+  "events.countdownStyle.classicHint": "Ruhig, seriös — für formelle Sitzungen",
+  "events.countdownStyle.modern": "Modern",
+  "events.countdownStyle.modernHint": "Standard — zeitgemäß und lebendig",
+  "events.countdownStyle.retro": "Retro",
+  "events.countdownStyle.retroHint": "Charaktervoll — für lockere Formate",
+  "events.field.showStageDateTime": "Datum und Uhrzeit auf der Stage anzeigen",
+  "events.field.showStageQr": "QR-Code auf der Stage (Standard aus)",
+  "events.field.showStageQrHint": "Nur öffentliche Join-URL — Presenter kann den QR live ein- und ausblenden.",
+  "events.liveChangeConfirm": "Das Event läuft. Das Publikum sieht Stil- und Anzeige-Änderungen sofort auf der Stage. Fortfahren?",
   "events.field.image": "Event-Grafik",
   "events.field.imageHint": "PNG, JPEG, WebP oder SVG · max. 2 MB · empfohlen 1920×1080",
   "events.field.imageDrop": "Grafik hierher ziehen oder Datei wählen",
@@ -932,6 +944,7 @@ function eventFieldsHtml(event = {}, opts = {}) {
       <input id="ev-start-time" type="datetime-local" value="${esc(localStart)}" />
     </label>
     <p class="muted">${esc(tx("events.field.startTimeHint"))}</p>
+    ${countdownStageFieldsHtml(event)}
     <label class="field"><span>${esc(tx("events.field.category"))}</span>
       <input id="ev-cat" value="${esc(event.category || "")}" maxlength="80" />
     </label>
@@ -940,6 +953,55 @@ function eventFieldsHtml(event = {}, opts = {}) {
     </label>
     ${eventImageFieldHtml(event.eventImage || "")}
   `;
+}
+
+function countdownStageFieldsHtml(event = {}) {
+  const style = String(event.countdownStyle || "modern");
+  const styles = [
+    { id: "classic", label: tx("events.countdownStyle.classic"), hint: tx("events.countdownStyle.classicHint") },
+    { id: "modern", label: tx("events.countdownStyle.modern"), hint: tx("events.countdownStyle.modernHint") },
+    { id: "retro", label: tx("events.countdownStyle.retro"), hint: tx("events.countdownStyle.retroHint") },
+  ];
+  return `
+    <fieldset class="countdown-style-picker" id="ev-countdown-style-box">
+      <legend>${esc(tx("events.field.countdownStyle"))}</legend>
+      <p class="muted">${esc(tx("events.field.countdownStyleHint"))}</p>
+      <div class="countdown-style-cards">
+        ${styles
+          .map(
+            (s) => `
+          <label class="countdown-style-card ${s.id === style ? "is-selected" : ""}" data-style-card="${esc(s.id)}">
+            <input type="radio" name="ev-countdown-style" value="${esc(s.id)}" ${s.id === style ? "checked" : ""} />
+            <span class="countdown-style-card-preview" data-countdown-style="${esc(s.id)}" aria-hidden="true"></span>
+            <span class="countdown-style-card-title">${esc(s.label)}</span>
+            <span class="countdown-style-card-hint muted">${esc(s.hint)}</span>
+          </label>`
+          )
+          .join("")}
+      </div>
+    </fieldset>
+    <label class="check"><input type="checkbox" id="ev-show-datetime" ${event.showStageDateTime !== false ? "checked" : ""} /> ${esc(tx("events.field.showStageDateTime"))}</label>
+    <label class="check"><input type="checkbox" id="ev-show-stage-qr" ${event.showStageQr ? "checked" : ""} /> ${esc(tx("events.field.showStageQr"))}</label>
+    <p class="muted">${esc(tx("events.field.showStageQrHint"))}</p>
+  `;
+}
+
+/** Ausgewählten Countdown-Stil aus den Karten lesen. */
+function readCountdownStyleField() {
+  const checked = document.querySelector('input[name="ev-countdown-style"]:checked');
+  const id = String(checked?.value || "modern");
+  return ["classic", "modern", "retro"].includes(id) ? id : "modern";
+}
+
+function bindCountdownStyleCards() {
+  document.querySelectorAll("[data-style-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".countdown-style-card").forEach((c) => c.classList.remove("is-selected"));
+      card.classList.add("is-selected");
+      const input = card.querySelector('input[type="radio"]');
+      if (input) input.checked = true;
+    });
+  });
 }
 
 /** ISO → Wert für datetime-local (lokale Zeitzone). */
@@ -1053,6 +1115,9 @@ function readEventFields() {
     eventImage: document.getElementById("ev-image")?.value || "",
     category: document.getElementById("ev-cat")?.value,
     room: document.getElementById("ev-room")?.value,
+    countdownStyle: readCountdownStyleField(),
+    showStageDateTime: document.getElementById("ev-show-datetime")?.checked !== false,
+    showStageQr: Boolean(document.getElementById("ev-show-stage-qr")?.checked),
   };
   const teamId = readTeamField();
   if (document.getElementById("ev-team")) fields.teamId = teamId;
@@ -1097,6 +1162,7 @@ async function renderCreate(root) {
   `;
   document.getElementById("event-create-form")?.addEventListener("submit", onCreateSubmit);
   bindEventImageUpload("");
+  bindCountdownStyleCards();
 }
 
 async function onCreateSubmit(e) {
@@ -1206,6 +1272,7 @@ async function renderDetail(root, eventId) {
   `;
   hooks.drawQrCode(document.getElementById("admin-event-qr"), joinUrl);
   bindEventImageUpload(event.eventImage || "");
+  bindCountdownStyleCards();
   document.getElementById("event-edit-form")?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const msg = document.getElementById("event-edit-msg");
@@ -1228,6 +1295,14 @@ async function renderDetail(root, eventId) {
         footerText: document.getElementById("ev-footer")?.value,
       },
     };
+    const liveVisualChange =
+      event.status === "active" &&
+      (patch.countdownStyle !== (event.countdownStyle || "modern") ||
+        patch.showStageDateTime !== (event.showStageDateTime !== false) ||
+        patch.showStageQr !== Boolean(event.showStageQr));
+    if (liveVisualChange && !confirm(tx("events.liveChangeConfirm"))) {
+      return;
+    }
     if (teamEditable && document.getElementById("ev-team")) patch.teamId = nextTeam;
     const resultSave = await api.updateEvent(event.id, patch);
     if (!resultSave?.ok) {

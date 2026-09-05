@@ -8,12 +8,13 @@
  */
 
 import { RealtimeClient, api } from "./websocket.js";
-import { t } from "./i18n.js";
+import { t, currentLang } from "./i18n.js";
 import { initPoll, updatePollResults, destroyPoll, initRatingScale, updateRatingResults } from "./poll.js";
 import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
 import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming, applySlidePayload } from "./sessionSync.js";
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js";
+import { drawQrCode, joinUrlFromLocation } from "./qrRender.js";
 import { stageStatusMessage } from "./interactionPresenter.js";
 
 /** @type {RealtimeClient | null} */
@@ -40,6 +41,9 @@ export async function enterStage(code) {
   const root = document.getElementById("view-stage");
   if (!root || !code) return;
   countdownSkipped = false;
+  /* Screen-Sharing-Modus: größere Typo, weniger Animation (URL ?share=1). */
+  const share = new URLSearchParams(location.search).get("share") === "1";
+  root.dataset.stageMode = share ? "share" : "";
   branding = (await api.getBranding())?.branding || {};
   applyChrome(branding);
   bindFullscreen();
@@ -379,16 +383,28 @@ function stopEventCountdown() {
  */
 function syncEventCountdown() {
   const host = document.getElementById("stage-event-countdown");
+  const root = document.getElementById("view-stage");
   const meta = session?.eventMeta;
+  if (root && meta) {
+    root.dataset.countdownStyle = meta.countdownStyle || "modern";
+  }
   if (!host || !shouldShowCountdown(meta, clockSkew, { skipped: countdownSkipped })) {
     stopEventCountdown();
     if (host) host.hidden = true;
     return false;
   }
+  const joinUrl = joinUrlFromLocation(session?.code || session?.joinCode);
   if (!eventCountdownCtl) {
     eventCountdownCtl = mountCountdown(host, meta, {
+      variant: "stage",
+      getMeta: () => session?.eventMeta || {},
       getSkew: () => clockSkew,
       showSkip: false,
+      showQr: Boolean(meta?.showStageQr),
+      joinUrl,
+      locale: currentLang() === "en" ? "en-GB" : currentLang() === "fr" ? "fr-FR" : "de-DE",
+      t,
+      onQrCanvas: (canvas, url) => drawQrCode(canvas, url),
       syncEveryMs: 10_000,
       onSync: () => {
         try {

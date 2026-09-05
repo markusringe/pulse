@@ -20,10 +20,12 @@ import {
 } from "./qaTimerUi.js";
 import { enterStage, leaveStage } from "./stage.js";
 import {
-  mountCountdown,
   shouldShowCountdown,
   remainingMs,
 } from "./eventCountdown.js";
+import {
+  syncPresenterCountdownControl,
+} from "./presenterCountdownControl.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
 import { initI18n, setLang, t, applyDom, currentLang, onLang } from "./i18n.js";
@@ -273,9 +275,6 @@ const ctx = {
   /** WebSocket-Rolle nach Join (presenter | participant | stage). */
   wsClientRole: "",
 };
-
-/** @type {{ stop: () => void, refresh?: () => void } | null} */
-let presentCountdownCtl = null;
 
 /** Hash-Pfad ohne führendes # und ohne ?query-Anhängsel im Hash. */
 function hashRoutePath(forced) {
@@ -1493,8 +1492,6 @@ function connectRealtime(role) {
     ctx.eventCountdownSkipped = Boolean(payload.eventMeta.countdownDismissed);
     persistLocal(ctx.session);
     if (ctx.role === "present") {
-      presentCountdownCtl?.stop();
-      presentCountdownCtl = null;
       renderLobby();
       renderActiveSlide();
     }
@@ -2607,6 +2604,22 @@ function refreshPresenterPanel() {
   if (ctx.role !== "present" || !ctx.session) return;
   refreshPresenterStats({ session: ctx.session, t, lobby: Boolean(ctx.session.lobby) });
   interactionBarCtrl?.render();
+  const countdownOn = syncPresentEventCountdown();
+  syncPresenterCountdownControl(document.getElementById("presenter-countdown-control"), {
+    session: ctx.session,
+    clockSkew: ctx.eventClockSkew || 0,
+    connectionOpen: els.connectionStatus?.dataset?.state === "open",
+    emit: emitLive,
+    onStart: () => requestEventCountdownStart("start_now"),
+    onToggleQr: (show) => {
+      emitLive("event_countdown", {
+        code: ctx.session.code,
+        action: "set_show_stage_qr",
+        showStageQr: show,
+      });
+      if (ctx.session.eventMeta) ctx.session.eventMeta.showStageQr = show;
+    },
+  }, countdownOn);
 }
 
 /** Countdown lokal aktualisieren, solange Interaktion läuft oder pausiert ist. */
@@ -3115,7 +3128,7 @@ function openStageWindow() {
   const h = 720;
   const left = Math.round((window.screenX || 0) + (window.outerWidth || 0));
   const top = Math.round(window.screenY || 0);
-  const url = `${location.origin}${location.pathname}#/stage/${code}`;
+  const url = `${location.origin}${location.pathname}#/stage/${code}?share=1`;
   const win = window.open(url, `pulse-stage-${code}`, `popup=yes,width=${w},height=${h},left=${left},top=${top},noopener`);
   if (win) win.opener = null;
 }
@@ -3171,47 +3184,17 @@ function renderLobby() {
 }
 
 /**
- * Event-Countdown in der Presenter-Stage. Presenter kann überspringen.
+ * Event-Countdown aktiv? Presenter nutzt die Leiste (#presenter-countdown-control), kein Vollbild-Overlay.
  * @returns {boolean}
  */
 function syncPresentEventCountdown() {
-  ensurePresentCountdownHost();
-  const host = document.getElementById("present-event-countdown");
   const meta = ctx.session?.eventMeta;
-  if (
-    ctx.role !== "present" ||
-    !host ||
-    !shouldShowCountdown(meta, ctx.eventClockSkew, { skipped: ctx.eventCountdownSkipped })
-  ) {
-    presentCountdownCtl?.stop();
-    presentCountdownCtl = null;
-    if (host) host.hidden = true;
-    return false;
-  }
-  if (!presentCountdownCtl) {
-    presentCountdownCtl = mountCountdown(host, meta, {
-      getSkew: () => ctx.eventClockSkew,
-      showStart: true,
-      startLabel: t("countdown.startNow"),
-      continueLabel: t("countdown.continue"),
-      syncEveryMs: 10_000,
-      onSync: () => {
-        try {
-          ctx.rt?.send("ping", {});
-        } catch {
-          /* offline */
-        }
-      },
-      onStart: () => requestEventCountdownStart("start_now"),
-      onContinue: () => {},
-      onEnded: () => {
-        requestEventCountdownStart("ended");
-      },
-    });
-  } else {
-    presentCountdownCtl.refresh?.();
-  }
-  return true;
+  const active =
+    ctx.role === "present" &&
+    shouldShowCountdown(meta, ctx.eventClockSkew, { skipped: ctx.eventCountdownSkipped });
+  const host = document.getElementById("present-event-countdown");
+  if (host) host.hidden = true;
+  return active;
 }
 
 /** Presenter startet Event vorzeitig oder nach Countdown-Ablauf — serverseitig autoritativ. */
@@ -3229,20 +3212,9 @@ function requestEventCountdownStart(action) {
     if (!window.confirm(t("countdown.confirmEarly", { planned, now }))) return;
   }
   ctx.eventCountdownSkipped = true;
-  presentCountdownCtl?.stop();
-  presentCountdownCtl = null;
   emitLive("event_countdown", { code: ctx.session.code, action });
   renderLobby();
   renderActiveSlide();
-}
-
-function ensurePresentCountdownHost() {
-  const stage = document.getElementById("present-stage");
-  if (!stage || document.getElementById("present-event-countdown")) return;
-  const host = document.createElement("div");
-  host.id = "present-event-countdown";
-  host.hidden = true;
-  stage.prepend(host);
 }
 
 function slideVoteCount(slide) {

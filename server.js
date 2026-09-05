@@ -1835,6 +1835,43 @@ function announceEventMeta(session) {
  * @param {object} [payload]
  * @param {{ role?: string }} [client]
  */
+/**
+ * Presenter steuert Event-Countdown: Start, QR-Toggle, Startzeit.
+ * @param {object} session
+ * @param {object} [payload]
+ * @param {{ role?: string }} [client]
+ */
+function applyEventCountdownControl(session, payload = {}, client = {}) {
+  if (client.role !== "presenter") return { error: "forbidden" };
+  const action = String(payload.action || "start_now");
+  if (action === "start_now" || action === "ended") {
+    return applyEventCountdownStart(session, payload, client);
+  }
+  if (!session?.eventId) return { error: "no_event" };
+
+  if (action === "set_show_stage_qr") {
+    eventStore.patchEventMeta(session.eventId, { showStageQr: payload.showStageQr === true });
+    schedulePersist(session);
+    announceEventMeta(session);
+    return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+  }
+
+  if (action === "set_start_time") {
+    const startTime = eventStore.sanitizeStartTime(payload.startTime, { allowPast: false });
+    if (!startTime) return { error: "invalid_start_time" };
+    eventStore.patchEventMeta(session.eventId, {
+      startTime,
+      countdownDismissed: false,
+      countdownDismissedAt: null,
+    });
+    schedulePersist(session);
+    announceEventMeta(session);
+    return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+  }
+
+  return { error: "unknown_action" };
+}
+
 function applyEventCountdownStart(session, payload = {}, client = {}) {
   if (client.role !== "presenter") return { error: "forbidden" };
   const meta = session.eventId ? eventStore.eventMetaFor(session.eventId) : null;
@@ -1987,9 +2024,11 @@ async function onWsMessage(client, data) {
     schedulePersist(session);
     announce(session.code, { type: "lobby", payload: { lobby: session.lobby } });
   } else if (type === "event_countdown") {
-    const out = applyEventCountdownStart(session, payload, client);
+    const out = applyEventCountdownControl(session, payload, client);
     if (out.error) {
       client.send({ type: "error", payload: out });
+    } else if (out.eventMeta) {
+      client.send({ type: "event_meta", payload: { eventMeta: out.eventMeta, serverNow: Date.now() } });
     }
   } else if (type === "results") {
     if (client.role !== "presenter") return;

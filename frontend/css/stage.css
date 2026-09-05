@@ -440,3 +440,25 @@ body.stage-mode .app {
     --stage-pad-x: 5vw;
   }
 }
+
+/* Screen-Sharing-Modus (?share=1): größere Typo, ruhigere Animationen */
+.view-stage[data-stage-mode="share"] {
+  --stage-pad-y: 8vh;
+  --stage-pad-x: 10vw;
+}
+
+.view-stage[data-stage-mode="share"] .event-countdown-title {
+  font-size: clamp(1.75rem, 4vw, 3rem);
+}
+
+.view-stage[data-stage-mode="share"] .event-countdown-num {
+  font-size: clamp(4rem, 14vw, 9rem);
+}
+
+.view-stage[data-stage-mode="share"] .event-countdown-datetime {
+  font-size: clamp(1.35rem, 3.5vw, 2.5rem);
+}
+
+.view-stage[data-stage-mode="share"] .event-countdown-bg {
+  animation: none;
+}
