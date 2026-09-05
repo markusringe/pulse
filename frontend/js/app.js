@@ -32,6 +32,7 @@ import {
   destroyPresenterSpecialSlideButtons,
   updateSpecialSlideButtons,
 } from "./presenterSpecialSlideButtons.js";
+import { openPresenterHelpModal } from "./presenterHelpModal.js";
 import { activeSpecialSlideKind, getCurrentSpecialSlide, mountSpecialSlide, isCountdownSpecialActive } from "./eventSpecialSlides.js";
 import { confirmSpecialSlideEnd, sendSpecialSlideCommand } from "./specialSlideNavCore.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
@@ -448,6 +449,10 @@ function bindGlobal() {
   els.btnThemeAdmin?.addEventListener("click", toggleTheme);
   document.getElementById("btn-sound")?.addEventListener("click", toggleSoundMute);
   document.getElementById("btn-sound-join")?.addEventListener("click", toggleSoundMute);
+  /* Presenter-Kopf: Hilfe-Modal (gleiche Logik wie Dock-Button ?) */
+  document.getElementById("btn-present-help")?.addEventListener("click", () => {
+    void openPresenterHelpModal();
+  });
   syncSoundToggles();
   els.btnPrev?.addEventListener("click", () => shiftSlide(-1));
   els.btnNext?.addEventListener("click", () => shiftSlide(1));
