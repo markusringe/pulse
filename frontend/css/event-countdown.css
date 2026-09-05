@@ -225,10 +225,17 @@
 .present-slide-canvas-fit {
   --present-canvas-ref-w: 960;
   --present-canvas-ref-h: 540;
+  /* Zusätzliche Verkleinerung — ganze Sonderfolie inkl. Rand sichtbar */
+  --present-canvas-extra-shrink: 0.76;
   width: calc(var(--present-canvas-ref-w) * 1px);
   height: calc(var(--present-canvas-ref-h) * 1px);
   transform-origin: center center;
-  transform: scale(min(100cqw / var(--present-canvas-ref-w), 100cqh / var(--present-canvas-ref-h)));
+  transform: scale(
+    calc(
+      min(100cqw / var(--present-canvas-ref-w), 100cqh / var(--present-canvas-ref-h)) *
+        var(--present-canvas-extra-shrink)
+    )
+  );
   position: relative;
   overflow: hidden;
   border-radius: inherit;

@@ -4,7 +4,6 @@
  */
 
 import { isCountdownSpecialActive, activeSpecialSlideKind } from "./eventSpecialSlides.js";
-import { shouldShowCountdown } from "./eventCountdown.js";
 import { renderSpecialSlideInto, stopSpecialSlideCountdown } from "./specialSlides/renderSpecialSlide.js";
 import { currentLang } from "./i18n.js";
 import { joinUrlFromLocation, drawQrCode } from "./qrRender.js";
@@ -20,17 +19,14 @@ let mountedKind = null;
 
 /**
  * Aktiven Sonderfolien-Modus für die Presenter-Hauptbox ermitteln.
+ * Nur explizit gesetzte Sonderfolie (eventMeta.currentSpecialSlide) — kein Auto-Countdown
+ * nur wegen zukünftiger Startzeit (das bleibt der Stage vorbehalten).
  * @param {object | null | undefined} session
- * @param {number} clockSkew
- * @param {boolean} countdownSkipped
  * @returns {'countdown'|'pause'|'end'|null}
  */
-export function resolvePresenterSpecialKind(session, clockSkew = 0, countdownSkipped = false) {
+export function resolvePresenterSpecialKind(session) {
   if (!session?.eventMeta) return null;
   if (isCountdownSpecialActive(session)) return "countdown";
-  if (shouldShowCountdown(session.eventMeta, clockSkew, { skipped: countdownSkipped })) {
-    return "countdown";
-  }
   return activeSpecialSlideKind(session);
 }
 
@@ -42,11 +38,7 @@ export function resolvePresenterSpecialKind(session, clockSkew = 0, countdownSki
  * @returns {'countdown'|'pause'|'end'|null}
  */
 export function syncPresenterMainCanvas(host, session, opts = {}) {
-  const kind = resolvePresenterSpecialKind(
-    session,
-    opts.clockSkew ?? 0,
-    opts.countdownSkipped ?? false
-  );
+  const kind = resolvePresenterSpecialKind(session);
 
   if (!host) return null;
   const fit = getPresenterCanvasFit(host);

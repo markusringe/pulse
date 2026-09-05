@@ -17,7 +17,8 @@ Die **Haupt-Präsentationsbox** (`#present-stage` / `#present-slide-canvas`) zei
 | Countdown aktiv | Countdown (live) |
 | Pause aktiv | Pausefolie |
 | Ende aktiv | Endfolie |
-| Keine Sonderfolie | Normale Folie |
+| Keine Sonderfolie aktiv | Normale Folie (auch wenn Event-Countdown läuft — Steuerleiste oben) |
+| Countdown-Button / `currentSpecialSlide: countdown` | Countdown in der Hauptbox |
 
 ## Architektur
 
