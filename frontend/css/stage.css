@@ -447,8 +447,12 @@ body.stage-mode .app {
   --stage-pad-x: 10vw;
 }
 
+#stage-event-countdown .event-countdown-title {
+  font-size: clamp(2rem, 6.5vw, 4.25rem);
+}
+
 .view-stage[data-stage-mode="share"] .event-countdown-title {
-  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-size: clamp(2rem, 5vw, 3.75rem);
 }
 
 .view-stage[data-stage-mode="share"] .event-countdown-num {

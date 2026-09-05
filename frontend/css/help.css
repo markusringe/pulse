@@ -563,6 +563,15 @@
   cursor: pointer;
 }
 
+/* Presenter (#/present): kein schwebender Hilfe-Button */
+.help-fab[hidden],
+body.route-present .help-fab,
+body.route-present .help-context {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 .help-context {
   position: fixed;
   right: max(12px, env(safe-area-inset-right));

@@ -782,6 +782,7 @@ function showView(name, routeHash) {
     el.inert = !active;
   }
   ctx.role = name;
+  document.body.classList.toggle("route-present", name === "present");
   syncHelpFabVisibility();
   const hashForNav = routeHash ?? hashRoutePath();
   syncAdminNav(name, hashForNav);
@@ -1306,6 +1307,7 @@ async function enterPresent(code) {
     onNotes: (value) => patchCurrentSlide({ notes: value }),
     onPlanned: (value) => patchCurrentSlide({ plannedMinutes: value }),
   });
+  syncHelpFabVisibility();
   renderPresenterChrome();
   connectRealtime("presenter");
   renderActiveSlide();

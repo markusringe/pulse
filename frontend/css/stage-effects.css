@@ -1,21 +1,24 @@
 /**
- * Stage-Hintergrundeffekte — nur CSS (transform/opacity).
+ * Stage-Hintergrundeffekte — nur CSS (transform/opacity/background-position).
  * Kombinierbar mit data-countdown-style; bei data-stage-effect ≠ none keine BG-Pulse-Animation.
  */
 
 .event-countdown-host {
-  --fx-opacity: 0.08;
-  --fx-shift: 6%;
+  --fx-opacity: 0.14;
+  --fx-shift: 8%;
+  --fx-stripe: 36px;
 }
 
 .event-countdown-host[data-stage-effect-intensity="low"] {
-  --fx-opacity: 0.05;
-  --fx-shift: 4%;
+  --fx-opacity: 0.09;
+  --fx-shift: 5%;
+  --fx-stripe: 40px;
 }
 
 .event-countdown-host[data-stage-effect-intensity="high"] {
-  --fx-opacity: 0.12;
-  --fx-shift: 9%;
+  --fx-opacity: 0.22;
+  --fx-shift: 12%;
+  --fx-stripe: 28px;
 }
 
 /* Effekt aktiv: bestehende Countdown-Hintergrund-Animation aus */
@@ -34,9 +37,8 @@
 
 .stage-effect__layer {
   position: absolute;
-  inset: -15%;
   pointer-events: none;
-  will-change: transform, opacity;
+  will-change: transform, opacity, background-position;
 }
 
 .stage-effect__layer--a {
@@ -44,73 +46,98 @@
 }
 
 .stage-effect__layer--b {
-  opacity: calc(var(--fx-opacity) * 0.75);
+  opacity: calc(var(--fx-opacity) * 0.82);
 }
 
-/* —— Sunrise: warmer Lichtkegel von unten —— */
+/* —— Sunrise: warmer Lichtkegel von unten (nahtlose Schleife) —— */
+.stage-effect--sunrise .stage-effect__layer--a,
+.stage-effect--sunrise .stage-effect__layer--b {
+  inset: -15%;
+}
+
 .stage-effect--sunrise .stage-effect__layer--a {
   background: radial-gradient(
     ellipse 90% 55% at 50% 115%,
-    rgba(255, 180, 80, 0.55) 0%,
-    rgba(255, 120, 60, 0.2) 45%,
+    rgba(255, 180, 80, 0.62) 0%,
+    rgba(255, 120, 60, 0.28) 45%,
     transparent 70%
   );
-  animation: stage-sunrise-rise 22s ease-in-out infinite alternate;
+  animation: stage-sunrise-rise 26s ease-in-out infinite;
 }
 
 .stage-effect--sunrise .stage-effect__layer--b {
   background: radial-gradient(
     ellipse 70% 40% at 50% 100%,
-    rgba(255, 230, 150, 0.35) 0%,
+    rgba(255, 230, 150, 0.42) 0%,
     transparent 65%
   );
-  animation: stage-sunrise-rise 18s ease-in-out infinite alternate-reverse;
+  animation: stage-sunrise-rise 22s ease-in-out infinite;
+  animation-delay: -7s;
 }
 
 @keyframes stage-sunrise-rise {
-  from {
+  0%,
+  100% {
     transform: translateY(8%) scale(1);
-    opacity: calc(var(--fx-opacity) * 0.7);
+    opacity: calc(var(--fx-opacity) * 0.75);
   }
-  to {
-    transform: translateY(calc(var(--fx-shift) * -1)) scale(1.04);
+  50% {
+    transform: translateY(calc(var(--fx-shift) * -1)) scale(1.05);
     opacity: var(--fx-opacity);
   }
 }
 
-/* —— Wasserfall: kühle seitliche Lichtbahnen —— */
+/* —— Wasserfall: durchgängige Lichtbahnen (background-position = nahtlos) —— */
+.stage-effect--waterfall .stage-effect__layer {
+  inset: -20% -10%;
+  transform: skewX(-10deg);
+  transform-origin: center center;
+}
+
 .stage-effect--waterfall .stage-effect__layer--a {
   background: repeating-linear-gradient(
-    105deg,
+    to bottom,
     transparent 0,
-    transparent 48px,
-    rgba(120, 200, 255, 0.12) 48px,
-    rgba(120, 200, 255, 0.12) 52px
+    transparent calc(var(--fx-stripe) - 4px),
+    rgba(120, 200, 255, 0.55) calc(var(--fx-stripe) - 4px),
+    rgba(120, 200, 255, 0.55) var(--fx-stripe)
   );
-  animation: stage-waterfall-drift 28s linear infinite;
+  background-size: 100% var(--fx-stripe);
+  animation: stage-waterfall-flow 16s linear infinite;
 }
 
 .stage-effect--waterfall .stage-effect__layer--b {
   background: repeating-linear-gradient(
-    75deg,
+    to bottom,
     transparent 0,
-    transparent 64px,
-    rgba(80, 160, 220, 0.08) 64px,
-    rgba(80, 160, 220, 0.08) 68px
+    transparent calc(var(--fx-stripe) * 0.75),
+    rgba(80, 160, 220, 0.38) calc(var(--fx-stripe) * 0.75),
+    rgba(80, 160, 220, 0.38) calc(var(--fx-stripe) * 1.1)
   );
-  animation: stage-waterfall-drift 36s linear infinite reverse;
+  background-size: 100% calc(var(--fx-stripe) * 1.1);
+  animation: stage-waterfall-flow-b 22s linear infinite;
+  animation-delay: calc(var(--fx-stripe) * -0.35);
 }
 
-@keyframes stage-waterfall-drift {
+@keyframes stage-waterfall-flow-b {
   from {
-    transform: translateX(-12%);
+    background-position: 0 0;
   }
   to {
-    transform: translateX(12%);
+    background-position: 0 calc(var(--fx-stripe) * 1.1);
   }
 }
 
-/* —— Parallaxe: langsame Blob-Tiefe —— */
+@keyframes stage-waterfall-flow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 var(--fx-stripe);
+  }
+}
+
+/* —— Parallaxe: langsame Blob-Tiefe (nahtlose Schleife) —— */
 .stage-effect--parallax .stage-effect__layer--a {
   width: 55%;
   height: 55%;
@@ -118,8 +145,8 @@
   left: -8%;
   inset: auto;
   border-radius: 45% 55% 60% 40%;
-  background: radial-gradient(circle at 30% 30%, rgba(130, 90, 255, 0.35), transparent 70%);
-  animation: stage-parallax-a 34s ease-in-out infinite alternate;
+  background: radial-gradient(circle at 30% 30%, rgba(130, 90, 255, 0.45), transparent 70%);
+  animation: stage-parallax-a 32s ease-in-out infinite;
 }
 
 .stage-effect--parallax .stage-effect__layer--b {
@@ -131,24 +158,27 @@
   left: auto;
   inset: auto;
   border-radius: 60% 40% 45% 55%;
-  background: radial-gradient(circle at 70% 60%, rgba(0, 180, 200, 0.28), transparent 72%);
-  animation: stage-parallax-b 46s ease-in-out infinite alternate-reverse;
+  background: radial-gradient(circle at 70% 60%, rgba(0, 180, 200, 0.38), transparent 72%);
+  animation: stage-parallax-b 44s ease-in-out infinite;
+  animation-delay: -12s;
 }
 
 @keyframes stage-parallax-a {
-  from {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
-  to {
+  50% {
     transform: translate3d(8%, 5%, 0);
   }
 }
 
 @keyframes stage-parallax-b {
-  from {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0);
   }
-  to {
+  50% {
     transform: translate3d(-10%, -6%, 0);
   }
 }

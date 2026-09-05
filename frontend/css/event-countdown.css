@@ -21,6 +21,7 @@
   --cd-digit-font: inherit;
   --cd-digit-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
   --cd-status-opacity: 0.9;
+  --cd-title-color: #fff;
 }
 
 /* Home-Countdown: flaches Panel ohne Glas-Rahmen */
@@ -79,10 +80,13 @@
 
 .event-countdown-title {
   margin: 0;
-  font-size: clamp(1.25rem, 2.5vw, 2rem);
-  font-weight: 650;
+  font-size: clamp(1.75rem, 5vw, 3.5rem);
+  font-weight: 700;
   font-family: var(--cd-title-font);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+  line-height: 1.15;
+  /* h1 in typography.css setzt var(--ink) — hier explizit für Kontrast auf dunkler Stage */
+  color: var(--cd-title-color, #fff);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.55), 0 0 40px rgba(0, 0, 0, 0.25);
 }
 
 .event-countdown-imminent {
@@ -352,6 +356,7 @@
   --cd-panel-radius: 1.25rem;
   --cd-accent: var(--primary-color, #007cc1);
   --cd-accent-2: var(--secondary-color, #f99700);
+  --cd-title-color: #fff;
 }
 
 .event-countdown-host[data-countdown-style="modern"] .event-countdown-bg--plain {
@@ -387,6 +392,7 @@
   --cd-accent: #d4af5f;
   --cd-accent-2: #8b9cb3;
   --cd-digit-color: #f5f5f0;
+  --cd-title-color: #f5f5f0;
   --cd-status-color: #c8d4e0;
   --cd-datetime-color: #e8e4dc;
 }
@@ -430,6 +436,7 @@
   --cd-digit-font: ui-monospace, "Courier New", Consolas, monospace;
   --cd-digit-shadow: 0 0 24px rgba(255, 107, 157, 0.55), 0 4px 12px rgba(0, 0, 0, 0.5);
   --cd-digit-color: #ffe566;
+  --cd-title-color: #ffe566;
   --cd-accent: #ff6b9d;
   --cd-accent-2: #ffe566;
 }

@@ -405,16 +405,23 @@ function updateContextPanel() {
 
 /**
  * Kontext-Hilfe (FAB unten rechts) ausblenden — Presenter-Modus ohne Ablenkung.
+ * CSS-Klasse body.route-present als Fallback, falls hidden am Button nicht greift.
  */
 export function syncHelpFabVisibility() {
   const hash = location.hash.replace(/^#/, "") || "/";
-  const onPresent = /^\/present(\/|$)/.test(hash);
+  const onPresent =
+    document.body.classList.contains("route-present") || /^\/present(\/|$|\?)/.test(hash);
   const fab = document.getElementById("help-fab");
   const panel = document.getElementById("help-context");
-  if (fab) fab.hidden = onPresent;
-  if (panel && onPresent) {
-    panel.hidden = true;
-    fab?.setAttribute("aria-expanded", "false");
+  if (fab) {
+    fab.hidden = onPresent;
+    fab.setAttribute("aria-hidden", onPresent ? "true" : "false");
+  }
+  if (panel) {
+    if (onPresent) {
+      panel.hidden = true;
+      fab?.setAttribute("aria-expanded", "false");
+    }
   }
 }
 
