@@ -208,6 +208,14 @@
   z-index: 6;
 }
 
+/* Presenter: Sonderfolie über der Folienfläche (Countdown/Pause/Ende) */
+#present-slide-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border-radius: inherit;
+}
+
 /* Admin: Grafik-Upload */
 .event-image-upload {
   display: grid;

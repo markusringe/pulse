@@ -33,8 +33,8 @@ import {
   updateSpecialSlideButtons,
 } from "./presenterSpecialSlideButtons.js";
 import { openPresenterHelpModal } from "./presenterHelpModal.js";
-import { bindPresenterSpecialPreviews, destroyPresenterSpecialPreview } from "./presenterSpecialPreview.js";
-import { activeSpecialSlideKind, getCurrentSpecialSlide, mountSpecialSlide, isCountdownSpecialActive } from "./eventSpecialSlides.js";
+import { syncPresenterMainCanvas, destroyPresenterMainCanvas } from "./presenterMainCanvas.js";
+import { getCurrentSpecialSlide, isCountdownSpecialActive } from "./eventSpecialSlides.js";
 import { confirmSpecialSlideEnd, sendSpecialSlideCommand } from "./specialSlideNavCore.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
@@ -1684,7 +1684,7 @@ function teardownRealtime() {
   destroyPresenterStats();
   destroyPresenterCountdownControl();
   destroyPresenterSpecialSlideButtons();
-  destroyPresenterSpecialPreview();
+  destroyPresenterMainCanvas();
   ctx.rt?.disconnect();
   ctx.rt = null;
   destroyPoll();
@@ -1773,26 +1773,32 @@ function renderPresenterChrome() {
   refreshPresenterPanel();
 }
 
-/** Host für Sonderfolien-Vorschau in der Presenter-Ansicht. */
-function ensurePresentSpecialHost() {
-  const stage = document.getElementById("present-stage");
-  if (!stage || document.getElementById("present-special-slide")) return;
-  const host = document.createElement("div");
-  host.id = "present-special-slide";
-  host.className = "present-special-slide";
-  host.hidden = true;
-  stage.prepend(host);
+/** Normale Folien-Panels ausblenden, wenn Sonderfolie die Hauptbox füllt. */
+function hidePresenterSlidePanelsForSpecial() {
+  els.pollRoot.hidden = true;
+  els.wordcloudRoot.hidden = true;
+  els.qaRoot.hidden = true;
+  els.quizRoot.hidden = true;
+  if (els.presentQuestion) els.presentQuestion.hidden = true;
+  destroyPoll();
+  destroyWordCloud();
+  destroyQA();
+  destroyQuiz();
+  destroySlideInput(els.pollRoot);
 }
 
 function renderActiveSlide() {
   const s = ctx.session;
   if (!s) return;
-  const countdownOn = syncPresentEventCountdown();
-  const specialKind = activeSpecialSlideKind(s);
-  const countdownForced = isCountdownSpecialActive(s);
+  syncPresentEventCountdown();
+  const mainSpecialKind = syncPresenterMainCanvas(document.getElementById("present-slide-canvas"), s, {
+    t,
+    clockSkew: ctx.eventClockSkew,
+    countdownSkipped: ctx.eventCountdownSkipped,
+  });
   const index = s.activeSlideIndex || 0;
   const slide = s.slides[index];
-  if (!slide && !specialKind && !countdownForced) return;
+  if (!slide && !mainSpecialKind) return;
 
   if (slide) {
     els.presentQuestion.textContent = slide.question;
@@ -1806,49 +1812,13 @@ function renderActiveSlide() {
     onGotoSpecial: (kind) => gotoSpecialSlide(kind),
     onAdd: openSlideDialog,
   });
-  syncPresenterSpecialPreviews();
 
-  if (countdownOn || countdownForced) {
-    els.pollRoot.hidden = true;
-    els.wordcloudRoot.hidden = true;
-    els.qaRoot.hidden = true;
-    els.quizRoot.hidden = true;
-    if (els.presentQuestion) els.presentQuestion.hidden = true;
-    destroyPoll();
-    destroyWordCloud();
-    destroyQA();
-    destroyQuiz();
-    destroySlideInput(els.pollRoot);
+  if (mainSpecialKind) {
+    hidePresenterSlidePanelsForSpecial();
     refreshPresenterPanel();
     return;
   }
 
-  if (specialKind) {
-    ensurePresentSpecialHost();
-    const host = document.getElementById("present-special-slide");
-    if (host) {
-      host.hidden = false;
-      mountSpecialSlide(host, specialKind, s.eventMeta, { t });
-    }
-    els.pollRoot.hidden = true;
-    els.wordcloudRoot.hidden = true;
-    els.qaRoot.hidden = true;
-    els.quizRoot.hidden = true;
-    if (els.presentQuestion) els.presentQuestion.hidden = true;
-    destroyPoll();
-    destroyWordCloud();
-    destroyQA();
-    destroyQuiz();
-    destroySlideInput(els.pollRoot);
-    refreshPresenterPanel();
-    return;
-  }
-
-  const specialHost = document.getElementById("present-special-slide");
-  if (specialHost) {
-    specialHost.hidden = true;
-    specialHost.replaceChildren();
-  }
   if (els.presentQuestion) els.presentQuestion.hidden = false;
 
   if (!slide) return;
@@ -2730,18 +2700,6 @@ function refreshPresenterPanel() {
     session: ctx.session,
     emit: emitLive,
   });
-  syncPresenterSpecialPreviews();
-}
-
-/** Sonderfolien-Vorschau (Dock + Folienleiste) an aktuelle Session binden. */
-function syncPresenterSpecialPreviews() {
-  if (ctx.role !== "present" || !ctx.session) return;
-  bindPresenterSpecialPreviews(document.getElementById("view-present"), {
-    getMeta: () => ctx.session?.eventMeta,
-    getSessionCode: () => ctx.session?.code || "",
-    getClockSkew: () => ctx.eventClockSkew || 0,
-    onShowOnStage: (kind) => gotoSpecialSlide(kind),
-  });
 }
 
 /** Countdown lokal aktualisieren, solange Interaktion läuft oder pausiert ist. */
@@ -3306,7 +3264,7 @@ function renderLobby() {
 }
 
 /**
- * Event-Countdown aktiv? Presenter nutzt die Leiste (#presenter-countdown-control), kein Vollbild-Overlay.
+ * Event-Countdown aktiv? Steuerleiste (#presenter-countdown-control); Anzeige in #present-slide-canvas.
  * @returns {boolean}
  */
 function syncPresentEventCountdown() {

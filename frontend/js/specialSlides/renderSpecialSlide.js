@@ -1,5 +1,5 @@
 /**
- * Gemeinsamer Renderer für Stage und Presenter-Vorschau (Pause, Ende, Countdown).
+ * Gemeinsamer Renderer für Stage und Presenter-Hauptbox (Pause, Ende, Countdown).
  */
 
 import { mountSpecialSlide } from "../eventSpecialSlides.js";

@@ -31,8 +31,9 @@ assert(indexHtml.includes('id="present-special-slide-nav"'), "Presenter-Dock-Hos
 assert(indexHtml.includes('id="btn-present-help"'), "Presenter-Hilfe-Button in Kopfzeile fehlt");
 assert(fs.existsSync(path.join(root, "frontend/js/stageDisplayControls.js")), "stageDisplayControls.js fehlt");
 assert(stageJs.includes("mountStageDisplayControls"), "stage.js bindet Vollbild-Overlay");
-assert(fs.existsSync(path.join(root, "frontend/js/presenterSpecialPreview.js")), "presenterSpecialPreview.js fehlt");
-assert(appJs.includes("bindPresenterSpecialPreviews"), "Presenter-Vorschau in app.js fehlt");
+assert(fs.existsSync(path.join(root, "frontend/js/presenterMainCanvas.js")), "presenterMainCanvas.js fehlt");
+assert(appJs.includes("syncPresenterMainCanvas"), "Presenter-Hauptbox in app.js fehlt");
+assert(!appJs.includes("presenterSpecialPreview"), "Overlay-Vorschau entfernt");
 assert(presenterJs.includes("syncPresenterSpecialSlideButtons"), "Presenter-Sync fehlt");
 assert(deckJs.includes("deck-chip-special"), "Sonderfolien-Chips in Folienleiste fehlen");
 assert(deckJs.includes("onGotoSpecial"), "onGotoSpecial-Handler in deck.js fehlt");

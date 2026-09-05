@@ -75,7 +75,8 @@ async function fetchAsset(base, indexHtml, pattern, fallbackPath, timeoutMs) {
   record("index present-special-slide-nav", index.body.includes('id="present-special-slide-nav"'));
   record("index kein stage-special-slide-nav", !index.body.includes("stage-special-slide-nav"));
   record("index ohne statischen stage-fs", !index.body.includes('id="stage-fs"'));
-  record("index presenter-special-preview.css", index.body.includes("presenter-special-preview.css"));
+  record("index present-slide-canvas", index.body.includes('id="present-slide-canvas"'));
+  record("index kein presenter-special-preview.css", !index.body.includes("presenter-special-preview.css"));
 
   const stageJs = await fetchAsset(
     base,

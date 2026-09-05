@@ -49,7 +49,6 @@
     <link rel="stylesheet" href="/css/event-countdown.css" />
     <link rel="stylesheet" href="/css/stage-effects.css" />
     <link rel="stylesheet" href="/css/event-special-slides.css" />
-    <link rel="stylesheet" href="/css/presenter-special-preview.css" />
     <link rel="stylesheet" href="/css/join-slides.css" />
     <link rel="stylesheet" href="/css/admin-settings.css" />
     <link rel="stylesheet" href="/css/present-interaction.css" />
@@ -504,6 +503,14 @@
             <p class="muted" data-i18n="results.hidden">Stimmen sind da — Ergebnisse noch verborgen.</p>
           </div>
           <div id="reaction-layer" class="reaction-layer" aria-hidden="true"></div>
+          <!-- Live-Sonderfolie (Countdown/Pause/Ende) — gleiche Renderer-Pipeline wie Stage -->
+          <div
+            id="present-slide-canvas"
+            class="present-slide-canvas event-special-slide-host"
+            data-slide-canvas
+            hidden
+            aria-live="polite"
+          ></div>
           <div id="poll-root" class="stage-panel" hidden></div>
           <div id="wordcloud-root" class="stage-panel wordcloud-stage" hidden>
             <canvas id="wordcloud-canvas" aria-label="Wortwolke"></canvas>
