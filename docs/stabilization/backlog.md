@@ -87,7 +87,7 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` **1.5.29** · Prod: **v1.5.29**
+- **Version:** `package.json` **1.5.30** · Prod: **v1.5.30**
 - **Live-Demo:** Event `241184` — `node scripts/prepare-live-demo.js` + Container-Neustart
 - **Remote-Tests:** `node scripts/smoke-remote-url.js --expect-version 1.5.27` · `node scripts/test-join-live-remote.js --vote`
 - **Last-Baseline:** `load-baseline-100.json`, `load-baseline-300.json` (lokal, Single, Gates grün)
