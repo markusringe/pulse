@@ -16,6 +16,7 @@ import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js";
 import { drawQrCode, joinUrlFromLocation } from "./qrRender.js";
 import { stageStatusMessage } from "./interactionPresenter.js";
+import { syncHelpFabVisibility } from "./help.js";
 
 /** @type {RealtimeClient | null} */
 let rt = null;
@@ -38,6 +39,7 @@ let countdownSkipped = false;
  */
 export async function enterStage(code) {
   leaveStage();
+  syncHelpFabVisibility();
   const root = document.getElementById("view-stage");
   if (!root || !code) return;
   countdownSkipped = false;

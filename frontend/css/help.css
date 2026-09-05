@@ -563,10 +563,12 @@
   cursor: pointer;
 }
 
-/* Presenter (#/present): kein schwebender Hilfe-Button */
+/* Presenter (#/present) und Stage-Leinwand (#/stage): kein schwebender Hilfe-Button */
 .help-fab[hidden],
 body.route-present .help-fab,
-body.route-present .help-context {
+body.route-present .help-context,
+body.route-stage .help-fab,
+body.route-stage .help-context {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;

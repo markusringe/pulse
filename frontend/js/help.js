@@ -404,24 +404,25 @@ function updateContextPanel() {
 }
 
 /**
- * Kontext-Hilfe (FAB unten rechts) ausblenden — Presenter-Modus ohne Ablenkung.
- * CSS-Klasse body.route-present als Fallback, falls hidden am Button nicht greift.
+ * Kontext-Hilfe (FAB) ausblenden auf Präsentationsflächen (#/present, #/stage).
+ * CSS body.route-present / body.route-stage als Fallback.
  */
 export function syncHelpFabVisibility() {
   const hash = location.hash.replace(/^#/, "") || "/";
-  const onPresent =
-    document.body.classList.contains("route-present") || /^\/present(\/|$|\?)/.test(hash);
+  const onPresentationSurface =
+    document.body.classList.contains("route-present") ||
+    document.body.classList.contains("route-stage") ||
+    /^\/present(\/|$|\?)/.test(hash) ||
+    /^\/(?:stage|present-view)\/\d{6}/.test(hash);
   const fab = document.getElementById("help-fab");
   const panel = document.getElementById("help-context");
   if (fab) {
-    fab.hidden = onPresent;
-    fab.setAttribute("aria-hidden", onPresent ? "true" : "false");
+    fab.hidden = onPresentationSurface;
+    fab.setAttribute("aria-hidden", onPresentationSurface ? "true" : "false");
   }
-  if (panel) {
-    if (onPresent) {
-      panel.hidden = true;
-      fab?.setAttribute("aria-expanded", "false");
-    }
+  if (panel && onPresentationSurface) {
+    panel.hidden = true;
+    fab?.setAttribute("aria-expanded", "false");
   }
 }
 

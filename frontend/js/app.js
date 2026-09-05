@@ -783,6 +783,7 @@ function showView(name, routeHash) {
   }
   ctx.role = name;
   document.body.classList.toggle("route-present", name === "present");
+  document.body.classList.toggle("route-stage", name === "stage");
   syncHelpFabVisibility();
   const hashForNav = routeHash ?? hashRoutePath();
   syncAdminNav(name, hashForNav);

@@ -256,7 +256,7 @@ export function renderCountdownPanel(meta, ms, opts = {}) {
     <div class="event-countdown-panel" data-urgency="${urgency}" data-variant="${esc(variant)}">
       ${meta?.title ? `<h1 class="event-countdown-title">${esc(meta.title)}</h1>` : ""}
       <p class="event-countdown-status" role="status">${esc(status)}</p>
-      ${imminent ? `<p class="event-countdown-imminent">${esc(opts.t?.("countdown.imminent") || "In wenigen Augenblicken geht es los…")}</p>` : ""}
+      <p class="event-countdown-imminent"${imminent ? "" : " hidden"}>${esc(opts.t?.("countdown.imminent") || "In wenigen Augenblicken geht es los…")}</p>
       ${digits}
       ${datetime ? `<p class="event-countdown-datetime">${esc(datetime)}</p>` : ""}
       ${showQr ? `<div class="event-countdown-qr-card">
@@ -307,6 +307,94 @@ function escapeAttr(value) {
     .replace(/"/g, "&quot;");
 }
 
+/** Ziffern-Layout — bestimmt wann das statische Markup neu aufgebaut werden muss. */
+function digitLayoutKey(ms) {
+  const parts = splitTime(ms);
+  if (parts.totalSec < 60) return "sec";
+  if (parts.totalSec < 3600) return "min";
+  return parts.days > 0 ? "full-d" : "full";
+}
+
+/**
+ * Schlüssel für Mount-once: nur bei Struktur-/Stil-Änderung innerHTML neu bauen.
+ * Tick-Updates ändern nur Text — Stage-Effekt-Layer bleiben im DOM (flüssige CSS-Animation).
+ */
+function countdownShellKey(liveMeta, ms, opts) {
+  const variant = opts.variant || "stage";
+  const showQr = Boolean(opts.showQr && opts.joinUrl && variant === "stage");
+  const showDateTime =
+    variant === "stage" && liveMeta?.showStageDateTime !== false && Boolean(liveMeta?.startTime);
+  const imminent = ms > 0 && ms < THRESH.fiveMin;
+  return [
+    sanitizeCountdownStyle(liveMeta?.countdownStyle),
+    sanitizeStageEffect(liveMeta?.stageEffect),
+    sanitizeStageEffectIntensity(liveMeta?.stageEffectIntensity),
+    liveMeta?.eventImage || "",
+    liveMeta?.title || "",
+    variant,
+    showQr ? "qr" : "",
+    opts.showSkip ? "skip" : "",
+    opts.showStart ? "start" : "",
+    digitLayoutKey(ms),
+    showDateTime ? "dt" : "",
+    imminent ? "imm" : "",
+  ].join("|");
+}
+
+/** Klick-Handler an Countdown-Buttons (nur nach Shell-Mount). */
+function bindCountdownActions(host, opts) {
+  host.querySelector("[data-countdown-skip]")?.addEventListener("click", () => {
+    opts.onSkip?.();
+  });
+  host.querySelector("[data-countdown-start]")?.addEventListener("click", () => {
+    opts.onStart?.();
+  });
+  host.querySelector("[data-countdown-continue]")?.addEventListener("click", () => {
+    opts.onContinue?.();
+  });
+}
+
+/** Nur veränderliche Felder pro Sekunde — kein innerHTML, Effekte laufen weiter. */
+function updateCountdownTicks(host, liveMeta, ms, opts) {
+  const panel = host.querySelector(".event-countdown-panel");
+  if (!panel) return;
+
+  const status = countdownStatusLabel(ms, { paused: opts.paused, t: opts.t });
+  const statusEl = host.querySelector(".event-countdown-status");
+  if (statusEl) statusEl.textContent = status;
+
+  const imminent = ms > 0 && ms < THRESH.fiveMin;
+  const immEl = host.querySelector(".event-countdown-imminent");
+  if (immEl) immEl.hidden = !imminent;
+
+  panel.dataset.urgency = urgencyLevel(ms);
+
+  const parts = splitTime(ms);
+  const nums = host.querySelectorAll(".event-countdown-digits .event-countdown-num");
+  if (parts.totalSec < 60) {
+    if (nums[0]) nums[0].textContent = parts.seconds;
+  } else if (parts.totalSec < 3600) {
+    if (nums[0]) nums[0].textContent = pad(parts.minutes);
+    if (nums[1]) nums[1].textContent = pad(parts.seconds);
+  } else if (parts.days > 0) {
+    let i = 0;
+    if (nums[i]) nums[i++].textContent = String(parts.days);
+    if (nums[i]) nums[i++].textContent = pad(parts.hours);
+    if (nums[i]) nums[i++].textContent = pad(parts.minutes);
+    if (nums[i]) nums[i++].textContent = pad(parts.seconds);
+  } else {
+    if (nums[0]) nums[0].textContent = pad(parts.hours);
+    if (nums[1]) nums[1].textContent = pad(parts.minutes);
+    if (nums[2]) nums[2].textContent = pad(parts.seconds);
+  }
+
+  const bar = host.querySelector(".event-countdown-bar > span");
+  if (bar) bar.style.width = `${progressPct(ms)}%`;
+
+  const sr = host.querySelector(".event-countdown-label.sr-only");
+  if (sr) sr.textContent = formatCountdownLabel(ms);
+}
+
 /**
  * Countdown-Overlay mounten und jede Sekunde aktualisieren.
  * @param {HTMLElement} host
@@ -340,6 +428,7 @@ export function mountCountdown(host, meta, opts = {}) {
   let endedFired = false;
   let timer = 0;
   let syncTimer = 0;
+  let shellKey = "";
   const getSkew = opts.getSkew || (() => 0);
   const getMeta = opts.getMeta || (() => meta);
 
@@ -351,36 +440,31 @@ export function mountCountdown(host, meta, opts = {}) {
     host.dataset.stageEffect = sanitizeStageEffect(liveMeta.stageEffect);
     host.dataset.stageEffectIntensity = sanitizeStageEffectIntensity(liveMeta.stageEffectIntensity);
     const showQr = opts.showQr ?? Boolean(liveMeta.showStageQr);
-    host.innerHTML = renderCountdownPanel(liveMeta, ms, {
+    const paintOpts = {
+      ...opts,
       variant: opts.variant || "stage",
-      showSkip: opts.showSkip,
-      showStart: opts.showStart,
-      skipLabel: opts.skipLabel,
-      startLabel: opts.startLabel,
-      continueLabel: opts.continueLabel,
       showQr,
-      joinUrl: opts.joinUrl,
-      locale: opts.locale,
-      timeZone: opts.timeZone,
-      t: opts.t,
-    });
+    };
+    const key = countdownShellKey(liveMeta, ms, paintOpts);
+    const needsShell = key !== shellKey || !host.querySelector(".event-countdown-panel");
+
+    if (needsShell) {
+      host.innerHTML = renderCountdownPanel(liveMeta, ms, paintOpts);
+      bindCountdownActions(host, opts);
+      shellKey = key;
+      if (showQr && opts.joinUrl) {
+        const canvas = host.querySelector(".event-countdown-qr-canvas");
+        if (canvas instanceof HTMLCanvasElement) {
+          opts.onQrCanvas?.(canvas, opts.joinUrl);
+        }
+      }
+    } else {
+      updateCountdownTicks(host, liveMeta, ms, paintOpts);
+    }
+
     host.hidden = false;
     host.classList.add("event-countdown-host");
-    if (showQr && opts.joinUrl) {
-      const canvas = host.querySelector(".event-countdown-qr-canvas");
-      if (canvas instanceof HTMLCanvasElement) {
-        opts.onQrCanvas?.(canvas, opts.joinUrl);
-      }
-    }
-    host.querySelector("[data-countdown-skip]")?.addEventListener("click", () => {
-      opts.onSkip?.();
-    });
-    host.querySelector("[data-countdown-start]")?.addEventListener("click", () => {
-      opts.onStart?.();
-    });
-    host.querySelector("[data-countdown-continue]")?.addEventListener("click", () => {
-      opts.onContinue?.();
-    });
+
     if (ms <= 0 && !endedFired) {
       endedFired = true;
       host.classList.add("is-ending");
@@ -403,6 +487,7 @@ export function mountCountdown(host, meta, opts = {}) {
       stopped = true;
       window.clearInterval(timer);
       window.clearInterval(syncTimer);
+      shellKey = "";
       if (host) {
         host.hidden = true;
         host.innerHTML = "";
