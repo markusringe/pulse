@@ -68,14 +68,14 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 
 | Abschnitt | Status |
 |-----------|--------|
-| 2 FF / Safari | ☐ Stichprobe → [Checkliste](abnahme-ff-safari-stichprobe.md) |
+| 2 FF / Safari | Firefox ☐ · **Safari ✅** (2026-09-05) → [Checkliste](abnahme-ff-safari-stichprobe.md) |
 | 4 Beamer ~3 m | ☐ |
 | 5 Screen-Share | ☐ Zoom / Teams / Meet |
 | 6 iOS / Android Gerät | ☐ (CSS/Layout Chrome simuliert ✅) |
 | 7 Regression kurz | ✅ Chrome (siehe Abschnitt 7) |
 | Pause/Ende vollständig | ✅ Townhall **807435** (siehe unten) |
 
-**Gesamt-Freigabe:** ☑ **RC Pilot** · ☑ **Funktional freigegeben** (Chrome, v1.5.41 Prod) · ☐ Vollständig (FF/Safari/Beamer/Gerät)
+**Gesamt-Freigabe:** ☑ **RC Pilot** · ☑ **Funktional freigegeben** (Chrome + Safari, v1.5.41 Prod) · ☐ Vollständig (Firefox/Beamer/Gerät)
 
 ---
 
@@ -151,7 +151,7 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 | — | Prod Health + Remote 15/15 | ✅ v1.5.41 |
 | — | `test-presenter-special-slide-dock` (Container) | ✅ |
 | — | Stage Kaltstart `#/stage/807435?share=1` | ✅ „Willkommen — erste Frage“, 0× `[data-pss-kind]` |
-| — | Firefox + Safari geöffnet (807435) | ☐ Stichprobe manuell → [Checkliste](abnahme-ff-safari-stichprobe.md) |
+| — | Firefox + Safari geöffnet (807435) | Firefox ☐ · **Safari ✅** 2026-09-05 |
 | — | GitHub Release-Body | ☐ PAT/API 403 — [Body-Vorlage](RELEASE-v1.5.41-body.md) |
 
 **Townhall 807435:** `status: active`, `countdownDismissed: true` — bereit für FF/Safari.

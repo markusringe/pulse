@@ -2,7 +2,7 @@
 
 **Prod:** https://pulse.ringe.us/ · **Ziel:** Abschnitt 2 + 3 der [Abnahme-Checkliste](abnahme-sonderfolien-v1.5.37.md)  
 **Dauer:** ca. 15–20 Min. pro Browser  
-**Tester:** _______________ · **Datum:** _______________
+**Tester:** markus · **Datum:** 2026-09-05
 
 ---
 
@@ -43,20 +43,20 @@ Hard-Reload nach erstem Load: **Cmd+Shift+R** (Safari/FF).
 
 | # | Aktion | Erwartung | OK | Notiz |
 |---|--------|-----------|-----|-------|
-| S1 | Countdown-Chip | Wie Firefox F1 | ☐ | |
-| S2 | Pause-Chip | Wie Firefox F2 | ☐ | |
-| S3 | Folie `1` | Wie Firefox F3 | ☐ | |
-| S4 | Ende-Dialog (Abbrechen) | Native `<dialog>` sichtbar, schließbar | ☐ | |
-| S5 | Dock-Sync | Wie Firefox F5 | ☐ | |
-| S6 | Hilfe `?` | Wie Firefox F6 | ☐ | |
+| S1 | Countdown-Chip | Wie Firefox F1 | ✅ | |
+| S2 | Pause-Chip | Wie Firefox F2 | ✅ | |
+| S3 | Folie `1` | Wie Firefox F3 | ✅ | |
+| S4 | Ende-Dialog (Abbrechen) | Native `<dialog>` sichtbar, schließbar | ✅ | |
+| S5 | Dock-Sync | Wie Firefox F5 | ✅ | |
+| S6 | Hilfe `?` | Wie Firefox F6 | ✅ | |
 
 ## Safari — Stage passiv
 
 | # | Prüfung | Erwartung | OK | Notiz |
 |---|---------|-----------|-----|-------|
-| S7 | Keine Steuer-Buttons | Wie Firefox F7 | ☐ | |
-| S8 | Keine Hilfe-FAB | Wie Firefox F8 | ☐ | |
-| S9 | WS-Sync Folie 1 | Wie Firefox F9 | ☐ | |
+| S7 | Keine Steuer-Buttons | Wie Firefox F7 | ✅ | |
+| S8 | Keine Hilfe-FAB | Wie Firefox F8 | ✅ | |
+| S9 | WS-Sync Folie 1 | Wie Firefox F9 | ✅ | |
 
 ---
 
@@ -77,7 +77,7 @@ Presenter-URL im **privaten Tab** (kein Desktop-Layout nötig):
 Nach Abschluss in `abnahme-sonderfolien-v1.5.37-fortschritt.md` unter **Noch offen** aktualisieren:
 
 - Firefox: ☐ offen → ✅ / ❌ (Ticket)
-- Safari: ☐ offen → ✅ / ❌ (Ticket)
+- Safari: ✅ **2026-09-05** (Townhall 807435, Presenter + Stage)
 
 **Bei Abweichung:** Browser-Version, OS, Screenshot, Konsole (F12 → Console), ggf. `#/stage/…` + Presenter-URL notieren.
 
