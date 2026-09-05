@@ -180,6 +180,11 @@ export function isAuthenticated() {
   return Boolean(state.user) || state.viaSecret;
 }
 
+/** Legacy-Zugriff per ADMIN_SECRET / X-Admin-Key (ohne Cookie-Benutzer). */
+export function isAuthViaSecret() {
+  return state.viaSecret;
+}
+
 /** Eingeloggt (beliebige Rolle) — für allgemeine Admin-Routen. */
 export function hasAdminAccess() {
   return isAuthenticated();

@@ -5,7 +5,20 @@
  */
 const fs = require("fs");
 const path = require("path");
-const { filterArticles, highlightText, listCategories, tokenize } = require("../lib/helpIndex");
+const {
+  filterArticles,
+  highlightText,
+  listCategories,
+  groupArticlesByCategory,
+  tokenize,
+} = require("../lib/helpIndex");
+const {
+  resolveHelpRoleFromAuth,
+  getVisibleRoleFilterIds,
+  articleMatchesHelpRole,
+  getRoleBadgeDefs,
+  normalizeArticleRoles,
+} = require("../lib/helpRoles");
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -16,7 +29,7 @@ const catalog = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 const articles = catalog.articles;
 
 assert(catalog.app === "Pulse", "App-Name im Katalog");
-assert(catalog.version >= 10, "Artikelkatalog Version mindestens 10");
+assert(catalog.version >= 13, "Artikelkatalog Version mindestens 13");
 assert(typeof catalog.appVersion === "string" && catalog.appVersion.length >= 5, "appVersion in articles.json");
 
 const requiredIds = [
@@ -57,7 +70,44 @@ const all = filterArticles(articles, { query: "", category: "" });
 assert(all.length === articles.length, "Leere Suche liefert alle");
 
 const presenterOnly = filterArticles(articles, { role: "presenter" });
-assert(presenterOnly.length >= 5 && presenterOnly.every((a) => (a.roles || []).includes("presenter")), "Rollenfilter Presenter");
+assert(
+  presenterOnly.length >= 5 &&
+    presenterOnly.every((a) => normalizeArticleRoles(a.roles).includes("presenter")),
+  "Rollenfilter Team/Presenter"
+);
+
+const authLoginHit = filterArticles(articles, { role: "presenter" });
+assert(authLoginHit.some((a) => a.id === "auth-login"), "Alias editor → presenter für auth-login");
+
+assert(
+  resolveHelpRoleFromAuth({ user: { role: "admin" }, authEnabled: true, adminRoute: true }) === "admin",
+  "Auth admin → Hilfe admin"
+);
+assert(
+  resolveHelpRoleFromAuth({ user: { role: "editor" }, authEnabled: true, adminRoute: true }) === "presenter",
+  "Auth editor → Hilfe team/presenter"
+);
+assert(
+  resolveHelpRoleFromAuth({ authEnabled: true, adminRoute: false }) === "participant",
+  "Öffentliche Hilfe → Teilnehmer"
+);
+assert(
+  getVisibleRoleFilterIds("presenter").join(",") === ",participant,presenter",
+  "Team sieht Teilnehmer+Team Filter"
+);
+assert(articleMatchesHelpRole({ roles: ["editor"] }, "presenter"), "editor-Alias im Artikel");
+
+const grouped = groupArticlesByCategory(articles.slice(0, 5), catalog.categories);
+assert(grouped.length >= 1 && grouped[0].articles.length >= 1, "Kategorie-Gruppierung");
+
+const faqBadges = getRoleBadgeDefs(articles.find((a) => a.id === "faq"));
+assert(faqBadges.length >= 2, "FAQ Mehrrollen-Badges");
+
+const teamRole = (catalog.roles || []).find((r) => r.id === "presenter");
+assert(teamRole && teamRole.label === "Team", "Presenter-Label ist Team");
+
+const catsWithIcon = (catalog.categories || []).filter((c) => c.icon);
+assert(catsWithIcon.length >= 10, "Kategorien mit icon-Feld");
 
 const wc = filterArticles(articles, { query: "wortwolke" });
 assert(

@@ -1,58 +1,71 @@
 {
-  "version": 12,
+  "version": 13,
   "app": "Pulse",
   "categories": [
     {
       "id": "welcome",
-      "label": "Einstieg"
+      "label": "Einstieg",
+      "icon": "👋"
     },
     {
       "id": "start",
-      "label": "Schnellstart"
+      "label": "Schnellstart",
+      "icon": "🚀"
     },
     {
       "id": "roles",
-      "label": "Rollen"
+      "label": "Rollen",
+      "icon": "👥"
     },
     {
       "id": "features",
-      "label": "Funktionen"
+      "label": "Funktionen",
+      "icon": "✨"
     },
     {
       "id": "polls",
-      "label": "Umfragen"
+      "label": "Umfragen",
+      "icon": "📊"
     },
     {
       "id": "qa",
-      "label": "Q&A"
+      "label": "Q&A",
+      "icon": "💬"
     },
     {
       "id": "quiz",
-      "label": "Quiz"
+      "label": "Quiz",
+      "icon": "🏆"
     },
     {
       "id": "admin",
-      "label": "Admin"
+      "label": "Admin",
+      "icon": "⚙️"
     },
     {
       "id": "ssl",
-      "label": "SSL"
+      "label": "SSL",
+      "icon": "🔒"
     },
     {
       "id": "privacy",
-      "label": "Datenschutz"
+      "label": "Datenschutz",
+      "icon": "🛡️"
     },
     {
       "id": "faq",
-      "label": "FAQ"
+      "label": "FAQ",
+      "icon": "❓"
     },
     {
       "id": "glossary",
-      "label": "Glossar"
+      "label": "Glossar",
+      "icon": "📖"
     },
     {
       "id": "troubleshooting",
-      "label": "Fehlerbehebung"
+      "label": "Fehlerbehebung",
+      "icon": "🔧"
     }
   ],
   "roles": [
@@ -66,7 +79,7 @@
     },
     {
       "id": "presenter",
-      "label": "Presenter"
+      "label": "Team"
     },
     {
       "id": "admin",

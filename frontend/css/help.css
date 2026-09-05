@@ -155,6 +155,75 @@
   background: color-mix(in srgb, var(--accent) 18%, var(--bg-elev));
 }
 
+/* ---------- Rollen-Badges (Artikelliste) ---------- */
+
+.help-article-list__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+}
+
+.help-article-list__badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.help-role-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  line-height: 1.35;
+}
+
+.badge-admin {
+  background: color-mix(in srgb, #c53030 16%, var(--bg-soft));
+  border-color: color-mix(in srgb, #c53030 35%, var(--line));
+  color: var(--ink);
+}
+
+.badge-team {
+  background: color-mix(in srgb, #2b6cb0 16%, var(--bg-soft));
+  border-color: color-mix(in srgb, #2b6cb0 35%, var(--line));
+  color: var(--ink);
+}
+
+.badge-participant {
+  background: color-mix(in srgb, #2f855a 14%, var(--bg-soft));
+  border-color: color-mix(in srgb, #2f855a 30%, var(--line));
+  color: var(--ink);
+}
+
+/* ---------- Kategorie-Gruppen (Hub) ---------- */
+
+.help-category-group {
+  margin: 0 0 1.35rem;
+}
+
+.help-category-group__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.help-category-group__icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.help-category-group .help-article-list {
+  margin-left: 0;
+}
+
 /* ---------- Callout-Boxen ---------- */
 
 .help-callout {

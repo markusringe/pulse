@@ -11,10 +11,20 @@
 import { bindTooltips } from "./tooltips.js";
 import { explainError, explainServerError } from "./errors.js";
 import { assetUrl } from "./assetUrl.js";
+import {
+  getRoleBadgeDefs,
+  getVisibleRoleFilterIds,
+  groupArticlesByCategory,
+  articleMatchesHelpRole,
+  resolveHelpRoleFromAuth,
+} from "./helpRoles.js";
+import { getCurrentUser, isAuthEnabled, isAuthViaSecret, loadAuth } from "./authClient.js";
 
 const TOUR_DONE_KEY = "pulse:tour-done";
 const TOUR_LATER_KEY = "pulse:tour-later";
 const FEEDBACK_KEY = "pulse:help-feedback";
+/** Session: Nutzer hat Rollenfilter manuell gewählt — Auto-Rolle nicht erneut setzen. */
+const HELP_ROLE_MANUAL_KEY = "pulse:help-role-manual";
 const ARTICLES_URL = assetUrl("/help/articles.json");
 
 /** @type {string|null} */
@@ -115,10 +125,7 @@ export function filterArticles(articles, opts = {}) {
   const tokens = tokenize(opts.query);
   return list.filter((article) => {
     if (category && String(article.category || "").toLowerCase() !== category) return false;
-    if (role) {
-      const roles = Array.isArray(article.roles) ? article.roles : [];
-      if (!roles.map((r) => String(r).toLowerCase()).includes(role)) return false;
-    }
+    if (role && !articleMatchesHelpRole(article, role)) return false;
     if (!tokens.length) return true;
     const blob = [
       article.id,
@@ -404,17 +411,41 @@ async function loadCatalog() {
   return catalog;
 }
 
+/**
+ * Rollenfilter aus Auth vorauswählen (einmal pro Tab, bis „Filter leeren“).
+ * @param {boolean} admin
+ */
+async function applyAutoHelpRole(admin) {
+  const roleBox = document.getElementById("help-roles");
+  if (!roleBox || roleBox.dataset.role || sessionStorage.getItem(HELP_ROLE_MANUAL_KEY)) return;
+  const suggested = resolveHelpRoleFromAuth({
+    user: getCurrentUser(),
+    viaSecret: isAuthViaSecret(),
+    authEnabled: isAuthEnabled(),
+    adminRoute: admin,
+  });
+  if (suggested) roleBox.dataset.role = suggested;
+}
+
 async function renderHelp(slug, admin) {
   const data = await loadCatalog();
   await refreshHelpVersionLine();
+  await loadAuth();
   const articles = data.articles || [];
   const cats = data.categories || [];
   const roleDefs = data.roles || [];
   const q = document.getElementById("help-q")?.value || "";
   const activeCat = document.getElementById("help-cats")?.dataset.cat || "";
+  if (!slug) await applyAutoHelpRole(admin);
   const activeRole = document.getElementById("help-roles")?.dataset.role || "";
+  const viewerRole = resolveHelpRoleFromAuth({
+    user: getCurrentUser(),
+    viaSecret: isAuthViaSecret(),
+    authEnabled: isAuthEnabled(),
+    adminRoute: admin,
+  });
   renderCats(cats, activeCat);
-  renderRoles(roleDefs, activeRole);
+  renderRoles(roleDefs, activeRole, viewerRole);
   const main = document.getElementById("help-main");
   const side = document.getElementById("help-side");
   if (!main || !side) return;
@@ -448,7 +479,7 @@ async function renderHelp(slug, admin) {
     main.innerHTML = `<div class="help-article-page">${welcome}
       <section class="help-hub-list" id="help-all-articles">
         <h2>Alle Artikel</h2>
-        ${renderArticleList(filtered, q, admin)}
+        ${renderGroupedArticleList(filtered, cats, q, admin)}
       </section>
     </div>`;
     return;
@@ -481,20 +512,40 @@ function injectArticleToc(html) {
   return html.replace(/(<h2[^>]*>)/i, toc + "$1");
 }
 
-function renderArticleList(filtered, q, admin) {
-  return `<ul class="help-article-list">${filtered
-    .map((a) => {
-      const href = `#/${admin ? "admin/" : ""}help/${a.id}`;
-      return `<li><a href="${href}"><strong>${highlightText(a.title, q)}</strong><span class="muted">${highlightText(a.summary, q)}</span></a></li>`;
-    })
-    .join("")}</ul>`;
+function renderArticleListItem(a, q, admin) {
+  const href = `#/${admin ? "admin/" : ""}help/${a.id}`;
+  const badges = getRoleBadgeDefs(a)
+    .map((b) => `<span class="help-role-badge ${escapeHtml(b.className)}">${escapeHtml(b.label)}</span>`)
+    .join("");
+  return `<li><a href="${href}"><span class="help-article-list__head"><strong>${highlightText(a.title, q)}</strong>${badges ? `<span class="help-article-list__badges">${badges}</span>` : ""}</span><span class="muted">${highlightText(a.summary, q)}</span></a></li>`;
 }
 
-function renderRoles(roleDefs, active) {
+function renderArticleList(filtered, q, admin) {
+  return `<ul class="help-article-list">${filtered.map((a) => renderArticleListItem(a, q, admin)).join("")}</ul>`;
+}
+
+/** Hub-Übersicht: Artikel nach Katalog-Kategorien gruppiert. */
+function renderGroupedArticleList(filtered, categories, q, admin) {
+  const groups = groupArticlesByCategory(filtered, categories);
+  if (!groups.length) return `<p class="muted">Keine Artikel im Katalog.</p>`;
+  return groups
+    .map(({ category, articles: items }) => {
+      const icon = category.icon ? `<span class="help-category-group__icon" aria-hidden="true">${escapeHtml(category.icon)}</span>` : "";
+      return `<section class="help-category-group" data-help-category="${escapeHtml(category.id)}">
+        <h3 class="help-category-group__title">${icon}${escapeHtml(category.label)}</h3>
+        <ul class="help-article-list">${items.map((a) => renderArticleListItem(a, q, admin)).join("")}</ul>
+      </section>`;
+    })
+    .join("");
+}
+
+function renderRoles(roleDefs, active, viewerRole) {
   const box = document.getElementById("help-roles");
   if (!box) return;
   const all = roleDefs.length ? roleDefs : [{ id: "", label: "Alle Rollen" }];
-  box.innerHTML = all
+  const visible = new Set(getVisibleRoleFilterIds(viewerRole));
+  const defs = all.filter((r) => visible.has(r.id || ""));
+  box.innerHTML = defs
     .map((r) => {
       const pressed = (r.id || "") === active;
       return `<button type="button" data-help-role="${escapeHtml(r.id || "")}" aria-pressed="${pressed}">${escapeHtml(r.label)}</button>`;
@@ -625,6 +676,7 @@ function renderAggregate() {
 function onDocClick(ev) {
   const roleBtn = ev.target.closest("[data-help-role]");
   if (roleBtn) {
+    sessionStorage.setItem(HELP_ROLE_MANUAL_KEY, "1");
     const box = document.getElementById("help-roles");
     if (box) box.dataset.role = roleBtn.getAttribute("data-help-role") || "";
     const parsed = parseHelpHash();
@@ -646,6 +698,7 @@ function onDocClick(ev) {
     if (input) input.value = "";
     if (box) box.dataset.cat = "";
     if (roleBox) roleBox.dataset.role = "";
+    sessionStorage.removeItem(HELP_ROLE_MANUAL_KEY);
     const parsed = parseHelpHash();
     renderHelp("", Boolean(parsed?.admin));
     return;
