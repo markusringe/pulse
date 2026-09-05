@@ -74,8 +74,8 @@ async function fetchAsset(base, indexHtml, pattern, fallbackPath, timeoutMs) {
   record("index present-deck", index.body.includes('id="present-deck"'));
   record("index present-special-slide-nav", index.body.includes('id="present-special-slide-nav"'));
   record("index kein stage-special-slide-nav", !index.body.includes("stage-special-slide-nav"));
-  record("stageDisplayControls.js", fs.existsSync(path.join(root, "frontend/js/stageDisplayControls.js")));
   record("index ohne statischen stage-fs", !index.body.includes('id="stage-fs"'));
+  record("index presenter-special-preview.css", index.body.includes("presenter-special-preview.css"));
 
   const stageJs = await fetchAsset(
     base,
@@ -85,6 +85,7 @@ async function fetchAsset(base, indexHtml, pattern, fallbackPath, timeoutMs) {
     opts.timeoutMs
   );
   record("stage.js kein stageSpecialSlideNav", !stageJs.includes("stageSpecialSlideNav"));
+  record("stage.js mountStageDisplayControls", stageJs.includes("mountStageDisplayControls"));
   record("stage.js kein event_countdown", !stageJs.includes("event_countdown"));
   record("stage.js Rolle stage", stageJs.includes('role: "stage"'));
 
