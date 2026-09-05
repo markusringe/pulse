@@ -2,7 +2,7 @@
 /**
  * Theme-Logik und WCAG-Kontraste der Light/Dark-Tokens.
  * Light ist Default; nur gespeichertes „dark“ schaltet Dark ein.
- * Markenfarben: Stadtblau #007cc1 und Orange-Akzent #f99700 (saarbruecken.de).
+ * Markenfarben: Preset #007cc1 und Orange-Akzent #f99700 (docs/contrast.md).
  */
 
 const { pathToFileURL } = require("url");

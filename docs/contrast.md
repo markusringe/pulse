@@ -11,16 +11,16 @@ Schwellen: Text **4,5:1**, großer Text **3:1**, UI/Border/Icon **3:1**.
 
 Orange-Akzent `#F99700` (und historisches Gelb `#FFCC00`) wird **nicht** als Text auf Weiß verwendet.
 
-## Herkunft der Markenfarben (Stand 2026-09-02)
+## Herkunft der Markenfarben (Standard-Preset)
 
-Abgelesen von der Live-Website [saarbruecken.de](https://www.saarbruecken.de) (Theme `saarbruecken_2019`, CSS-Bundle `cache/media/css/ebb4190ff6a3da102592063bc9bbca03.css` und Logo `/media/saarbruecken_2019/img/logo.svg`). Klassisches Navy `#003399` / Gelb `#FFCC00` kommt dort **nicht** vor.
+Die Default-Farben in `lib/branding.js` sind ein **WCAG-geprüftes Preset** (siehe Tabelle unten). Klassisches Navy `#003399` / Gelb `#FFCC00` werden **nicht** verwendet.
 
-| Token | Hex | Stelle auf der Website |
+| Token | Hex | Verwendung |
 |---|---|---|
-| primary | `#007CC1` | CSS `a { color: #007cc1 }`, `.button` / `.button.primary` / `.blue` / `.no_theme`; Homepage-CTA `background-color: #007CC1`. Logo-Welle `.cls-2 { fill: #007bc2 }` (1/255 Abweichung). Hover `#005B8E`. |
-| secondary | `#F99700` | CSS-Klasse `.orange` (Hauptnavigation „Leben“), ~80 Treffer im Theme. Die Klasse `.lemon` ist Grün `#71AE13` (Bildung), kein Gelb. |
-| bg | `#FFFFFF` | `body { background: #fff }`, Header `.top-navigation { background-color: #fff }`, `theme-color` / `msapplication-TileColor`. |
-| text | `#1A171B` | Logo-Wortmarke `.cls-1 { fill: #1a171b }`. Body-CSS `color: #000`, Header `color: #2b2b2b`. |
+| primary | `#007CC1` | Links, Buttons, Primary-Aktionen |
+| secondary | `#F99700` | Akzent (nicht als Text auf Weiß) |
+| bg | `#FFFFFF` | Seitenhintergrund |
+| text | `#1A171B` | Fließtext / Wortmarke |
 
 ## Light Mode
 

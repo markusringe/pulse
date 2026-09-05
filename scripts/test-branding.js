@@ -30,11 +30,8 @@ assert(SAARBRUECKEN.footerHidden === false, "Footer standard sichtbar");
 assert(SAARBRUECKEN.stageShowLogo === false, "Stage-Logo standard aus");
 assert(SAARBRUECKEN.stageShowFooter === false, "Stage-Footer standard aus");
 assert(SAARBRUECKEN.qaDefaultLimitSec === 60, "Q&A-Default 60 s");
-assert(
-  SAARBRUECKEN.homepageUrl === "https://www.saarbruecken.de",
-  "Default Homepage saarbruecken.de"
-);
-assert(SAARBRUECKEN.privacyExtra.includes("saarbruecken.de"), "privacyExtra verweist auf Stadt-Datenschutz");
+assert(SAARBRUECKEN.homepageUrl === "", "Default Homepage leer (White-Label)");
+assert(SAARBRUECKEN.privacyExtra.includes("verantwortlichen"), "privacyExtra generisch");
 assert(!Object.prototype.hasOwnProperty.call(SAARBRUECKEN, "social"), "kein social-Array im Preset");
 
 assert(sanitizeHomepageUrl("") === "", "leer bleibt leer");

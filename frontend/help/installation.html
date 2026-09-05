@@ -30,7 +30,7 @@ sudo ./scripts/install-vps-ubuntu.sh</code></pre>
   <p>Alternativ: <code>npm run setup:vps</code> (im Projektverzeichnis, mit sudo).</p>
   <p>Das VPS-Skript installiert <strong>Docker Engine</strong> und das <strong>Compose-Plugin</strong>, richtet die Firewall (UFW: SSH, 80, 443) ein, erzeugt <code>.env</code> mit Zufallssecrets, kopiert Grundeinstellungen nach <code>data/</code> und startet <code>docker compose up -d</code>.</p>
   <ul>
-    <li><strong>Grunddaten</strong> (<code>scripts/seed-data.sh</code>): <code>branding.json</code> und <code>privacy.json</code> (Saarbrücken-Preset), leerer Event-Katalog, leeres Audit-Log — bestehende Dateien werden nicht überschrieben</li>
+    <li><strong>Grunddaten</strong> (<code>scripts/seed-data.sh</code>): <code>branding.json</code> und <code>privacy.json</code> (generisches Preset), leerer Event-Katalog, leeres Audit-Log — bestehende Dateien werden nicht überschrieben</li>
     <li><strong>Zugangsdaten</strong> nach der Installation: <code>INSTALL-CREDENTIALS.txt</code> (<code>ADMIN_SECRET</code>, Grafana-Passwort) — sichern und danach löschen</li>
     <li>Option <code>--expose-grafana</code> öffnet Port 3001 in der Firewall</li>
     <li>Option <code>--git URL --dir /opt/pulse</code> klont das Repository und installiert dort</li>

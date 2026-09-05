@@ -11,7 +11,7 @@ log() { printf '==> %s\n' "$*"; }
 
 mkdir -p "$DEST/ssl"
 
-# Branding & Datenschutz: aktuelle Repo-Grundeinstellungen (Saarbrücken-Preset)
+# Branding & Datenschutz: generisches Repo-Preset (lib/branding.js, lib/privacy.js)
 for f in branding.json privacy.json; do
   if [ ! -f "$DEST/$f" ] && [ -f "$ROOT/data/$f" ]; then
     cp "$ROOT/data/$f" "$DEST/$f"

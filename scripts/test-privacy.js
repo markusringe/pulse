@@ -75,7 +75,7 @@ assert(saved.versions.length >= 1, "Store schreibt Historie");
 const payload = store.publicPayload({ retentionDays: 30, lang: "de" });
 assert(payload.html.includes("Musterkommune am Fluss"), "Name in Erklärung");
 assert(payload.html.includes("Mustertext"), "Disclaimer im HTML");
-assert(payload.html.includes("SDSG"), "SDSG genannt");
+assert(payload.html.includes("Landesdatenschutzrecht") || payload.html.includes("DSGVO"), "Rechtsgrundlagen in Erklärung");
 assert(payload.html.includes("Digitale-Dienste-Gesetz") || payload.html.includes("DDG"), "DDG genannt");
 assert(payload.html.includes("BITV"), "BITV genannt");
 assert(payload.html.includes("datenschutz@example.invalid"), "E-Mail ersetzt");
@@ -94,22 +94,13 @@ const poisoned = store.save({ version: 99, __proto__: { polluted: true }, adminK
 assert(poisoned.record.adminKey == null, "adminKey nicht persistiert");
 assert(poisoned.record.extraText === "ok", "extraText bleibt");
 
-assert(DEFAULTS.controllerName.includes("Landeshauptstadt"), "Name Landeshauptstadt");
-assert(DEFAULTS.controllerName.includes("Saarbrücken"), "Default Saarbrücken");
-assert(
-  DEFAULTS.controllerAddress.includes("Rathausplatz") || DEFAULTS.controllerAddress.includes("Schlossplatz"),
-  "Anschrift Rathaus (offiziell Rathausplatz 1 laut saarbruecken.de/impressum)"
-);
-assert(/66111|66119/.test(DEFAULTS.controllerAddress), "PLZ Saarbrücken");
-assert(DEFAULTS.controllerEmail.includes("saarbruecken.de"), "Stadt-Mail saarbruecken.de");
-assert(DEFAULTS.controllerPhone.includes("681"), "Stadt-Telefon");
-assert(DEFAULTS.controllerLegalRep.includes("Oberbürgermeister"), "gesetzliche Vertretung aus Impressum");
-assert(DEFAULTS.dsbEmail.includes("saarbruecken.de"), "DSB-Mail der Stadt");
-assert(DEFAULTS.supervisoryWebsite.includes("datenschutz.saarland.de"), "UDIS-Website");
-assert(DEFAULTS.supervisoryAddress.includes("Fritz-Dobisch"), "UDIS-Anschrift unverändert");
-assert(DEFAULTS.extraText.includes("saarbruecken.de"), "Ergänzung verweist auf Stadt-Datenschutz");
+assert(DEFAULTS.controllerName.includes("Musterorganisation"), "Default Musterorganisation");
+assert(DEFAULTS.controllerAddress.includes("Musterstadt"), "Default Musterstadt");
+assert(DEFAULTS.controllerEmail.includes("example.invalid"), "Platzhalter-E-Mail");
+assert(DEFAULTS.dsbEmail.includes("example.invalid"), "DSB-Platzhalter-E-Mail");
+assert(DEFAULTS.supervisoryWebsite.includes("example.invalid"), "Aufsicht-Platzhalter");
 assert(DEFAULTS.extraText.includes("Pulse"), "Ergänzung nennt Pulse");
-assert(DEFAULTS.vatId.includes("DE 138116928"), "USt-IdNr. aus Stadt-Impressum");
+assert(DEFAULTS.vatId.includes("Platzhalter"), "USt-IdNr. Platzhalter");
 
 fs.rmSync(dir, { recursive: true, force: true });
 console.log("Privacy-Tests OK");

@@ -22,7 +22,7 @@
   --breakpoint-xl: 90rem;
   --breakpoint-2xl: 120rem;
 
-  /* Markenfarben (Saarbrücken-Fallback; Branding überschreibt per CSS-Variablen) */
+  /* Markenfarben (Standard-Preset; Branding überschreibt per CSS-Variablen) */
   --color-pulse-primary: #007cc1;
   --color-pulse-primary-hover: #005b8e;
   --color-pulse-primary-ink: #ffffff;

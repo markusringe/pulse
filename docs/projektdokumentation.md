@@ -24,7 +24,7 @@ Pulse ist eine **Live-Interaktionsanwendung** für Sitzungen und Townhalls: Prä
 
 ### 1.3 Zielgruppe
 
-Aus Branding- und Privacy-Defaults (`lib/branding.js`, `lib/privacy.js`): **öffentliche Verwaltung**, konkret voreingestellt auf die **Landeshauptstadt Saarbrücken** (Verantwortliche, Impressum-Kontakte, Homepage-Link, Footer-Text). Die Instanz ist per Admin-UI umkonfigurierbar; die Defaults sind Stadt-CI-/Rechts-Platzhalter, keine fest verdrahtete Mandantenlogik.
+Aus Branding- und Privacy-Defaults (`lib/branding.js`, `lib/privacy.js`): **öffentliche Verwaltung** mit **generischen Muster-Platzhaltern** (Verantwortliche, Impressum-Kontakte, Footer). Die Instanz ist per Admin-UI umkonfigurierbar; keine fest verdrahtete Mandantenlogik.
 
 **Teilnehmende** brauchen **kein Konto** (anonymer Join). Optional aktiviert die Instanz eine **Benutzerverwaltung** (`USER_AUTH_ENABLED=1`): Rollen **admin**, **editor**, **viewer**; Anmeldung per **E-Mail-PIN**; Kennwort nur für Kontoänderungen. Ohne Benutzerverwaltung gelten weiterhin Session-Rollen (Presenter-Schlüssel, anonymer Join).
 
@@ -352,13 +352,13 @@ Serverseitige State-Machine in `lib/interactionState.js` für alle interaktiven 
 ### 3.18 Branding
 
 - Admin `#/admin/branding`. Speicherung `data/branding.json` (`lib/branding.js`).
-- **Stadt-CI (Default, Stand 2026-09-02 von saarbruecken.de, Theme `saarbruecken_2019`):** Primär **#007CC1** (Stadtblau, Links/Buttons), Sekundär **#F99700** (Orange, Nav „Leben“). Hintergrund `#FFFFFF`, Text `#1A171B`. Klassisches Navy/Gelb kommt auf der aktuellen Stadtseite nicht vor. Prüfung und erlaubte/verbotene Paare: `docs/contrast.md`. Orange nicht als Text auf Weiß. Markenfarben werden nur übernommen, wenn Text-AA (4,5:1) und UI-Kontrast (3:1) erfüllt sind (`frontend/js/theme.js` `applyBrandingContrast`).
+- **Standard-Markenfarben (Preset, WCAG in `docs/contrast.md`):** Primär **#007CC1**, Sekundär **#F99700**, Hintergrund `#FFFFFF`, Text `#1A171B`. Orange nicht als Text auf Weiß. Markenfarben werden nur übernommen, wenn Text-AA (4,5:1) und UI-Kontrast (3:1) erfüllt sind (`frontend/js/theme.js` `applyBrandingContrast`).
 - White-Label: `appName` (Default „Pulse“), `favicon` (svg/png, max. 64 KiB Data-URL), `customDomain` (nur Hostname, CNAME-Hinweis + Link nach `#/admin/ssl`, kein magisches DNS), `footerHidden` (Footer aus; Impressum/Datenschutz bleiben per Hash). Intern bleiben `pulse.db` und `pulse:`/`tt:`-Storage.
 - Erweitertes Branding: `customFont` (woff2/woff/ttf, max. 500 KiB, `@font-face`, kein Google-Fonts-CDN), `slideBackground` (Data-URL + WCAG-Scrim), `slideTransition` (none/fade/slide, Default `slide`), `sound` (mp3/ogg/wav, max. 200 KiB).
 - **Sound standardmäßig stumm:** Client-Key `pulse:sound-muted`, Default an (`SOUND_MUTE_DEFAULT` in `app.js`). Mute-Schalter in Presenter- und Join-Ansicht. Wiedergabe nur nach User-Geste.
 - Weitere Felder: Logo (Data-URL PNG/JPEG/SVG/WebP, 256 KiB), Footer-Text, Sprachen, Retention, Wortfilter, Fragen-Intervall, IP-Sperre, Links zu Datenschutz/Impressum, Zusatztext Datenschutz.
 - **Präsentationsansicht / Q&A:** `stageShowLogo`, `stageShowFooter` (Default `false`), `qaDefaultLimitSec` (Default 60, `0` = kein vorgewähltes Limit).
-- **Homepage-Link statt Social:** `homepageUrl` (nur `http://` / `https://`, Default `https://www.saarbruecken.de`). Feld `social[]` wird beim Laden/Speichern/Import **verworfen**. Footer zeigt den Stadt-Link, keine Mastodon-/LinkedIn-Felder.
+- **Homepage-Link statt Social:** `homepageUrl` (nur `http://` / `https://`, Standard **leer**). Feld `social[]` wird beim Laden/Speichern/Import **verworfen**. Footer zeigt optional den Homepage-Link, keine Mastodon-/LinkedIn-Felder.
 
 ### 3.19 Internationalisierung
 
@@ -371,7 +371,7 @@ Serverseitige State-Machine in `lib/interactionState.js` für alle interaktiven 
 - Öffentliche Views `#/privacy`, `#/impressum` (auch Pfade `/privacy`, `/impressum` laden `index.html`).
 - Admin `#/admin/privacy`. API `GET/POST /api/privacy`, Versionen `GET /api/privacy/versions`.
 - Speicherung `data/privacy.json` und `data/privacy-versions.json` (letzte 20 Stände).
-- **Saarbrücken-Defaults** in `lib/privacy.js`: Landeshauptstadt, Rathaus St. Johann, DSB Thorsten Carbon, UDIS, USt-IdNr., BITV-2.0-Hinweis.
+- **Generische Muster-Defaults** in `lib/privacy.js`: Verantwortliche, DSB, Aufsicht, USt-IdNr., BITV-2.0-Hinweis — vor Produktivbetrieb ersetzen.
 - UI `frontend/js/privacyPage.js`.
 - Consent-Dialog (`tt:consent` in localStorage, 90 Tage): Hinweis auf anonyme Teilnahme, **keine Cookies**, lokale Speicherung nur für Session-ID u. Ä.
 - Internes Verzeichnis Art. 30: `docs/verfahrensverzeichnis.md` (Entwurf für den DSB, nicht die öffentliche Privacy-Seite).
@@ -627,7 +627,7 @@ Umgesetzt, soweit der Code das hergibt — **keine** abgeschlossene BITV-Zertifi
 
 ### 4.3 BITV-Hinweis
 
-Die Datenschutzerklärung/Impressum-Vorlage verweist ausdrücklich auf BITV 2.0. Das ist ein **rechtlicher Hinweistext**, keine Konformitätserklärung der Software. Mängelmeldung: Kontaktfeld `accessibilityContact` (Default Internetredaktion LHS).
+Die Datenschutzerklärung/Impressum-Vorlage verweist ausdrücklich auf BITV 2.0. Das ist ein **rechtlicher Hinweistext**, keine Konformitätserklärung der Software. Mängelmeldung: Kontaktfeld `accessibilityContact` (Platzhalter in den Defaults).
 
 ### 4.4 Betriebliche Eigenschaften
 

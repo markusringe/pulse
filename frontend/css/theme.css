@@ -23,7 +23,7 @@
   --radius: 18px;
   --pad: clamp(12px, 2.4vw, 28px);
 
-  /* Marken-Fallbacks (Saarbrücken, Stand saarbruecken.de 2026-09-02). JS darf sie überschreiben, nie unter AA. */
+  /* Marken-Fallbacks (Standard-Preset). JS darf sie überschreiben, nie unter AA. */
   --primary-color: #007cc1;
   --secondary-color: #f99700;
   --bg-color: #ffffff;

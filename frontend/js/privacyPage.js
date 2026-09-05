@@ -13,33 +13,33 @@ import { ensureStepUp } from "./stepUp.js";
 
 /**
  * Fallback, wenn /api/privacy nicht erreichbar ist (reiner Datei-Modus).
- * Werte spiegeln die Defaults aus lib/privacy.js (Impressum/Datenschutz saarbruecken.de, Abruf 2026-09-02).
+ * Werte spiegeln die generischen Defaults aus lib/privacy.js.
  */
 const FALLBACK = {
-  controllerName: "Landeshauptstadt Saarbrücken",
-  controllerAddress: "Rathaus St. Johann\nRathausplatz 1\n66111 Saarbrücken",
-  controllerEmail: "stadt@saarbruecken.de",
-  controllerPhone: "+49 681 9050",
-  controllerLegalRep: "Oberbürgermeister Uwe Conradt",
-  dsbName: "Thorsten Carbon, Datenschutzbeauftragter der Landeshauptstadt Saarbrücken",
-  dsbEmail: "datenschutz@saarbruecken.de",
-  dsbPhone: "+49 681 905-5074",
-  supervisoryName: "Unabhängiges Datenschutzzentrum Saarland (UDIS)",
-  supervisoryAddress: "Fritz-Dobisch-Straße 12, 66111 Saarbrücken",
-  supervisoryWebsite: "https://www.datenschutz.saarland.de",
-  supervisoryEmail: "poststelle@datenschutz.saarland.de",
-  supervisoryPhone: "0681 94781-0",
+  controllerName: "Musterorganisation (öffentliche Verwaltung)",
+  controllerAddress: "Musterstraße 1\n12345 Musterstadt",
+  controllerEmail: "kontakt@example.invalid",
+  controllerPhone: "+49 123 4567890",
+  controllerLegalRep: "Gesetzliche Vertretung (Platzhalter)",
+  dsbName: "Datenschutzbeauftragte/r der verantwortlichen Stelle",
+  dsbEmail: "datenschutz@example.invalid",
+  dsbPhone: "+49 123 4567891",
+  supervisoryName: "Zuständige Datenschutzaufsichtsbehörde (Platzhalter)",
+  supervisoryAddress: "Musterstraße 2\n12345 Musterstadt",
+  supervisoryWebsite: "https://example.invalid/aufsicht",
+  supervisoryEmail: "poststelle@example.invalid",
+  supervisoryPhone: "+49 123 4567892",
   adminSupervisory:
-    "Landesverwaltungsamt Saarland (Kommunalaufsicht), Am Markt 7, 66386 St. Ingbert. Oberste Kommunalaufsicht: Ministerium für Inneres, Bauen und Sport des Saarlandes.",
+    "Zuständige Fachaufsicht (Platzhalter — bitte im Impressum der verantwortlichen Stelle ergänzen).",
   hostingText:
     "Rechenzentrum der verantwortlichen Stelle / eigener Server in der Europäischen Union.",
   processorNote: "",
   extraText:
-    "Pulse ist ein Angebot der Landeshauptstadt Saarbrücken. Die lokale Verarbeitung in dieser Anwendung (anonyme Teilnahme, keine Tracking-Cookies, Speicherung auf dem Server der verantwortlichen Stelle) ist in den Abschnitten dieser Erklärung beschrieben.\n\nDie ausführliche Datenschutzerklärung der Stadtwebsite gilt ergänzend: [Datenschutz der Landeshauptstadt Saarbrücken](https://www.saarbruecken.de/fusszeile/datenschutz). Anbieterkennzeichnung der Stadt: [Impressum](https://www.saarbruecken.de/impressum).",
-  standDate: "2026-09-02",
+    "Pulse dient öffentlichen und anderen Organisationen zur anonymen bzw. datensparsamen Live-Interaktion in Veranstaltungen.",
+  standDate: "2026-09-05",
   version: 1,
-  accessibilityContact: "Internetredaktion der Landeshauptstadt Saarbrücken, internet@saarbruecken.de",
-  vatId: "DE 138116928 (USt-IdNr. gem. § 27a UStG, laut Impressum der Landeshauptstadt)",
+  accessibilityContact: "Barrierefreiheit: kontakt@example.invalid",
+  vatId: "DE 000000000 (USt-IdNr. Platzhalter — vor Produktivbetrieb ersetzen)",
 };
 
 /**
@@ -332,7 +332,7 @@ function renderVersionList(versions) {
 
 /**
  * Kurzer Fallback-Text, wenn der Server nicht läuft.
- * Enthält denselben Disclaimer und die Saarbrücken-Platzhalter.
+ * Enthält denselben Disclaimer und die generischen Platzhalter.
  * @param {typeof FALLBACK} p
  */
 function fallbackPrivacyHtml(p) {
@@ -350,7 +350,7 @@ ${lang}
 <p>${escapeText(p.dsbName)}<br>${escapeText(p.dsbEmail)} · ${escapeText(p.dsbPhone)}</p>
 <h2>Aufsicht</h2>
 <p>${escapeText(p.supervisoryName)}<br>${escapeText(p.supervisoryAddress)}<br><a href="${escapeText(p.supervisoryWebsite)}" rel="noopener noreferrer">${escapeText(p.supervisoryWebsite)}</a></p>
-<p>Rechtsquellen: DSGVO, BDSG, SDSG (Saarländisches Datenschutzgesetz), DDG (§ 5, Nachfolger TMG), TDDDG, BITV 2.0. Keine Cookies, kein Tracking. IP nur als Hash im Audit. Geräte-Typ wird nicht gespeichert.</p>
+<p>Rechtsquellen: DSGVO, BDSG, ergänzendes Landesdatenschutzrecht (soweit anwendbar), DDG (§ 5, Nachfolger TMG), TDDDG, BITV 2.0. Keine Cookies, kein Tracking. IP nur als Hash im Audit. Geräte-Typ wird nicht gespeichert.</p>
 <p><a href="#/impressum">${escapeText(t("footer.imprint"))}</a></p>
 ${extra}`;
 }

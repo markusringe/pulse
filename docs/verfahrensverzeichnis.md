@@ -1,12 +1,12 @@
 # Verzeichnis von Verarbeitungstätigkeiten (Art. 30 DSGVO)
 
 **Anwendung:** Pulse  
-**Verantwortliche Stelle:** Landeshauptstadt Saarbrücken  
+**Verantwortliche Stelle (Muster):** Musterorganisation (öffentliche Verwaltung)  
 **Stand:** 2026-09-04 · **Programmversion:** v1.5.27
 **Fassung:** 5 (Entwurf)
 
 > **Entwurf für die/den Datenschutzbeauftragte/n — keine Rechtsberatung.**  
-> Dieses Verzeichnis beschreibt den **Ist-Zustand der Software** (Quellcode Stand 2026-09-04) und die **geplante** Auftragsverarbeitung beim Hosting. Es ersetzt nicht die Prüfung, Freigabe und Fortschreibung durch die/den DSB der Landeshauptstadt Saarbrücken. Angaben zu Personen, Anschriften und Aufsicht stammen aus den öffentlichen Defaults in `lib/privacy.js` / `data/privacy.json` (Abruf Stadtwebsite / UDIS, Stand 2026-09-02). Es werden **keine** Vertragsnummern, Server-IPs, Ticket-IDs oder DPIA-Scores erfunden.  
+> Dieses Verzeichnis beschreibt den **Ist-Zustand der Software** und die **geplante** Auftragsverarbeitung beim Hosting. Es ersetzt nicht die Prüfung, Freigabe und Fortschreibung durch die/den DSB der **betreibenden Organisation**. Personen-, Adress- und Aufsichtsangaben in den Tabellen sind **generische Platzhalter** aus `lib/privacy.js` / `data/privacy.json` — vor Produktivbetrieb durch die verantwortliche Stelle ersetzen. Es werden **keine** Vertragsnummern, Server-IPs, Ticket-IDs oder DPIA-Scores erfunden.  
 > Die öffentliche Datenschutzerklärung der Anwendung (`data/privacy.json`, `hostingText`) beschreibt derzeit noch ein Hosting im Rechenzentrum der verantwortlichen Stelle. **Dieses Verzeichnis dokumentiert abweichend das geplante Hosting bei Hetzner** (Art. 28). Vor Produktivbetrieb müssen Privacy-Text, AV-Vertrag und dieses Verzeichnis vom DSB in Einklang gebracht werden.
 
 Quellen (Ist-Software): `docs/projektdokumentation.md`, `docs/installation.md`, `docs/hilfe.md`, `README.md`, `lib/privacy.js`, `data/privacy.json`, `lib/auditLogger.js`, `lib/rateLimiter.js`, `lib/settings.js`, `lib/branding.js`, `lib/auth.js`, `lib/userDb.js`, `lib/userAuth.js`, `lib/userService.js`, `lib/emailService.js`, `lib/events.js`, `docker-compose.yml`, `scripts/install-vps-ubuntu.sh`, `scripts/install.sh`, `scripts/seed-data.sh`.
@@ -17,16 +17,16 @@ Quellen (Ist-Software): `docs/projektdokumentation.md`, `docs/installation.md`, 
 
 | Feld | Angabe |
 |---|---|
-| Name | Landeshauptstadt Saarbrücken |
-| Anschrift | Rathaus St. Johann, Rathausplatz 1, 66111 Saarbrücken |
-| E-Mail | stadt@saarbruecken.de |
-| Telefon | +49 681 9050 |
-| Gesetzliche Vertretung | Oberbürgermeister Uwe Conradt |
-| USt-IdNr. | DE 138116928 (laut Impressum der Landeshauptstadt, § 27a UStG) |
+| Name | Musterorganisation (öffentliche Verwaltung) |
+| Anschrift | Musterstraße 1, 12345 Musterstadt |
+| E-Mail | kontakt@example.invalid |
+| Telefon | +49 123 4567890 |
+| Gesetzliche Vertretung | Gesetzliche Vertretung (Platzhalter) |
+| USt-IdNr. | DE 000000000 (Platzhalter — vor Produktivbetrieb ersetzen) |
 
 Die Anwendung dient öffentlichen Stellen zur **anonymen bzw. datensparsamen Live-Interaktion** in Veranstaltungen (Umfragen, Wortwolken, Fragen und Antworten, Quiz, Bewertungsskalen). **Teilnehmende** benötigen **kein Konto**. Optional kann die Instanz eine **Benutzerverwaltung** für Administratoren, Redakteure und Betrachter aktivieren (`USER_AUTH_ENABLED=1`): Anmeldung per **E-Mail-PIN** (kein Passwort-Login im Alltag), Rollen und Event-Zugriff. Ohne diese Option bleiben Rollen rein sessionbezogen (Presenter-Schlüssel, anonymer Join).
 
-**Kommunalaufsicht (Impressum, nicht Datenschutzaufsicht):** Landesverwaltungsamt Saarland (Kommunalaufsicht), Am Markt 7, 66386 St. Ingbert. Oberste Kommunalaufsicht: Ministerium für Inneres, Bauen und Sport des Saarlandes.
+**Fachaufsicht (Impressum, nicht Datenschutzaufsicht):** Zuständige Fachaufsicht (Platzhalter — im Impressum der verantwortlichen Stelle ergänzen).
 
 ---
 
@@ -34,12 +34,12 @@ Die Anwendung dient öffentlichen Stellen zur **anonymen bzw. datensparsamen Liv
 
 | Feld | Angabe |
 |---|---|
-| Name / Funktion | Thorsten Carbon, Datenschutzbeauftragter der Landeshauptstadt Saarbrücken |
-| E-Mail | datenschutz@saarbruecken.de |
-| Telefon | +49 681 905-5074 |
-| Post | Landeshauptstadt Saarbrücken, Rathaus St. Johann, Rathausplatz 1, 66111 Saarbrücken |
+| Name / Funktion | Datenschutzbeauftragte/r der verantwortlichen Stelle |
+| E-Mail | datenschutz@example.invalid |
+| Telefon | +49 123 4567891 |
+| Post | Musterorganisation, Musterstraße 1, 12345 Musterstadt |
 
-Kontakte laut Abschnitt II der Stadt-Datenschutzerklärung bzw. Organisationsplan (öffentliche Website, Stand 2026-09-02). Keine weiteren biografischen Angaben.
+Kontakte sind Platzhalter aus dem Privacy-Muster — vor Produktivbetrieb durch die verantwortliche Stelle ersetzen.
 
 **Betroffenenrechte und Beschwerdeweg** in der Anwendung: Hash-Route `#/privacy` (Datenschutzerklärung) sowie `#/impressum`.
 
@@ -49,13 +49,13 @@ Kontakte laut Abschnitt II der Stadt-Datenschutzerklärung bzw. Organisationspla
 
 | Feld | Angabe |
 |---|---|
-| Behörde | Unabhängiges Datenschutzzentrum Saarland (UDIS) — Landesbeauftragte für Datenschutz und Informationsfreiheit |
-| Anschrift | Fritz-Dobisch-Straße 12, 66111 Saarbrücken; Postfach 10 26 31, 66026 Saarbrücken |
-| Telefon | 0681 94781-0 |
-| E-Mail | poststelle@datenschutz.saarland.de |
-| Internet | https://www.datenschutz.saarland.de |
+| Behörde | Zuständige Datenschutzaufsichtsbehörde (Platzhalter) |
+| Anschrift | Musterstraße 2, 12345 Musterstadt |
+| Telefon | +49 123 4567892 |
+| E-Mail | poststelle@example.invalid |
+| Internet | https://example.invalid/aufsicht |
 
-Beschwerdeformular: über die Website des UDIS (Online-Dienste / Beschwerde). Art. 77 DSGVO bleibt unberührt.
+Beschwerdeformular: über die Website der zuständigen Aufsichtsbehörde. Art. 77 DSGVO bleibt unberührt.
 
 ---
 
@@ -97,7 +97,7 @@ Diese Empfänger sind **kein** Standard der Anwendung; sie entstehen nur, wenn d
 |---|---|
 | **Bezeichnung** | Durchführung interaktiver Live-Umfragen und Townhalls (Pulse) |
 | **Zwecke** | Anonyme bzw. datensparsame Interaktion in öffentlichen oder internen Veranstaltungen: Multiple Choice, Ranking, 100 Punkte, Freitext, Bildwahl, Terminfindung, **Picker** (10–50 Optionen), Wortwolke, Live-Q&A, Quiz, Bewertungsskala, Reaktionen auf der Leinwand; Präsentation auf einer Bühne; Moderation; Katalog geplanter/aktiver Events mit Join-Code (ein Code = eine Session, ein Deck); optionale Instanzverwaltung (Branding, Rechtstexte, TLS). |
-| **Rechtsgrundlagen (Art. 6 DSGVO)** | Siehe Unterabschnitt 5.0.1. Maßgeblich für die Kommune: **Art. 6 Abs. 1 lit. e DSGVO i. V. m. SDSG**. |
+| **Rechtsgrundlagen (Art. 6 DSGVO)** | Siehe Unterabschnitt 5.0.1. Maßgeblich für öffentliche Stellen: **Art. 6 Abs. 1 lit. e DSGVO** (ggf. i. V. m. Landesrecht). |
 | **Kategorien Betroffener** | (1) Teilnehmende (anonym, kein Klarname); (2) Presenter / Session-Admin; (3) Instanz-Admin; (4) **optional:** registrierte Instanz-Benutzer (Admin/Editor/Viewer); (5) optionale Kontaktfelder des DSB / der Stadt in den Rechtstexten (keine Verarbeitung von Betroffenenanfragen *in* der App). |
 | **Datenkategorien** | Siehe Unterpositionen 5.1–5.11 (Ist aus dem Code). |
 | **Empfänger** | Hetzner als geplanter AV (Abschnitt 4). Keine Drittweitergabe zu Werbung/Analyse. Let’s Encrypt nur bei SSL-Beantragung. |
@@ -107,11 +107,11 @@ Diese Empfänger sind **kein** Standard der Anwendung; sie entstehen nur, wenn d
 
 #### 5.0.1 Rechtsgrundlagen (aus dem Privacy-Muster, nicht neu erfunden)
 
-Es gelten DSGVO, BDSG und für öffentliche Stellen des Saarlandes das **Saarländische Datenschutzgesetz (SDSG)**. Telemedien: **DDG** (seit 14. Mai 2024); Speicherung in der Endeinrichtung: **TDDDG**. Das KDG ist für die Landeshauptstadt Saarbrücken **nicht** einschlägig.
+Es gelten DSGVO, BDSG und — für öffentliche Stellen — **ergänzendes Landesdatenschutzrecht**, soweit anwendbar. Telemedien: **DDG** (seit 14. Mai 2024); Speicherung in der Endeinrichtung: **TDDDG**. Das KDG ist für kommunale und andere öffentliche Stellen in der Regel **nicht** einschlägig.
 
 | Grundlage | Verwendung in dieser Anwendung |
 |---|---|
-| **Art. 6 Abs. 1 lit. e DSGVO i. V. m. SDSG** | **Hauptrechtsgrundlage** der Kommune: Aufgabe im öffentlichen Interesse bzw. Ausübung öffentlicher Gewalt (interaktive Bürger- oder Mitarbeiterveranstaltungen, Meinungsbilder ohne Klarnamenspflicht). Technische Sicherungsmaßnahmen (Rate-Limiting, Integrität, IP-Hash-Sperre) stützt die öffentliche Stelle auf **lit. e** bzw. **Art. 32 DSGVO**, nicht auf lit. f. |
+| **Art. 6 Abs. 1 lit. e DSGVO** | **Hauptrechtsgrundlage** öffentlicher Stellen: Aufgabe im öffentlichen Interesse bzw. Ausübung öffentlicher Gewalt (interaktive Bürger- oder Mitarbeiterveranstaltungen, Meinungsbilder ohne Klarnamenspflicht). Ergänzendes Landesrecht kann hinzutreten. Technische Sicherungsmaßnahmen stützt die Stelle auf **lit. e** bzw. **Art. 32 DSGVO**, nicht auf lit. f. |
 | **Art. 6 Abs. 1 lit. a DSGVO** | Einwilligung, soweit sie eingeholt wird (Hinweisdialog zur lokalen Speicherung; optionale Speicherung der Darstellung). Freiwillig und unabhängig von der Teilnahme an der Abstimmung. |
 | **Art. 6 Abs. 1 lit. c DSGVO** | Soweit gesetzliche Pflichten (z. B. Nachweis der IT-Sicherheit, kurze Audit-Aufbewahrung) eine Speicherung verlangen. |
 | **Art. 6 Abs. 1 lit. b DSGVO** | Nur soweit ausnahmsweise vertragliche Nutzung vorliegt; für die klassische kommunale Veranstaltung **nachrangig**. |
@@ -236,7 +236,7 @@ Es gelten DSGVO, BDSG und für öffentliche Stellen des Saarlandes das **Saarlä
 |---|---|
 | Bezeichnung | Instanz-Benutzer, E-Mail-PIN-Anmeldung, Rollen |
 | Zwecke | Zugriffskontrolle auf Administration (Branding, Events, Benutzer); Trennung Admin / Editor / Viewer; optional Selbstregistrierung |
-| Rechtsgrundlage | Art. 6 Abs. 1 lit. e DSGVO i. V. m. SDSG (IT-Betrieb und Zugriffskontrolle); ggf. lit. c für Nachweispflichten |
+| Rechtsgrundlage | Art. 6 Abs. 1 lit. e DSGVO (IT-Betrieb und Zugriffskontrolle); ggf. lit. c für Nachweispflichten |
 | Kategorien Betroffener | Registrierte Instanz-Benutzer (Administratoren, Redakteure, Betrachter) |
 | Datenkategorien (Ist) | In **`pulse.db`** (SQLite) bzw. PostgreSQL bei `DATABASE_URL`: Tabellen `users` (Anzeigename, E-Mail, **scrypt-Kennwort-Hash** nur für Kontoänderungen, Rolle, Status, Kommentar, Zeitstempel), `auth_pins` (**gehashter** 6-stelliger PIN, 10 Min. Gültigkeit, einmalig), `auth_sessions` (Token-Hash, Ablauf, optional `step_up_until` für Step-up), `auth_settings`, `user_event_access`. **Kein Klartext-PIN** in der DB. E-Mail-Versand: PIN im SMTP-Body (Provider abhängig). Rate-Limits: `lib/pinLimiter.js`. Audit-Ereignisse: `user_created`, `pin_requested`, `pin_verified`, `step_up_verified`, … |
 | Empfänger | SMTP-Relais (Abschnitt 4.1); sonst nur Server der Instanz |
@@ -318,11 +318,11 @@ Stichwortartig aus README, Projektdokumentation und `lib/*` — **kein** vollst�
 
 Rechte aus Art. 15–21 DSGVO (Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit soweit anwendbar, Widerspruch gegen Verarbeitungen auf Grundlage von Art. 6 Abs. 1 lit. e, Widerruf einer Einwilligung für die Zukunft) sowie Beschwerde Art. 77 DSGVO.
 
-**Verweis:** Die für Nutzende lesbare Darstellung steht in der Anwendung unter **`#/privacy`**. Kontaktwege dort: DSB `datenschutz@saarbruecken.de` bzw. `stadt@saarbruecken.de`.
+**Verweis:** Die für Nutzende lesbare Darstellung steht in der Anwendung unter **`#/privacy`**. Kontaktwege dort: Platzhalter `datenschutz@example.invalid` bzw. `kontakt@example.invalid` — vor Produktivbetrieb ersetzen.
 
 Weil Abstimmungen ohne Klarnamen erfolgen, gelingt eine Zuordnung oft nur, wenn die betroffene Person Join-Code, ungefähren Zeitpunkt und ggf. den Wortlaut des Beitrags mitteilt.
 
-Für öffentliche Stellen können sich Besonderheiten aus § 34, § 35 BDSG und dem SDSG ergeben; Klärung im Einzelfall durch den DSB.
+Für öffentliche Stellen können sich Besonderheiten aus § 34, § 35 BDSG und landesrechtlichen Regelungen ergeben; Klärung im Einzelfall durch den DSB.
 
 ---
 
