@@ -1,6 +1,9 @@
 # Stage: Sonderfolien-Navigation (Final)
 
-## Ziel
+> **⚠️ Veraltet / zurückgenommen (v1.5.36):** Stage-FAB entfernt.  
+> Gültige Spec: **`PROMPT-PRESENTER-SPECIAL-SLIDES-DOCK.md`** — Steuerung nur im Presenter-Dock.
+
+## Ziel (historisch)
 
 Floating Action Bar auf der **Stage** (`#/stage/:code`) für Presenter/Admin:
 
