@@ -150,6 +150,7 @@ assert(allowed.ok && allowed.article.id === "installation", "Einzelartikel für 
 
 (async () => {
   const port = pickPort();
+  const adminSecret = "help-api-phase2-secret";
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-help-api-"));
   const child = spawn(process.execPath, ["server.js"], {
     cwd: path.join(__dirname, ".."),
@@ -161,6 +162,7 @@ assert(allowed.ok && allowed.article.id === "installation", "Einzelartikel für 
       REDIS_URL: "",
       IP_BLOCK: "0",
       USER_AUTH_ENABLED: "0",
+      ADMIN_SECRET: adminSecret,
     },
     stdio: "ignore",
   });
@@ -174,17 +176,14 @@ assert(allowed.ok && allowed.article.id === "installation", "Einzelartikel für 
     assert(Array.isArray(pub.json.articles), "HTTP: articles Array");
     assert(!pub.json.articles.some((a) => a.id === "installation"), "HTTP: Gast ohne Installation");
 
-    const secret = await httpGet(`http://127.0.0.1:${port}/api/help/articles?adminRoute=1`, "");
-    assert(secret.status === 200, "HTTP adminRoute");
-
     const one = await httpGet(`http://127.0.0.1:${port}/api/help/articles/installation`);
     assert(one.status === 403, "HTTP Einzelartikel 403 ohne Auth");
 
-    const adminKey = process.env.ADMIN_SECRET || "";
-    if (adminKey) {
-      const withKey = await httpGet(`http://127.0.0.1:${port}/api/help/articles/installation`, "");
-      /* ohne Header bleibt 403 — Secret-Test nur wenn konfiguriert */
-    }
+    const withSecret = await httpGet(`http://127.0.0.1:${port}/api/help/articles/installation`, {
+      headers: { "X-Admin-Key": adminSecret },
+    });
+    assert(withSecret.status === 200, "HTTP Einzelartikel mit ADMIN_SECRET");
+    assert(withSecret.json.article?.id === "installation", "HTTP Installation mit Secret");
 
     console.log("test-help-api: ok", pub.json.articles.length, "Artikel (Gast)");
   } finally {
