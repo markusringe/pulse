@@ -139,7 +139,22 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 **Bugfix deployed v1.5.41:** `frontend/js/stage.js` — `countdownDismissed` beim Stage-Kaltstart aus Session-Metadaten (symmetrisch zu WS `event_meta`).  
 **Verifiziert nach Deploy:** `#/stage/807435?share=1` Kaltstart → Folie „Willkommen — erste Frage“, kein Auto-Countdown (Townhall, `countdownDismissed: true`).
 
-**Release:** https://github.com/markusringe/pulse/releases/tag/v1.5.41
+**Release:** Tag `v1.5.41` auf GitHub · Release-Body: [RELEASE-v1.5.41-body.md](RELEASE-v1.5.41-body.md) (manuell einfügen — PAT ohne `contents: write`)
+
+---
+
+## Fortsetzung 2026-09-05 (Nachmittag)
+
+| # | Aktion | Ergebnis |
+|---|--------|----------|
+| — | `git push origin main` (SSH) | ✅ `8a9c9c3`, `34f02ef` auf GitHub |
+| — | Prod Health + Remote 15/15 | ✅ v1.5.41 |
+| — | `test-presenter-special-slide-dock` (Container) | ✅ |
+| — | Stage Kaltstart `#/stage/807435?share=1` | ✅ „Willkommen — erste Frage“, 0× `[data-pss-kind]` |
+| — | Firefox + Safari geöffnet (807435) | ☐ Stichprobe manuell → [Checkliste](abnahme-ff-safari-stichprobe.md) |
+| — | GitHub Release-Body | ☐ PAT/API 403 — [Body-Vorlage](RELEASE-v1.5.41-body.md) |
+
+**Townhall 807435:** `status: active`, `countdownDismissed: true` — bereit für FF/Safari.
 
 ---
 
@@ -149,3 +164,4 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 2. Beamer ~3 m + Screen-Share (Abschnitt 4–5) beim nächsten Pilot.
 3. Physische Geräte iOS/Android (Abschnitt 6).
 4. Feature-Freeze 2–3 Tage — nur Bugfixes aus Abnahme.
+5. GitHub Release: [Neues Release](https://github.com/markusringe/pulse/releases/new?tag=v1.5.41) — Body aus [RELEASE-v1.5.41-body.md](RELEASE-v1.5.41-body.md).
