@@ -20,7 +20,7 @@ npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.37
 |---|-----------|--------|
 | 0.1 | `test-presenter-special-slide-dock` → OK | [ ] |
 | 0.2 | Remote-Smoke 16/16, Version 1.5.37 | [ ] |
-| 0.3 | `/api/health/ready` → `"ok": true` | [ ] |
+| 0.3 | `/api/health/ready` → `"ok": true` | [x] |
 
 ---
 

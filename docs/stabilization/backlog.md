@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.32 · Prod **v1.5.32** (single, ready) · Branch `main`
+Stand: v1.5.37 · Prod **v1.5.37** (single, ready) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
@@ -110,5 +110,6 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 8. ~~Rollback-Drill auf Prod~~ — **erledigt** (2026-09-04)
 9. ~~Automatisierte Stabilisierungs-Abnahme~~ — **erledigt** (`acceptance:stabilization` 2026-09-04)
 10. Browser-Pflichtpfad 19 Schritte + iOS/Android (manuell)
-11. Last-Dauerläufe 30/45 min (`npm run load:scenarios:full`)
-12. SSH-Key auf VPS rotieren (Key im Chat exponiert)
+11. ~~Sonderfolien Presenter/Stage v1.5.37~~ — **Architektur erledigt**; manuelle Abnahme: `abnahme-sonderfolien-v1.5.37.md` (Fortschritt: `abnahme-sonderfolien-v1.5.37-fortschritt.md`)
+12. Last-Dauerläufe 30/45 min (`npm run load:scenarios:full`)
+13. SSH-Key auf VPS rotieren (Key im Chat exponiert)
