@@ -75,7 +75,7 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 | 7 Regression kurz | ✅ Chrome (siehe Abschnitt 7) |
 | Pause/Ende vollständig | ✅ Townhall **807435** (siehe unten) |
 
-**Gesamt-Freigabe:** ☑ **RC Pilot** · ☑ **Funktional freigegeben** (alle Sonderfolien-Pfade Chrome) · ☐ Vollständig (FF/Safari/Beamer/Gerät offen)
+**Gesamt-Freigabe:** ☑ **RC Pilot** · ☑ **Funktional freigegeben** (Chrome, v1.5.41 Prod) · ☐ Vollständig (FF/Safari/Beamer/Gerät)
 
 ---
 
@@ -136,7 +136,10 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 
 **Prod:** `/api/health/ready` → `ok: true`
 
-**Bugfix deployed v1.5.41:** `frontend/js/stage.js` — `countdownDismissed` beim Stage-Kaltstart aus Session-Metadaten (symmetrisch zu WS `event_meta`).
+**Bugfix deployed v1.5.41:** `frontend/js/stage.js` — `countdownDismissed` beim Stage-Kaltstart aus Session-Metadaten (symmetrisch zu WS `event_meta`).  
+**Verifiziert nach Deploy:** `#/stage/807435?share=1` Kaltstart → Folie „Willkommen — erste Frage“, kein Auto-Countdown (Townhall, `countdownDismissed: true`).
+
+**Release:** https://github.com/markusringe/pulse/releases/tag/v1.5.41
 
 ---
 
