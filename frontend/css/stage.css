@@ -349,10 +349,6 @@ body.stage-mode .app {
 }
 
 .stage-fs {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 5;
   padding: 12px 18px;
   border: 2px solid #111111;
   border-radius: 999px;
@@ -361,6 +357,28 @@ body.stage-mode .app {
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* Auto-ausblendbare Vollbildsteuerung (stageDisplayControls.js) */
+.stage-display-controls {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 5;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.stage-display-controls.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.view-stage[data-stage-mode="share"] .stage-display-controls {
+  display: none !important;
 }
 
 .stage-fs:focus-visible {

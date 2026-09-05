@@ -1,6 +1,6 @@
 {
   "name": "pulse",
-  "version": "1.5.42",
+  "version": "1.5.43",
   "private": true,
   "description": "Pulse — Live-Interaktion für Umfragen, Wortwolken, Q&A und Quiz (Vanilla JS + Node.js)",
   "main": "server.js",
@@ -25,6 +25,8 @@
     "test:stage-countdown": "node scripts/test-stage-countdown.js",
     "test:event-special-slides": "node scripts/test-event-special-slides.js",
     "test:presenter-special-slide-dock": "node scripts/test-presenter-special-slide-dock.js",
+    "test:stage-display-controls": "node scripts/test-stage-display-controls.js",
+    "test:presenter-special-preview": "node scripts/test-presenter-special-preview.js",
     "test:special-slides-remote": "node scripts/test-special-slides-remote.js",
     "test:special-slides-ws": "node scripts/test-special-slides-ws.js",
     "test:errors": "node scripts/test-errors.js",

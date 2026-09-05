@@ -220,6 +220,7 @@ function appendSpecialChip(root, opts) {
   btn.setAttribute("role", "tab");
   btn.setAttribute("aria-selected", String(Boolean(opts.isActive)));
   btn.setAttribute("aria-pressed", String(Boolean(opts.isActive)));
+  btn.dataset.pssKind = opts.kind;
   btn.title = opts.label;
   btn.disabled = Boolean(opts.disabled);
   btn.innerHTML = `<span class="deck-chip-special-icon" aria-hidden="true">${opts.icon}</span><span class="deck-chip-special-label">${escapeHtml(opts.label)}</span>`;

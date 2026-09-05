@@ -18,6 +18,7 @@ import { activeSpecialSlideKind, mountSpecialSlide, isCountdownSpecialActive, ge
 import { drawQrCode, joinUrlFromLocation } from "./qrRender.js";
 import { stageStatusMessage } from "./interactionPresenter.js";
 import { syncHelpFabVisibility } from "./help.js";
+import { mountStageDisplayControls, destroyStageDisplayControls } from "./stageDisplayControls.js";
 
 /** @type {RealtimeClient | null} */
 let rt = null;
@@ -57,7 +58,7 @@ export async function enterStage(code) {
   root.dataset.stageMode = share ? "share" : "";
   branding = (await api.getBranding())?.branding || {};
   applyChrome(branding);
-  bindFullscreen();
+  mountStageDisplayControls(root, { share, t });
   ensureCountdownHost();
   const remote = await api.getSession(code);
   if (remote?.session) {
@@ -74,6 +75,7 @@ export function leaveStage() {
   cancelAnimationFrame(clockRaf);
   clockRaf = 0;
   stopEventCountdown();
+  destroyStageDisplayControls(document.getElementById("view-stage"));
   rt?.disconnect();
   rt = null;
   session = null;
@@ -248,29 +250,6 @@ function applyChrome(b) {
     foot.hidden = !showFoot;
     foot.textContent = showFoot ? String(b.footerText || "") : "";
   }
-}
-
-function bindFullscreen() {
-  const btn = document.getElementById("stage-fs");
-  if (!btn || btn.dataset.bound) return;
-  btn.dataset.bound = "1";
-  const sync = () => {
-    const on = Boolean(document.fullscreenElement);
-    btn.textContent = on ? t("stage.fullscreenExit") : t("stage.fullscreen");
-    btn.setAttribute("aria-pressed", on ? "true" : "false");
-  };
-  btn.addEventListener("click", () => {
-    const root = document.getElementById("view-stage") || document.documentElement;
-    if (document.fullscreenElement) document.exitFullscreen?.();
-    else root.requestFullscreen?.();
-  });
-  document.addEventListener("fullscreenchange", sync);
-  document.addEventListener("keydown", (ev) => {
-    if (ev.key !== "F10") return;
-    ev.preventDefault();
-    btn.click();
-  });
-  sync();
 }
 
 function currentSlide() {

@@ -275,6 +275,8 @@
   "programControl.endConfirmBody": "The event will be marked as ended. Participants will no longer be able to vote or submit questions. The end slide will be shown on stage.",
   "programControl.endConfirmOk": "End event",
   "programControl.endConfirmCancel": "Cancel",
+  "programControl.previewShowOnStage": "Show on stage",
+  "programControl.previewTitle": "Preview: {kind}",
   "specialSlide.eventEnded": "Event ended",
   "specialSlide.pauseHint": "We will continue shortly",
   "events.slides.ixSection": "Flow and time limit",

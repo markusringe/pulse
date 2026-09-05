@@ -74,7 +74,8 @@ async function fetchAsset(base, indexHtml, pattern, fallbackPath, timeoutMs) {
   record("index present-deck", index.body.includes('id="present-deck"'));
   record("index present-special-slide-nav", index.body.includes('id="present-special-slide-nav"'));
   record("index kein stage-special-slide-nav", !index.body.includes("stage-special-slide-nav"));
-  record("index stage-fs (nur Anzeige)", index.body.includes('id="stage-fs"'));
+  record("stageDisplayControls.js", fs.existsSync(path.join(root, "frontend/js/stageDisplayControls.js")));
+  record("index ohne statischen stage-fs", !index.body.includes('id="stage-fs"'));
 
   const stageJs = await fetchAsset(
     base,

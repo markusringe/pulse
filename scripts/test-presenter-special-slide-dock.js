@@ -29,6 +29,10 @@ const serverJs = read("server.js");
 /* Presenter-Dock vorhanden */
 assert(indexHtml.includes('id="present-special-slide-nav"'), "Presenter-Dock-Host fehlt");
 assert(indexHtml.includes('id="btn-present-help"'), "Presenter-Hilfe-Button in Kopfzeile fehlt");
+assert(fs.existsSync(path.join(root, "frontend/js/stageDisplayControls.js")), "stageDisplayControls.js fehlt");
+assert(stageJs.includes("mountStageDisplayControls"), "stage.js bindet Vollbild-Overlay");
+assert(fs.existsSync(path.join(root, "frontend/js/presenterSpecialPreview.js")), "presenterSpecialPreview.js fehlt");
+assert(appJs.includes("bindPresenterSpecialPreviews"), "Presenter-Vorschau in app.js fehlt");
 assert(presenterJs.includes("syncPresenterSpecialSlideButtons"), "Presenter-Sync fehlt");
 assert(deckJs.includes("deck-chip-special"), "Sonderfolien-Chips in Folienleiste fehlen");
 assert(deckJs.includes("onGotoSpecial"), "onGotoSpecial-Handler in deck.js fehlt");

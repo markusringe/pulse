@@ -275,6 +275,8 @@
   "programControl.endConfirmBody": "Das Event wird beendet. Teilnehmer können danach nicht mehr abstimmen oder Fragen stellen. Die Endfolie wird auf der Stage angezeigt.",
   "programControl.endConfirmOk": "Event beenden",
   "programControl.endConfirmCancel": "Abbrechen",
+  "programControl.previewShowOnStage": "Auf Stage anzeigen",
+  "programControl.previewTitle": "Vorschau: {kind}",
   "specialSlide.eventEnded": "Event beendet",
   "specialSlide.pauseHint": "Gleich geht es weiter",
   "events.slides.ixSection": "Ablauf und Zeitlimit",

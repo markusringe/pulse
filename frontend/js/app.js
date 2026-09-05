@@ -33,6 +33,7 @@ import {
   updateSpecialSlideButtons,
 } from "./presenterSpecialSlideButtons.js";
 import { openPresenterHelpModal } from "./presenterHelpModal.js";
+import { bindPresenterSpecialPreviews, destroyPresenterSpecialPreview } from "./presenterSpecialPreview.js";
 import { activeSpecialSlideKind, getCurrentSpecialSlide, mountSpecialSlide, isCountdownSpecialActive } from "./eventSpecialSlides.js";
 import { confirmSpecialSlideEnd, sendSpecialSlideCommand } from "./specialSlideNavCore.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
@@ -1683,6 +1684,7 @@ function teardownRealtime() {
   destroyPresenterStats();
   destroyPresenterCountdownControl();
   destroyPresenterSpecialSlideButtons();
+  destroyPresenterSpecialPreview();
   ctx.rt?.disconnect();
   ctx.rt = null;
   destroyPoll();
@@ -1804,6 +1806,7 @@ function renderActiveSlide() {
     onGotoSpecial: (kind) => gotoSpecialSlide(kind),
     onAdd: openSlideDialog,
   });
+  syncPresenterSpecialPreviews();
 
   if (countdownOn || countdownForced) {
     els.pollRoot.hidden = true;
@@ -2726,6 +2729,18 @@ function refreshPresenterPanel() {
   syncPresenterSpecialSlideButtons(document.getElementById("present-special-slide-nav"), {
     session: ctx.session,
     emit: emitLive,
+  });
+  syncPresenterSpecialPreviews();
+}
+
+/** Sonderfolien-Vorschau (Dock + Folienleiste) an aktuelle Session binden. */
+function syncPresenterSpecialPreviews() {
+  if (ctx.role !== "present" || !ctx.session) return;
+  bindPresenterSpecialPreviews(document.getElementById("view-present"), {
+    getMeta: () => ctx.session?.eventMeta,
+    getSessionCode: () => ctx.session?.code || "",
+    getClockSkew: () => ctx.eventClockSkew || 0,
+    onShowOnStage: (kind) => gotoSpecialSlide(kind),
   });
 }
 
