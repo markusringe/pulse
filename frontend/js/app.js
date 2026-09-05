@@ -25,6 +25,7 @@ import {
 } from "./eventCountdown.js";
 import {
   syncPresenterCountdownControl,
+  destroyPresenterCountdownControl,
 } from "./presenterCountdownControl.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
@@ -1662,6 +1663,7 @@ function teardownRealtime() {
   ctx.pendingVoteSlideId = null;
   ctx.pendingVotePayload = null;
   destroyPresenterStats();
+  destroyPresenterCountdownControl();
   ctx.rt?.disconnect();
   ctx.rt = null;
   destroyPoll();

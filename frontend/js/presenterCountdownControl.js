@@ -1,131 +1,238 @@
 /**
  * Presenter-Leiste für Event-Countdown: Restzeit, Status, Start, QR-Toggle, Stage-Vorschau.
  * Steuert nur die Presenter-Ansicht — keine Controls auf #/stage (Screen-Share).
+ *
+ * Architektur: Shell einmal mounten, Event-Delegation auf dem Host,
+ * Tick aktualisiert nur Text/Klassen — kein innerHTML-Neuaufbau pro Sekunde.
  */
 
 import { remainingMs, splitTime, sanitizeCountdownStyle } from "./eventCountdown.js";
 import { t } from "./i18n.js";
 
-/** @type {{ stop: () => void } | null} */
-let tickCtl = null;
+/** @type {{
+ *   host: HTMLElement | null,
+ *   timer: number,
+ *   ctx: object | null,
+ *   mountKey: string,
+ *   popoverOpen: boolean,
+ *   listenersBound: boolean,
+ * }} */
+const state = {
+  host: null,
+  timer: 0,
+  ctx: null,
+  mountKey: "",
+  popoverOpen: false,
+  listenersBound: false,
+};
 
 /**
- * Presenter-Countdown-Leiste rendern oder ausblenden.
+ * Presenter-Countdown-Leiste synchronisieren.
  * @param {HTMLElement | null} host
  * @param {{
  *   session: object,
  *   clockSkew?: number,
  *   connectionOpen?: boolean,
+ *   emit?: (type: string, payload: object) => void,
  *   onStart?: () => void,
  *   onToggleQr?: (show: boolean) => void,
- *   joinUrl?: string,
  * }} ctx
  * @param {boolean} visible
  */
 export function syncPresenterCountdownControl(host, ctx, visible) {
-  tickCtl?.stop();
-  tickCtl = null;
-  if (!host) return;
-  if (!visible || !ctx?.session?.eventMeta?.startTime) {
-    host.hidden = true;
-    host.innerHTML = "";
+  if (!host || !visible || !ctx?.session?.eventMeta?.startTime) {
+    teardown();
     return;
   }
 
+  state.ctx = ctx;
   const meta = ctx.session.eventMeta;
   const code = ctx.session.code || ctx.session.joinCode;
   const style = sanitizeCountdownStyle(meta.countdownStyle);
+  const mountKey = `${code}|${style}`;
 
-  const paint = () => {
-    const ms = remainingMs(meta.startTime, ctx.clockSkew || 0);
-    const parts = splitTime(ms);
-    const digits =
-      parts.totalSec < 3600
-        ? `${pad(parts.minutes)}:${pad(parts.seconds)}`
-        : `${parts.hours}:${pad(parts.minutes)}:${pad(parts.seconds)}`;
-    const syncLabel = ctx.connectionOpen ? t("countdown.sync.ok") : t("countdown.sync.wait");
-    const qrOn = Boolean(meta.showStageQr);
-    const stageUrl = `${location.origin}${location.pathname.replace(/\/$/, "")}#/stage/${code}?share=1`;
+  if (state.host !== host || state.mountKey !== mountKey) {
+    state.host = host;
+    state.mountKey = mountKey;
+    state.popoverOpen = false;
+    mountShell(host, code);
+  }
 
-    host.hidden = false;
-    host.dataset.countdownStyle = style;
-    host.innerHTML = `
-      <div class="presenter-countdown-inner" role="region" aria-label="${esc(t("countdown.control.label"))}">
-        <div class="presenter-countdown-time">
-          <span class="presenter-countdown-digits" aria-live="polite">${esc(digits)}</span>
-          <span class="presenter-countdown-pill" data-state="${ms <= 0 ? "expired" : "running"}">${esc(ms <= 0 ? t("countdown.status.expired") : t("countdown.status.running"))}</span>
-        </div>
-        <p class="presenter-countdown-sync muted" role="status">${esc(syncLabel)}</p>
-        <div class="presenter-countdown-actions">
-          <button type="button" class="btn primary" data-pcd-start ${ms <= 0 ? "" : ""}>${esc(t("countdown.startNow"))}</button>
-          <label class="check presenter-countdown-qr-toggle">
-            <input type="checkbox" data-pcd-qr ${qrOn ? "checked" : ""} />
-            ${esc(t("countdown.qr.toggle"))}
-          </label>
-          <button type="button" class="btn ghost" data-pcd-stage>${esc(t("countdown.stagePreview"))}</button>
-          <a class="btn ghost" href="${esc(stageUrl)}" target="_blank" rel="noopener">${esc(t("countdown.shareMode"))}</a>
-          <button type="button" class="btn ghost" data-pcd-time-pop>${esc(t("countdown.editTime"))}</button>
-        </div>
-        <div class="presenter-countdown-popover" hidden data-pcd-popover>
-          <p class="eyebrow">${esc(t("countdown.editTime"))}</p>
-          <div class="presenter-countdown-presets">
-            ${[1, 5, 10, 15, 30].map((m) => `<button type="button" class="btn ghost btn--sm" data-pcd-preset="${m}">${m} min</button>`).join("")}
-          </div>
-          <label class="field">
-            <span>${esc(t("countdown.customTime"))}</span>
-            <input type="datetime-local" data-pcd-datetime />
-          </label>
-          <button type="button" class="btn primary btn--sm" data-pcd-apply>${esc(t("countdown.applyTime"))}</button>
-        </div>
+  host.hidden = false;
+  host.dataset.countdownStyle = style;
+  updateDynamicFields();
+
+  if (!state.timer) {
+    state.timer = window.setInterval(updateDynamicFields, 1000);
+  }
+}
+
+/** Statisches Markup einmal erzeugen — Listener per Delegation am Host. */
+function mountShell(host, code) {
+  const stageUrl = `${location.origin}${location.pathname.replace(/\/$/, "")}#/stage/${code}?share=1`;
+  const stageOpenUrl = `${location.origin}${location.pathname.replace(/\/$/, "")}#/stage/${code}`;
+
+  host.innerHTML = `
+    <div class="presenter-countdown-inner" role="region" aria-label="${esc(t("countdown.control.label"))}">
+      <div class="presenter-countdown-time">
+        <span class="presenter-countdown-digits" data-pcd-digits aria-live="polite">--:--</span>
+        <span class="presenter-countdown-pill" data-pcd-pill data-state="running"></span>
       </div>
-    `;
+      <p class="presenter-countdown-sync muted" data-pcd-sync role="status"></p>
+      <div class="presenter-countdown-actions">
+        <button type="button" class="btn primary" data-pcd-start>${esc(t("countdown.startNow"))}</button>
+        <label class="check presenter-countdown-qr-toggle">
+          <input type="checkbox" data-pcd-qr />
+          ${esc(t("countdown.qr.toggle"))}
+        </label>
+        <button type="button" class="btn ghost" data-pcd-stage data-stage-url="${esc(stageOpenUrl)}">${esc(t("countdown.stagePreview"))}</button>
+        <a class="btn ghost" href="${esc(stageUrl)}" target="_blank" rel="noopener">${esc(t("countdown.shareMode"))}</a>
+        <button type="button" class="btn ghost" data-pcd-time-pop aria-expanded="false">${esc(t("countdown.editTime"))}</button>
+      </div>
+      <div class="presenter-countdown-popover" hidden data-pcd-popover>
+        <p class="eyebrow">${esc(t("countdown.editTime"))}</p>
+        <div class="presenter-countdown-presets">
+          ${[1, 5, 10, 15, 30].map((m) => `<button type="button" class="btn ghost btn--sm" data-pcd-preset="${m}">${m} min</button>`).join("")}
+        </div>
+        <label class="field">
+          <span>${esc(t("countdown.customTime"))}</span>
+          <input type="datetime-local" data-pcd-datetime />
+        </label>
+        <button type="button" class="btn primary btn--sm" data-pcd-apply>${esc(t("countdown.applyTime"))}</button>
+      </div>
+    </div>
+  `;
 
-    host.querySelector("[data-pcd-start]")?.addEventListener("click", () => ctx.onStart?.());
-    host.querySelector("[data-pcd-qr]")?.addEventListener("change", (ev) => {
-      ctx.onToggleQr?.(ev.target.checked);
-    });
-    host.querySelector("[data-pcd-stage]")?.addEventListener("click", () => {
-      window.open(`${location.origin}${location.pathname.replace(/\/$/, "")}#/stage/${code}`, "_blank", "noopener");
-    });
-    const pop = host.querySelector("[data-pcd-popover]");
-    host.querySelector("[data-pcd-time-pop]")?.addEventListener("click", () => {
-      if (!pop) return;
-      pop.hidden = !pop.hidden;
+  if (!state.listenersBound) {
+    host.addEventListener("click", onHostClick);
+    host.addEventListener("change", onHostChange);
+    state.listenersBound = true;
+  }
+}
+
+/** Nur veränderliche Felder pro Tick / Sync aktualisieren. */
+function updateDynamicFields() {
+  const host = state.host;
+  const ctx = state.ctx;
+  if (!host || !ctx?.session?.eventMeta) return;
+
+  const meta = ctx.session.eventMeta;
+  const ms = remainingMs(meta.startTime, ctx.clockSkew || 0);
+  const parts = splitTime(ms);
+  const digits =
+    parts.totalSec < 3600
+      ? `${pad(parts.minutes)}:${pad(parts.seconds)}`
+      : `${parts.hours}:${pad(parts.minutes)}:${pad(parts.seconds)}`;
+
+  const digitsEl = host.querySelector("[data-pcd-digits]");
+  if (digitsEl) digitsEl.textContent = digits;
+
+  const pillEl = host.querySelector("[data-pcd-pill]");
+  if (pillEl) {
+    const expired = ms <= 0;
+    pillEl.dataset.state = expired ? "expired" : "running";
+    pillEl.textContent = expired ? t("countdown.status.expired") : t("countdown.status.running");
+  }
+
+  const syncEl = host.querySelector("[data-pcd-sync]");
+  if (syncEl) {
+    syncEl.textContent = ctx.connectionOpen ? t("countdown.sync.ok") : t("countdown.sync.wait");
+  }
+
+  const qrEl = host.querySelector("[data-pcd-qr]");
+  if (qrEl && qrEl.checked !== Boolean(meta.showStageQr)) {
+    qrEl.checked = Boolean(meta.showStageQr);
+  }
+
+  const pop = host.querySelector("[data-pcd-popover]");
+  const popBtn = host.querySelector("[data-pcd-time-pop]");
+  if (pop && popBtn) {
+    pop.hidden = !state.popoverOpen;
+    popBtn.setAttribute("aria-expanded", state.popoverOpen ? "true" : "false");
+    if (state.popoverOpen) {
       const input = pop.querySelector("[data-pcd-datetime]");
-      if (input && meta.startTime) input.value = toDatetimeLocal(meta.startTime);
-    });
-    pop?.querySelectorAll("[data-pcd-preset]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const mins = Number(btn.getAttribute("data-pcd-preset")) || 5;
-        applyRelativeStartTime(ctx, mins * 60 * 1000);
-        pop.hidden = true;
-      });
-    });
-    pop?.querySelector("[data-pcd-apply]")?.addEventListener("click", () => {
-      const raw = pop.querySelector("[data-pcd-datetime]")?.value;
-      const iso = fromDatetimeLocal(raw);
-      if (!iso) return;
-      applyStartTime(ctx, iso);
-      pop.hidden = true;
-    });
-  };
+      if (input && meta.startTime && !input.value) {
+        input.value = toDatetimeLocal(meta.startTime);
+      }
+    }
+  }
+}
 
-  paint();
-  tickCtl = {
-    stop() {
-      window.clearInterval(timer);
-    },
-  };
-  const timer = window.setInterval(paint, 1000);
-  tickCtl.stop = () => window.clearInterval(timer);
+/** Klick-Delegation — ein Handler für die Lebensdauer des Hosts. */
+function onHostClick(ev) {
+  const target = ev.target;
+  if (!(target instanceof Element)) return;
+  const ctx = state.ctx;
+  if (!ctx) return;
+
+  if (target.closest("[data-pcd-start]")) {
+    ctx.onStart?.();
+    return;
+  }
+
+  if (target.closest("[data-pcd-stage]")) {
+    const url = target.closest("[data-pcd-stage]")?.getAttribute("data-stage-url");
+    if (url) window.open(url, "_blank", "noopener");
+    return;
+  }
+
+  if (target.closest("[data-pcd-time-pop]")) {
+    state.popoverOpen = !state.popoverOpen;
+    updateDynamicFields();
+    return;
+  }
+
+  const presetBtn = target.closest("[data-pcd-preset]");
+  if (presetBtn) {
+    const mins = Number(presetBtn.getAttribute("data-pcd-preset")) || 5;
+    applyRelativeStartTime(ctx, mins * 60 * 1000);
+    state.popoverOpen = false;
+    updateDynamicFields();
+    return;
+  }
+
+  if (target.closest("[data-pcd-apply]")) {
+    const pop = state.host?.querySelector("[data-pcd-popover]");
+    const raw = pop?.querySelector("[data-pcd-datetime]")?.value;
+    const iso = fromDatetimeLocal(raw);
+    if (iso) {
+      applyStartTime(ctx, iso);
+      state.popoverOpen = false;
+      updateDynamicFields();
+    }
+  }
+}
+
+/** Change-Delegation für Checkboxen. */
+function onHostChange(ev) {
+  const target = ev.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  if (!target.matches("[data-pcd-qr]")) return;
+  state.ctx?.onToggleQr?.(target.checked);
+}
+
+/** Leiste vollständig abbauen. */
+function teardown() {
+  if (state.timer) {
+    window.clearInterval(state.timer);
+    state.timer = 0;
+  }
+  if (state.host) {
+    state.host.hidden = true;
+    state.host.innerHTML = "";
+  }
+  state.host = null;
+  state.ctx = null;
+  state.mountKey = "";
+  state.popoverOpen = false;
 }
 
 /** ISO → datetime-local (Browser-Zeitzone). */
 function toDatetimeLocal(iso) {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return "";
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const padN = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${padN(d.getMonth() + 1)}-${padN(d.getDate())}T${padN(d.getHours())}:${padN(d.getMinutes())}`;
 }
 
 /** datetime-local → ISO. */
@@ -137,21 +244,13 @@ function fromDatetimeLocal(value) {
   return d.toISOString();
 }
 
-/**
- * Startzeit relativ ab jetzt setzen (Presenter-Presets).
- * @param {object} ctx
- * @param {number} deltaMs
- */
+/** Startzeit relativ ab jetzt setzen (Presenter-Presets). */
 function applyRelativeStartTime(ctx, deltaMs) {
   const iso = new Date(Date.now() + (ctx.clockSkew || 0) + deltaMs).toISOString();
   applyStartTime(ctx, iso);
 }
 
-/**
- * Neue Startzeit per WebSocket an den Server senden.
- * @param {object} ctx
- * @param {string} iso
- */
+/** Neue Startzeit per WebSocket an den Server senden. */
 function applyStartTime(ctx, iso) {
   if (!ctx?.emit || !ctx?.session?.code) return;
   ctx.emit("event_countdown", {
@@ -176,6 +275,6 @@ function esc(value) {
 
 /** Leiste beim Verlassen der Presenter-Ansicht abbauen. */
 export function destroyPresenterCountdownControl() {
-  tickCtl?.stop();
-  tickCtl = null;
+  teardown();
+  state.listenersBound = false;
 }
