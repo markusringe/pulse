@@ -31,12 +31,14 @@ assert(!canvasJs.includes("shouldShowCountdown"), "shouldShowCountdown nicht imp
 assert(canvasJs.includes("syncPresenterMainCanvas"), "syncPresenterMainCanvas fehlt");
 assert(canvasJs.includes("renderSpecialSlideInto"), "gemeinsamer Renderer");
 assert(canvasJs.includes("ensurePresenterCanvasFit"), "Fit-Leinwand absichern");
-assert(indexHtml.includes("present-dock-toolbar"), "kompakte Dock-Toolbar");
+assert(indexHtml.includes('class="present-dock-row"'), "kompakte Dock-Zeile");
+assert(!indexHtml.includes('id="present-deck"'), "keine Folienleiste present-deck");
 assert(indexHtml.includes('id="present-slide-canvas-fit"'), "Fit-Container mit ID");
 assert(!indexHtml.includes('aria-label="QR-Code zum Beitreten"') || indexHtml.includes("present-dock-qr-sr"), "kein sichtbarer Dock-QR");
 assert(renderJs.includes("mountSpecialSlide"), "renderSpecialSlide re-export");
 assert(appJs.includes("syncPresenterMainCanvas"), "app.js bindet Hauptbox");
 assert(appJs.includes("destroyPresenterMainCanvas"), "app.js Teardown Hauptbox");
+assert(appJs.includes("syncPresenterStageStatus"), "app.js bindet Status-Badge");
 assert(!appJs.includes("presenterSpecialPreview"), "Overlay-Vorschau entfernt");
 assert(indexHtml.includes('id="present-slide-canvas"'), "Hauptbox-Host in index.html");
 assert(indexHtml.indexOf('class="present-dock') < indexHtml.indexOf('id="presenter-stats"'), "Dock vor Statistik im DOM");

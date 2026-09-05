@@ -34,6 +34,7 @@ import {
 } from "./presenterSpecialSlideButtons.js";
 import { openPresenterHelpModal } from "./presenterHelpModal.js";
 import { syncPresenterMainCanvas, destroyPresenterMainCanvas } from "./presenterMainCanvas.js";
+import { syncPresenterStageStatus } from "./presenterStageStatus.js";
 import { getCurrentSpecialSlide, isCountdownSpecialActive } from "./eventSpecialSlides.js";
 import { confirmSpecialSlideEnd, sendSpecialSlideCommand } from "./specialSlideNavCore.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
@@ -83,7 +84,6 @@ import {
   clearDraft,
   slidesForStart,
   renderDraftList,
-  renderPresentStrip,
   applyMockDeck,
 } from "./deck.js";
 import { normalizeSessionSlides, acceptIncoming, acceptStructural, acceptInteraction, applyIncoming, applySlidePayload, interactionNeedsSync } from "./sessionSync.js";
@@ -227,7 +227,7 @@ const els = {
   deckDraft: document.getElementById("deck-draft"),
   deckEditor: document.getElementById("deck-editor"),
   btnDeckAdd: document.getElementById("btn-deck-add"),
-  presentDeck: document.getElementById("present-deck"),
+  btnSlideAdd: document.getElementById("btn-slide-add"),
   btnSlideDup: document.getElementById("btn-slide-dup"),
   btnSlideDel: document.getElementById("btn-slide-del"),
   slideDialog: document.getElementById("slide-dialog"),
@@ -504,6 +504,10 @@ function bindGlobal() {
   });
   els.btnModeration?.addEventListener("click", toggleModeration);
   els.btnDeckAdd?.addEventListener("click", onAddDraftSlide);
+  els.btnSlideAdd?.addEventListener("click", openSlideDialog);
+  document.getElementById("btn-present-help-dock")?.addEventListener("click", () => {
+    void openPresenterHelpModal();
+  });
   els.btnSlideDup?.addEventListener("click", () => emitDeck("duplicate", { id: currentSlide()?.id }));
   els.btnSlideDel?.addEventListener("click", () => emitDeck("remove", { id: currentSlide()?.id }));
   els.btnResults?.addEventListener("click", toggleResults);
@@ -1803,15 +1807,9 @@ function renderActiveSlide() {
   if (slide) {
     els.presentQuestion.textContent = slide.question;
   }
-  const current = getCurrentSpecialSlide(s);
-  els.slideIndicator.textContent = current
-    ? t(`programControl.${current}`)
-    : `${index + 1} / ${s.slides.length}`;
-  renderPresentStrip(els.presentDeck, s, t, {
-    onGoto: (i) => gotoSlideIndex(i),
-    onGotoSpecial: (kind) => gotoSpecialSlide(kind),
-    onAdd: openSlideDialog,
-  });
+  els.slideIndicator.textContent = `${index + 1} / ${s.slides.length}`;
+  syncPresenterStageStatus(s, t);
+  syncPresenterDockNav(s);
 
   if (mainSpecialKind) {
     hidePresenterSlidePanelsForSpecial();
@@ -2340,6 +2338,7 @@ function patchSlideResults(payload) {
 }
 
 function shiftSlide(delta) {
+  if (getCurrentSpecialSlide(ctx.session)) return;
   gotoSlideIndex((ctx.session?.activeSlideIndex || 0) + delta);
 }
 
@@ -2361,8 +2360,18 @@ function gotoSlideIndex(index) {
 }
 
 /**
- * Presenter: Sonderfolie aus der Folienleiste aktivieren (Countdown / Pause / Ende).
- * @param {"countdown"|"pause"|"end"} kind
+ * Presenter-Dock: Folien-Navigation bei aktiver Sonderfolie sperren.
+ * @param {object | null | undefined} session
+ */
+function syncPresenterDockNav(session) {
+  const specialActive = Boolean(getCurrentSpecialSlide(session));
+  if (els.btnPrev) els.btnPrev.disabled = specialActive;
+  if (els.btnNext) els.btnNext.disabled = specialActive;
+}
+
+/**
+ * Presenter: Sonderfolie aktivieren oder (Countdown/Pause) per erneutem Klick deaktivieren.
+ * @param {"countdown"|"pause"|"end"|null} kind
  */
 function gotoSpecialSlide(kind) {
   if (!ctx.session?.eventId || ctx.role !== "present") return;
@@ -2373,7 +2382,14 @@ function gotoSpecialSlide(kind) {
     confirmSpecialSlideEnd(() => applySpecialSlideFromPresenter("end"));
     return;
   }
-  if (current === kind) return;
+  if (kind == null) {
+    applySpecialSlideFromPresenter(null);
+    return;
+  }
+  if (current === kind) {
+    applySpecialSlideFromPresenter(null);
+    return;
+  }
   applySpecialSlideFromPresenter(kind);
 }
 
@@ -2699,6 +2715,7 @@ function refreshPresenterPanel() {
   syncPresenterSpecialSlideButtons(document.getElementById("present-special-slide-nav"), {
     session: ctx.session,
     emit: emitLive,
+    onRefresh: () => renderActiveSlide(),
   });
 }
 

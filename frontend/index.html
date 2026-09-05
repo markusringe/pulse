@@ -491,6 +491,7 @@
         </div>
 
         <main class="present-stage" id="present-stage" data-transition="slide">
+          <div id="present-stage-status" class="present-stage-status" hidden aria-live="polite"></div>
           <div id="lobby-overlay" class="lobby-overlay" hidden>
             <p class="eyebrow" data-i18n="lobby.title">Warteraum</p>
             <p id="lobby-code" class="join-code">------</p>
@@ -527,41 +528,43 @@
         </main>
 
         <footer class="present-dock pulse-present-dock">
-          <div id="present-deck" class="present-deck"></div>
-          <div class="present-dock-toolbar">
-            <div class="join-block join-block--present-compact">
-              <div class="join-copy">
-                <span class="eyebrow join-block__label" data-i18n="present.join">Beitreten</span>
-                <p id="join-code-display" class="join-code">------</p>
-                <button type="button" id="btn-copy-link" class="btn ghost pulse-btn-ghost btn--sm" data-i18n="present.copy">Link kopieren</button>
-              </div>
-              <!-- QR nur in Lobby/Stage — im Dock Platz sparen -->
-              <canvas id="qr-canvas" class="qr present-dock-qr-sr" width="200" height="200" hidden aria-hidden="true"></canvas>
-              <p id="join-url" class="join-url muted sr-only" aria-hidden="true"></p>
+          <div class="present-dock-row">
+            <div class="present-dock-section present-dock-nav" role="group" aria-label="Folien">
+              <button type="button" id="btn-prev" class="btn ghost pulse-btn-ghost present-dock-btn" data-i18n="present.prev" data-i18n-aria="present.prev" aria-label="Zurück">◀</button>
+              <span id="slide-indicator" class="present-dock-slide-indicator muted" aria-live="polite">1 / 1</span>
+              <button type="button" id="btn-next" class="btn ghost pulse-btn-ghost present-dock-btn" data-i18n="present.next" data-i18n-aria="present.next" aria-label="Weiter">▶</button>
+              <button type="button" id="btn-slide-add" class="btn ghost pulse-btn-ghost present-dock-btn" data-i18n-aria="deck.addLive" aria-label="Folie hinzufügen" title="Folie hinzufügen">+</button>
             </div>
-            <nav class="slide-nav present-slide-nav" aria-label="Folien">
-            <div class="present-nav-core">
-              <button type="button" id="btn-prev" class="btn ghost pulse-btn-ghost" data-i18n="present.prev">Zurück</button>
-              <span id="slide-indicator" class="muted" aria-live="polite">1 / 1</span>
-              <button type="button" id="btn-next" class="btn ghost pulse-btn-ghost" data-i18n="present.next">Weiter</button>
-              <button type="button" id="btn-stage-view" class="btn primary pulse-btn-primary" data-i18n="present.stageView">Präsentationsansicht öffnen</button>
-              <button type="button" id="btn-results" class="btn ghost pulse-btn-ghost" data-i18n="results.show">Ergebnisse zeigen</button>
-              <div id="present-special-slide-nav" class="present-special-slide-nav" hidden aria-live="polite"></div>
+            <div
+              id="present-special-slide-nav"
+              class="present-dock-section present-dock-special"
+              hidden
+              role="group"
+              aria-label="Sonderfolien"
+              aria-live="polite"
+            ></div>
+            <div class="present-dock-section present-dock-tools" role="group" aria-label="Werkzeuge">
+              <button type="button" id="btn-results" class="btn ghost pulse-btn-ghost present-dock-btn present-dock-btn--icon" data-i18n-aria="results.show" aria-label="Ergebnisse zeigen" title="Ergebnisse">📊</button>
+              <button type="button" id="btn-copy-link" class="btn ghost pulse-btn-ghost present-dock-btn present-dock-btn--icon" data-i18n="present.copy" data-i18n-aria="present.copy" aria-label="Link kopieren" title="Link kopieren">🔗</button>
+              <button type="button" id="btn-present-help-dock" class="btn ghost pulse-btn-ghost present-dock-btn present-dock-btn--icon" data-i18n-aria="programControl.help" aria-label="Hilfe" title="Hilfe">?</button>
+              <button type="button" id="btn-stage-view" class="btn primary pulse-btn-primary present-dock-btn present-dock-btn--stage" data-i18n="present.stageView">Stage</button>
+              <details class="present-nav-overflow">
+                <summary class="present-dock-btn present-dock-btn--more" aria-label="Weitere Presenter-Aktionen">⋯</summary>
+                <div class="present-nav-overflow-panel">
+                  <p class="present-dock-join-meta muted"><span data-i18n="present.join">Beitreten</span>: <strong id="join-code-display" class="join-code">------</strong></p>
+                  <button type="button" id="btn-slide-dup" class="btn ghost pulse-btn-ghost" data-i18n="deck.duplicate">Duplizieren</button>
+                  <button type="button" id="btn-slide-del" class="btn ghost pulse-btn-ghost" data-i18n="deck.removeLive">Folie löschen</button>
+                  <button type="button" id="btn-reset" class="btn ghost pulse-btn-ghost" data-i18n="present.reset">Ergebnisse leeren</button>
+                  <button type="button" id="btn-moderation" class="btn ghost pulse-btn-ghost" data-i18n="present.moderation">Moderation</button>
+                  <button type="button" id="btn-export-csv" class="btn ghost pulse-btn-ghost" data-i18n="present.exportCsv">Q&amp;A CSV</button>
+                  <button type="button" id="btn-export-pdf" class="btn ghost pulse-btn-ghost" data-i18n="present.exportPdf">Q&amp;A PDF</button>
+                  <button type="button" id="panic-button" class="btn present-panic-btn" data-i18n="present.panic">Notfall</button>
+                </div>
+              </details>
             </div>
-            <details class="present-nav-overflow">
-              <summary aria-label="Weitere Presenter-Aktionen">Mehr</summary>
-              <div class="present-nav-overflow-panel">
-                <button type="button" id="btn-slide-dup" class="btn ghost pulse-btn-ghost" data-i18n="deck.duplicate">Duplizieren</button>
-                <button type="button" id="btn-slide-del" class="btn ghost pulse-btn-ghost" data-i18n="deck.removeLive">Folie löschen</button>
-                <button type="button" id="btn-reset" class="btn ghost pulse-btn-ghost" data-i18n="present.reset">Ergebnisse leeren</button>
-                <button type="button" id="btn-moderation" class="btn ghost pulse-btn-ghost" data-i18n="present.moderation">Moderation</button>
-                <button type="button" id="btn-export-csv" class="btn ghost pulse-btn-ghost" data-i18n="present.exportCsv">Q&amp;A CSV</button>
-                <button type="button" id="btn-export-pdf" class="btn ghost pulse-btn-ghost" data-i18n="present.exportPdf">Q&amp;A PDF</button>
-              </div>
-            </details>
-            <button type="button" id="panic-button" class="btn present-panic-btn" data-i18n="present.panic">Notfall</button>
-          </nav>
           </div>
+          <canvas id="qr-canvas" class="qr present-dock-qr-sr" width="200" height="200" hidden aria-hidden="true"></canvas>
+          <p id="join-url" class="join-url muted sr-only" aria-hidden="true"></p>
         </footer>
 
         <aside id="presenter-stats" class="presenter-stats" hidden></aside>

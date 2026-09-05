@@ -747,6 +747,7 @@ a#btn-admin-home {
 }
 
 .view-present .present-stage {
+  position: relative;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -765,9 +766,110 @@ a#btn-admin-home {
   align-items: stretch;
 }
 
-.view-present .present-deck {
-  flex: 0 0 auto;
-  max-height: 72px;
+/* Status-Badge oben rechts in der Hauptbox (aktive Sonderfolie) */
+.present-stage-status {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 6;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--ink, #111);
+  background: color-mix(in srgb, var(--bg-elev, #fff) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink, #111) 12%, transparent);
+  box-shadow: 0 1px 4px color-mix(in srgb, #000 8%, transparent);
+  pointer-events: none;
+}
+
+.present-stage-status[hidden] {
+  display: none !important;
+}
+
+/* Dock — drei Sektionen in einer Zeile */
+.present-dock-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.present-dock-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.present-dock-nav {
+  flex: 0 1 auto;
+}
+
+.present-dock-special {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.present-dock-tools {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.present-dock-btn {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}
+
+.present-dock-btn--icon {
+  font-size: 1rem;
+  padding: 4px 8px;
+}
+
+.present-dock-btn--stage {
+  font-size: 0.78rem;
+  padding: 4px 12px;
+}
+
+.present-dock-slide-indicator {
+  min-width: 3.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+
+.present-dock-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.present-dock-join-meta {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+}
+
+.present-dock-btn--more {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-pulse-sm, 0.75rem);
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  font-weight: 750;
+  font-size: 1.1rem;
 }
 
 .present-top {

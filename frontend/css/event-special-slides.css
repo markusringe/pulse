@@ -129,19 +129,22 @@
   line-height: 1.2;
 }
 
-.present-special-btn.is-active {
+.present-special-btn.is-active,
+.present-dock-special-btn.is-active {
   border-color: var(--accent, #2563eb);
   background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
   color: var(--accent, #2563eb);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #2563eb) 22%, transparent);
 }
 
-.present-special-btn.is-confirmed.is-active {
+.present-special-btn.is-confirmed.is-active,
+.present-dock-special-btn.is-confirmed.is-active {
   background: color-mix(in srgb, var(--accent, #2563eb) 18%, transparent);
   font-weight: 600;
 }
 
-.present-special-btn:disabled {
+.present-special-btn:disabled,
+.present-dock-special-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }

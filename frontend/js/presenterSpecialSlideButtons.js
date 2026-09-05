@@ -15,11 +15,13 @@ import {
  *   host: HTMLElement | null,
  *   ctx: object | null,
  *   listenersBound: boolean,
+ *   onRefresh: (() => void) | null,
  * }} */
 const state = {
   host: null,
   ctx: null,
   listenersBound: false,
+  onRefresh: null,
 };
 
 /**
@@ -47,13 +49,17 @@ export function syncPresenterSpecialSlideButtons(host, ctx) {
 
   state.host = host;
   state.ctx = ctx;
+  state.onRefresh = typeof ctx.onRefresh === "function" ? ctx.onRefresh : null;
 
   if (!host.querySelector(".present-special-btns")) {
     host.innerHTML = buildSpecialSlideButtonsHtml({
       hasCountdown,
       hasPause,
       hasEnd,
-      includeHelp: true,
+      includeHelp: false,
+      iconOnly: true,
+      groupClass: "present-special-btns present-dock-special-btns",
+      btnClass: "btn ghost present-dock-special-btn",
     });
     if (!state.listenersBound) {
       host.addEventListener("click", onHostClick);
@@ -84,6 +90,7 @@ function teardown(host) {
   }
   state.host = null;
   state.ctx = null;
+  state.onRefresh = null;
 }
 
 function onHostClick(ev) {
@@ -92,4 +99,5 @@ function onHostClick(ev) {
     return;
   }
   handleSpecialSlideButtonClick(ev, state.ctx, state.host);
+  state.onRefresh?.();
 }

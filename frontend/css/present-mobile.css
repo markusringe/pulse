@@ -79,7 +79,7 @@
   }
 }
 
-/* Dock — kompakte Toolbar (ohne QR), kein vertikales Scrollen */
+/* Dock — kompakte Drei-Sektionen-Leiste, kein vertikales Scrollen */
 .pulse-present-dock,
 .view-present .present-dock {
   display: flex;
@@ -91,44 +91,8 @@
   overflow: visible;
 }
 
-.view-present .present-dock-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 10px;
-  min-width: 0;
-}
-
-.view-present .join-block--present-compact {
-  flex: 0 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  margin: 0;
-}
-
-.view-present .join-block--present-compact .join-copy {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-}
-
-.view-present .join-block--present-compact .join-block__label {
-  margin: 0;
-  font-size: 0.72rem;
-}
-
-.view-present .join-block--present-compact .join-code {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.view-present .join-block--present-compact .btn--sm {
-  min-height: 36px;
-  padding: 4px 10px;
-  font-size: 0.82rem;
+.view-present .present-dock-row {
+  flex-wrap: nowrap;
 }
 
 .view-present .present-dock-qr-sr {
@@ -139,108 +103,28 @@
   clip: rect(0, 0, 0, 0);
 }
 
-.view-present .present-deck {
-  flex: none;
-  width: 100%;
-  -webkit-overflow-scrolling: touch;
-  max-height: 64px;
-}
-
-.view-present .present-slide-nav {
-  flex: 1 1 280px;
-  min-width: 0;
-  gap: 6px;
-}
-
-.view-present .present-nav-core {
-  gap: 6px;
-}
-
-.view-present .present-nav-core .btn,
-.view-present .present-nav-overflow summary,
-.view-present .present-panic-btn {
-  min-height: 36px;
-  padding: 4px 10px;
-  font-size: 0.82rem;
-}
-
-.view-present .present-special-slide-nav {
-  flex: 1 1 100%;
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-
-.view-present .present-special-btns {
+.view-present .present-dock-special .present-special-btns {
   margin-top: 0;
   padding-top: 0;
   border-top: none;
   gap: 4px;
 }
 
-.view-present .present-special-btn {
+.view-present .present-dock-special-btn {
   min-height: 36px;
+  min-width: 36px;
   padding: 4px 8px;
-  font-size: 0.78rem;
-}
-
-@media (max-width: 720px) {
-  .view-present .present-dock-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .view-present .present-slide-nav {
-    width: 100%;
-  }
-}
-
-/* Folien-Navigation — Kernaktionen sichtbar, Rest im Overflow-Menü */
-.view-present .present-slide-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.view-present .present-nav-core {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.view-present .present-nav-core .btn,
-.view-present .present-nav-overflow summary {
-  min-height: 36px;
 }
 
 .view-present .present-nav-overflow {
   position: relative;
 }
 
-.view-present .present-nav-overflow summary {
-  list-style: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  padding: 0 14px;
-  border-radius: var(--radius-pulse-sm, 0.75rem);
-  border: 1px solid var(--line);
-  background: var(--bg-elev);
-  font-weight: 650;
-}
-
 .view-present .present-nav-overflow summary::-webkit-details-marker {
   display: none;
 }
 
-.view-present .present-nav-overflow[open] summary {
+.view-present .present-nav-overflow[open] .present-dock-btn--more {
   background: var(--bg-soft);
   outline: 2px solid var(--focus);
 }
@@ -261,6 +145,26 @@
   box-shadow: var(--shadow);
 }
 
+@media (max-width: 720px) {
+  .view-present .present-dock-row {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .view-present .present-dock-nav,
+  .view-present .present-dock-special,
+  .view-present .present-dock-tools {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  .view-present .present-dock-tools {
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 640px) {
   .view-present .present-nav-overflow-panel {
     position: fixed;
@@ -268,43 +172,14 @@
     max-height: min(50dvh, 100%);
     overflow-y: auto;
   }
-}
 
-.view-present .present-nav-overflow-panel .btn {
-  width: 100%;
-  min-height: 48px;
-  justify-content: center;
-}
+  .view-present .present-nav-overflow-panel .btn {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
 
-/* Notfall — visuell getrennt, größere Touch-Fläche */
-.view-present .present-panic-btn {
-  min-height: 48px;
-  min-width: 48px;
-  margin-left: auto;
-  font-weight: 750;
-}
-
-@media (max-width: 640px) {
   .view-present .present-panic-btn {
-    width: 100%;
-    margin-left: 0;
-    order: 10;
-  }
-
-  .view-present .present-slide-nav {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .view-present .present-nav-core {
-    justify-content: space-between;
-  }
-
-  .view-present .present-nav-overflow {
-    width: 100%;
-  }
-
-  .view-present .present-nav-overflow summary {
     width: 100%;
   }
 }

@@ -46,12 +46,16 @@ export function sendSpecialSlideCommand(ctx, kind, host = null) {
   const payload = {
     code: ctx.session.code,
     action: "set_current_special_slide",
-    currentSpecialSlide: kind,
+    currentSpecialSlide: kind ?? null,
   };
   const sent = ctx.emit?.("event_countdown", payload);
   if (sent !== false && ctx.session.eventMeta) {
-    ctx.session.eventMeta.currentSpecialSlide = kind;
-    if (kind === "end") ctx.session.eventMeta.status = "ended";
+    if (kind == null || kind === "") {
+      ctx.session.eventMeta.currentSpecialSlide = null;
+    } else {
+      ctx.session.eventMeta.currentSpecialSlide = kind;
+      if (kind === "end") ctx.session.eventMeta.status = "ended";
+    }
     if (host) updateSpecialSlideButtons(host, ctx.session.eventMeta);
   }
 }
@@ -96,8 +100,22 @@ export function handleSpecialSlideButtonClick(ev, ctx, host) {
     return;
   }
 
-  if (current === kind) return;
+  /* Aktiven Modus erneut klicken → zurück zur regulären Folie. */
+  if (current === kind) {
+    clearSpecialSlideCommand(ctx, host);
+    return;
+  }
+
   sendSpecialSlideCommand(ctx, kind, host);
+}
+
+/**
+ * Sonderfolie deaktivieren (zurück zur aktiven Folie).
+ * @param {{ session: object, emit?: Function }} ctx
+ * @param {HTMLElement | null} [host]
+ */
+export function clearSpecialSlideCommand(ctx, host = null) {
+  sendSpecialSlideCommand(ctx, null, host);
 }
 
 /**
@@ -107,6 +125,7 @@ export function handleSpecialSlideButtonClick(ev, ctx, host) {
  *   hasPause?: boolean,
  *   hasEnd?: boolean,
  *   includeHelp?: boolean,
+ *   iconOnly?: boolean,
  *   groupClass?: string,
  *   btnClass?: string,
  * }} opts
@@ -114,15 +133,16 @@ export function handleSpecialSlideButtonClick(ev, ctx, host) {
 export function buildSpecialSlideButtonsHtml(opts) {
   const groupClass = opts.groupClass || "present-special-btns";
   const btnClass = opts.btnClass || "btn ghost present-special-btn";
+  const iconOnly = Boolean(opts.iconOnly);
   const parts = [];
   if (opts.hasCountdown) {
-    parts.push(specialSlideButtonHtml("countdown", t("programControl.countdown"), iconCountdown(), btnClass));
+    parts.push(specialSlideButtonHtml("countdown", t("programControl.countdown"), iconCountdown(), btnClass, iconOnly));
   }
   if (opts.hasPause) {
-    parts.push(specialSlideButtonHtml("pause", t("programControl.pause"), iconPause(), btnClass));
+    parts.push(specialSlideButtonHtml("pause", t("programControl.pause"), iconPause(), btnClass, iconOnly));
   }
   if (opts.hasEnd) {
-    parts.push(specialSlideButtonHtml("end", t("programControl.end"), iconEnd(), btnClass));
+    parts.push(specialSlideButtonHtml("end", t("programControl.end"), iconEnd(), btnClass, iconOnly));
   }
   if (opts.includeHelp) {
     parts.push(`
@@ -137,11 +157,12 @@ export function buildSpecialSlideButtonsHtml(opts) {
     </div>`;
 }
 
-function specialSlideButtonHtml(kind, label, icon, btnClass) {
+function specialSlideButtonHtml(kind, label, icon, btnClass, iconOnly = false) {
+  const labelClass = iconOnly ? "present-special-label sr-only" : "present-special-label";
   return `
-    <button type="button" class="${esc(btnClass)}" data-pss-kind="${esc(kind)}" aria-pressed="false">
+    <button type="button" class="${esc(btnClass)}" data-pss-kind="${esc(kind)}" aria-pressed="false" aria-label="${esc(label)}" title="${esc(label)}">
       <span class="present-special-icon" aria-hidden="true">${icon}</span>
-      <span class="present-special-label">${esc(label)}</span>
+      <span class="${labelClass}">${esc(label)}</span>
     </button>`;
 }
 

@@ -70,8 +70,10 @@ async function fetchAsset(base, indexHtml, pattern, fallbackPath, timeoutMs) {
   const index = await httpGet(joinUrl(base, "/"), opts.timeoutMs);
   record("GET /", index.status === 200, `HTTP ${index.status}`);
 
-  /* Presenter-Hosts in index.html */
-  record("index present-deck", index.body.includes('id="present-deck"'));
+  /* Presenter-Hosts in index.html — keine Folienleiste, Dock mit Sonderfolien */
+  record("index kein present-deck", !index.body.includes('id="present-deck"'));
+  record("index present-dock-row", index.body.includes('class="present-dock-row"'));
+  record("index present-stage-status", index.body.includes('id="present-stage-status"'));
   record("index present-special-slide-nav", index.body.includes('id="present-special-slide-nav"'));
   record("index kein stage-special-slide-nav", !index.body.includes("stage-special-slide-nav"));
   record("index ohne statischen stage-fs", !index.body.includes('id="stage-fs"'));
@@ -90,15 +92,15 @@ async function fetchAsset(base, indexHtml, pattern, fallbackPath, timeoutMs) {
   record("stage.js kein event_countdown", !stageJs.includes("event_countdown"));
   record("stage.js Rolle stage", stageJs.includes('role: "stage"'));
 
-  const deckJs = await fetchAsset(
+  const appJs = await fetchAsset(
     base,
     index.body,
-    /\/js\/deck\.js\?h=[^"']+/,
-    "/js/deck.js",
+    /\/js\/app\.js\?h=[^"']+/,
+    "/js/app.js",
     opts.timeoutMs
   );
-  record("deck.js deck-chip-special", deckJs.includes("deck-chip-special"));
-  record("deck.js onGotoSpecial", deckJs.includes("onGotoSpecial"));
+  record("app.js kein renderPresentStrip", !appJs.includes("renderPresentStrip("));
+  record("app.js syncPresenterStageStatus", appJs.includes("syncPresenterStageStatus"));
 
   const coreJs = await fetchAsset(
     base,
@@ -109,6 +111,7 @@ async function fetchAsset(base, indexHtml, pattern, fallbackPath, timeoutMs) {
   );
   record("specialSlideNavCore data-pss-kind", coreJs.includes("data-pss-kind"));
   record("specialSlideNavCore End-Dialog", coreJs.includes("confirmSpecialSlideEnd"));
+  record("specialSlideNavCore clearSpecialSlideCommand", coreJs.includes("clearSpecialSlideCommand"));
 
   const helpCss = await fetchAsset(
     base,
@@ -126,7 +129,8 @@ async function fetchAsset(base, indexHtml, pattern, fallbackPath, timeoutMs) {
     "/css/styles.css",
     opts.timeoutMs
   );
-  record("styles.css Mobil Icon-only Chips", stylesCss.includes(".deck-chip-special-label") && stylesCss.includes("display: none"));
+  record("styles.css present-stage-status", stylesCss.includes(".present-stage-status"));
+  record("styles.css present-dock-row", stylesCss.includes(".present-dock-row"));
 
   if (opts.expectVersion) {
     const health = await httpGet(joinUrl(base, "/api/health"), opts.timeoutMs);
