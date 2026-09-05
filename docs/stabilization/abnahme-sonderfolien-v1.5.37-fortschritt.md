@@ -139,7 +139,7 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 **Bugfix deployed v1.5.41:** `frontend/js/stage.js` — `countdownDismissed` beim Stage-Kaltstart aus Session-Metadaten (symmetrisch zu WS `event_meta`).  
 **Verifiziert nach Deploy:** `#/stage/807435?share=1` Kaltstart → Folie „Willkommen — erste Frage“, kein Auto-Countdown (Townhall, `countdownDismissed: true`).
 
-**Release:** Tag `v1.5.41` auf GitHub · Release-Body: [RELEASE-v1.5.41-body.md](RELEASE-v1.5.41-body.md) (manuell einfügen — PAT ohne `contents: write`)
+**Release:** https://github.com/markusringe/pulse/releases/tag/v1.5.41 (2026-09-05, PAT/API)
 
 ---
 
