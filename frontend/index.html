@@ -510,7 +510,10 @@
             data-slide-canvas
             hidden
             aria-live="polite"
-          ></div>
+          >
+            <!-- Feste Referenz-Leinwand (16:9), per CSS in die Box skaliert — ganze Grafik sichtbar -->
+            <div class="present-slide-canvas-fit" data-present-canvas-fit></div>
+          </div>
           <div id="poll-root" class="stage-panel" hidden></div>
           <div id="wordcloud-root" class="stage-panel wordcloud-stage" hidden>
             <canvas id="wordcloud-canvas" aria-label="Wortwolke"></canvas>

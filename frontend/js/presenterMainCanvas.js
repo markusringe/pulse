@@ -9,6 +9,12 @@ import { renderSpecialSlideInto, stopSpecialSlideCountdown } from "./specialSlid
 import { currentLang } from "./i18n.js";
 import { joinUrlFromLocation, drawQrCode } from "./qrRender.js";
 
+/** Innere Leinwand — Stage-Parität 16:9, äußere Box skaliert per CSS. */
+function getPresenterCanvasFit(host) {
+  if (!host) return null;
+  return host.querySelector("[data-present-canvas-fit]") || host;
+}
+
 /** Zuletzt gemountete Sonderfolie — verhindert unnötiges Remount bei gleichem Modus. */
 let mountedKind = null;
 
@@ -43,12 +49,13 @@ export function syncPresenterMainCanvas(host, session, opts = {}) {
   );
 
   if (!host) return null;
+  const fit = getPresenterCanvasFit(host);
 
   if (!kind) {
     if (mountedKind) {
-      stopSpecialSlideCountdown(host);
-      host.replaceChildren();
-      host.classList.remove("event-countdown-host");
+      stopSpecialSlideCountdown(fit);
+      fit?.replaceChildren();
+      fit?.classList.remove("event-countdown-host");
       host.hidden = true;
       mountedKind = null;
     }
@@ -67,20 +74,20 @@ export function syncPresenterMainCanvas(host, session, opts = {}) {
   const joinUrl = joinUrlFromLocation(session.code || session.joinCode || "");
 
   /* Countdown: einmal mounten — Sekunden-Tick läuft in mountCountdown ohne Shell-Rebuild. */
-  if (kind === "countdown" && mountedKind === "countdown" && host.querySelector(".event-countdown-panel")) {
+  if (kind === "countdown" && mountedKind === "countdown" && fit?.querySelector(".event-countdown-panel")) {
     return kind;
   }
 
   /* Pause/Ende: mountSpecialSlide cached intern — nur bei fehlendem DOM neu rendern. */
-  if (kind !== "countdown" && kind === mountedKind && host.querySelector(".ess")) {
+  if (kind !== "countdown" && kind === mountedKind && fit?.querySelector(".ess")) {
     return kind;
   }
 
   if (kind !== mountedKind) {
-    stopSpecialSlideCountdown(host);
+    stopSpecialSlideCountdown(fit);
   }
 
-  renderSpecialSlideInto(host, kind, meta, {
+  renderSpecialSlideInto(fit, kind, meta, {
     variant: "stage",
     t: opts.t,
     locale,
@@ -103,9 +110,10 @@ export function destroyPresenterMainCanvas() {
     mountedKind = null;
     return;
   }
-  stopSpecialSlideCountdown(host);
-  host.replaceChildren();
-  host.classList.remove("event-countdown-host");
+  const fit = getPresenterCanvasFit(host);
+  stopSpecialSlideCountdown(fit);
+  fit?.replaceChildren();
+  fit?.classList.remove("event-countdown-host");
   host.hidden = true;
   mountedKind = null;
 }

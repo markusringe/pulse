@@ -33,9 +33,9 @@ assert(appJs.includes("syncPresenterMainCanvas"), "app.js bindet Hauptbox");
 assert(appJs.includes("destroyPresenterMainCanvas"), "app.js Teardown Hauptbox");
 assert(!appJs.includes("presenterSpecialPreview"), "Overlay-Vorschau entfernt");
 assert(indexHtml.includes('id="present-slide-canvas"'), "Hauptbox-Host in index.html");
-assert(indexHtml.includes("data-slide-canvas"), "data-slide-canvas Attribut");
+assert(indexHtml.includes('data-present-canvas-fit'), "Skalier-Container in index.html");
 assert(!indexHtml.includes("presenter-special-preview.css"), "Preview-CSS nicht mehr eingebunden");
 assert(!fs.existsSync(path.join(root, "frontend/js/presenterSpecialPreview.js")), "presenterSpecialPreview.js gelöscht");
-assert(countdownCss.includes("#present-slide-canvas"), "CSS für Hauptbox-Sonderfolie");
+assert(countdownCss.includes(".present-slide-canvas-fit"), "CSS-Skalierung für Hauptbox");
 
 console.log("OK test-presenter-main-canvas");
