@@ -1,7 +1,7 @@
 # Abnahme-Fortschritt — Sonderfolien v1.5.37
 
 **Datum:** 2026-09-05  
-**Prod:** https://pulse.ringe.us/ · **v1.5.39** (Deploy **v1.5.40** mit erweiterten Tests)  
+**Prod:** https://pulse.ringe.us/ · **v1.5.40**  
 **Checkliste:** `abnahme-sonderfolien-v1.5.37.md`
 
 ---
@@ -11,7 +11,7 @@
 | # | Prüfung | Ergebnis | Notiz |
 |---|---------|----------|-------|
 | 0.1 | `test-presenter-special-slide-dock` | ✅ OK | Container v1.5.39 |
-| 0.2 | Remote-Smoke 16/16 | ✅ OK | v1.5.39 |
+| 0.2 | Remote-Smoke 16/16 | ✅ OK | v1.5.40 |
 | 0.3 | `/api/health/ready` | ✅ `ok: true` | |
 | 0.4 | `test-special-slides-remote` 15/15 | ✅ OK | Prod-Bundles v1.5.39 |
 | 0.5 | `test-special-slides-ws` | ✅ OK | Presenter steuert, Stage passiv |
