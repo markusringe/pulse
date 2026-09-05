@@ -181,6 +181,10 @@ async function onHttpRequest(req, res) {
       observe(req, url, res.statusCode || 200, started);
       return;
     }
+    if (await helpApi.handleHelpStatic({ req, res, url, send, getAuth, userDb })) {
+      observe(req, url, res.statusCode || 200, started);
+      return;
+    }
     serveStatic(url.pathname, req, res);
   } catch (err) {
     console.error(err);
@@ -3958,6 +3962,9 @@ function applyAssetBase(htmlBuf) {
  * @param {string} [webPath]
  */
 function cacheControlFor(ext, reqUrl, webPath) {
+  if (ext === ".html" && webPath && /^\/help\//.test(webPath)) {
+    return "no-store, private";
+  }
   if (ext === ".html") {
     return "no-cache, must-revalidate";
   }

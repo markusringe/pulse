@@ -132,7 +132,7 @@ GET /api/help/articles/:id?adminRoute=0|1
 - Server filtert Artikel-Metadaten nach **Sichtbarkeits-Obergrenze** (Auth) und optionalem Rollenfilter.
 - Response-Cache pro Obergrenze + Filter (`roleCache`, TTL 5 min, invalidiert bei `articles.json`-mtime).
 - **Sicherheit:** Nicht berechtigte Artikel fehlen in der API-Antwort; direkte Hash-URLs zeigen „Kein Zugriff“.
-- HTML-Partials unter `/help/*.html` bleiben statisch — Metadaten-Gate in `help.js` verhindert Anzeige.
+- **Statische Pfade:** `/help/articles.json` und `/help/*.html` werden serverseitig mit derselben Rollenlogik geschützt (403 ohne Berechtigung).
 
 ### Module
 

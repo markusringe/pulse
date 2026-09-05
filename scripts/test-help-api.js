@@ -13,6 +13,8 @@ const os = require("os");
 const {
   buildHelpArticlesResponse,
   resolveHelpArticleAccess,
+  resolveHelpArticleIdFromWebPath,
+  checkHelpStaticAccess,
   resetHelpCatalogCache,
   loadRawCatalog,
 } = require("../lib/helpCatalog");
