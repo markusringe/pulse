@@ -1,0 +1,275 @@
+/**
+ * Sonderfolien — Stage/Presenter (Start, Pause, Ende).
+ * Stile teilen Variablen mit dem Event-Countdown.
+ */
+
+.ess {
+  --ess-title-color: var(--ink, #111);
+  --ess-sub-color: color-mix(in srgb, var(--ink, #111) 72%, transparent);
+  min-height: min(70vh, 520px);
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.ess-inner {
+  max-width: 42rem;
+  z-index: 1;
+}
+
+.ess-icon {
+  width: clamp(4rem, 12vw, 6rem);
+  margin: 0 auto 1.25rem;
+  color: var(--accent, #2563eb);
+  opacity: 0.92;
+}
+
+.ess-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ess-title {
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  line-height: 1.12;
+  font-weight: 700;
+  color: var(--ess-title-color);
+  margin: 0 0 0.75rem;
+}
+
+.ess-subtitle {
+  font-size: clamp(1.05rem, 2.5vw, 1.35rem);
+  color: var(--ess-sub-color);
+  margin: 0;
+}
+
+.ess-ended-badge {
+  display: inline-block;
+  margin-top: 1.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+  color: var(--accent, #2563eb);
+}
+
+.ess-pause-hint {
+  margin-top: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.ess--classic {
+  background: linear-gradient(165deg, #f7f4ef 0%, #ebe4d8 100%);
+  --ess-title-color: #1a1a1a;
+  --ess-sub-color: #4a4a4a;
+}
+
+.ess--modern {
+  background: radial-gradient(circle at 20% 20%, #eef4ff 0%, #f8fafc 45%, #edf2ff 100%);
+  --ess-title-color: #0f172a;
+  --ess-sub-color: #475569;
+}
+
+.ess--retro {
+  background: linear-gradient(135deg, #1e1033 0%, #2d1b4e 55%, #1a0f2e 100%);
+  --ess-title-color: #fde68a;
+  --ess-sub-color: #fcd34d;
+}
+
+.ess--retro .ess-icon {
+  color: #fbbf24;
+}
+
+.ess--kind-pause .ess-icon {
+  animation: ess-pulse 3.5s ease-in-out infinite;
+}
+
+@keyframes ess-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+.presenter-program-control {
+  position: fixed;
+  right: clamp(0.75rem, 2vw, 1.25rem);
+  bottom: clamp(0.75rem, 2vw, 1.25rem);
+  z-index: 40;
+  max-width: min(22rem, calc(100vw - 1.5rem));
+}
+
+.presenter-program-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink, #111) 12%, transparent);
+  box-shadow: 0 8px 28px color-mix(in srgb, #000 14%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.presenter-program-ended {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent, #2563eb);
+}
+
+.presenter-program-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.presenter-program-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 4.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--ink, #111) 14%, transparent);
+  background: var(--surface, #fff);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.presenter-program-tile.is-active {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #2563eb) 25%, transparent);
+}
+
+.presenter-program-tile-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ppc-preview,
+.ess-preview {
+  display: block;
+  width: 100%;
+  min-height: 1.4rem;
+  border-radius: 6px;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.65rem;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ess-preview--classic {
+  background: #ebe4d8;
+  color: #1a1a1a;
+}
+
+.ess-preview--modern {
+  background: #eef4ff;
+  color: #0f172a;
+}
+
+.ess-preview--retro {
+  background: #2d1b4e;
+  color: #fde68a;
+}
+
+.presenter-program-help {
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.presenter-program-help-icon {
+  display: block;
+  line-height: 1;
+}
+
+.presenter-help-modal {
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: min(80vh, 640px);
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+}
+
+.presenter-help-modal::backdrop {
+  background: color-mix(in srgb, #000 45%, transparent);
+}
+
+.presenter-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.5rem;
+}
+
+.presenter-help-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.presenter-help-body {
+  padding: 0 1rem;
+  max-height: 50vh;
+  overflow: auto;
+}
+
+.presenter-help-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.presenter-help-list li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink, #111) 10%, transparent);
+}
+
+.presenter-help-list a {
+  font-weight: 600;
+}
+
+.presenter-help-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 1rem;
+}
+
+@media (max-width: 640px) {
+  .presenter-program-control {
+    left: 0.75rem;
+    right: 0.75rem;
+    max-width: none;
+  }
+
+  .presenter-program-inner {
+    justify-content: center;
+  }
+}

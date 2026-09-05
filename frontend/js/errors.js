@@ -208,6 +208,12 @@ export const ERRORS = {
     next: "Wenden Sie sich an den Veranstalter, falls Sie Fragen haben.",
     help: "#/help/events",
   },
+  event_ended: {
+    title: "Event beendet",
+    cause: "Dieses Event ist beendet — neue Eingaben sind nicht mehr möglich.",
+    next: "Vielen Dank für Ihre Teilnahme.",
+    help: "#/help/events",
+  },
   emoji_limit: {
     title: "Zu viele Emojis",
     cause: "Die Frage enthält zu viele Emojis.",

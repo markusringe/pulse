@@ -122,7 +122,15 @@ export function acceptStructural(session, payload, { role = "presenter", eventTy
  * @returns {number | null} neuer Index oder null
  */
 export function applySlidePayload(session, payload, opts = {}) {
-  if (!session || payload?.index == null) return null;
+  if (!session) return null;
+  if (Object.prototype.hasOwnProperty.call(payload, "specialSlide")) {
+    const raw = payload.specialSlide;
+    const kind = String(raw || "")
+      .trim()
+      .toLowerCase();
+    session.specialSlide = ["start", "pause", "end"].includes(kind) ? kind : null;
+  }
+  if (payload?.index == null) return session.activeSlideIndex;
   const index = Number(payload.index);
   if (!Number.isFinite(index)) return null;
   session.activeSlideIndex = index;

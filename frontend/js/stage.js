@@ -14,6 +14,7 @@ import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
 import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming, applySlidePayload } from "./sessionSync.js";
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js";
+import { activeSpecialSlideKind, mountSpecialSlide } from "./eventSpecialSlides.js";
 import { drawQrCode, joinUrlFromLocation } from "./qrRender.js";
 import { stageStatusMessage } from "./interactionPresenter.js";
 import { syncHelpFabVisibility } from "./help.js";
@@ -322,6 +323,12 @@ function renderStage() {
     return;
   }
 
+  /* Sonderfolie (Start / Pause / Ende) — vor Warteraum und Deck. */
+  if (syncSpecialSlide(frame)) {
+    fadeIfNeeded(`special:${session?.specialSlide || ""}`);
+    return;
+  }
+
   if (!session?.slides?.length) {
     fadeIfNeeded("empty");
     frame.innerHTML = `<p class="stage-wait">${esc(t("stage.empty"))}</p>`;
@@ -377,6 +384,21 @@ function ensureCountdownHost() {
 function stopEventCountdown() {
   eventCountdownCtl?.stop();
   eventCountdownCtl = null;
+}
+
+/**
+ * Sonderfolie rendern, falls aktiv.
+ * @param {HTMLElement} frame
+ * @returns {boolean}
+ */
+function syncSpecialSlide(frame) {
+  const kind = activeSpecialSlideKind(session);
+  if (!kind || !session?.eventMeta) {
+    frame.innerHTML = "";
+    return false;
+  }
+  mountSpecialSlide(frame, kind, session.eventMeta, { t });
+  return true;
 }
 
 /**

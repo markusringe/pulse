@@ -102,6 +102,15 @@ const DE = {
   "events.stageEffectIntensity.low": "Niedrig",
   "events.stageEffectIntensity.medium": "Mittel",
   "events.stageEffectIntensity.high": "Hoch",
+  "events.field.specialSlides": "Sonderfolien (Stage)",
+  "events.field.specialSlidesHint": "Start-, Pause- und Endfolie für die Präsentations-Leinwand. Die Endfolie beendet das Event automatisch.",
+  "events.specialSlide.start": "Startfolie",
+  "events.specialSlide.pause": "Pausefolie",
+  "events.specialSlide.end": "Endfolie",
+  "events.specialSlide.enabled": "Aktivieren",
+  "events.specialSlide.title": "Titel",
+  "events.specialSlide.subtitle": "Untertitel",
+  "events.specialSlide.endHint": "Beim Wechsel auf die Endfolie wird das Event automatisch beendet.",
   "events.field.showStageDateTime": "Datum und Uhrzeit auf der Stage anzeigen",
   "events.field.showStageQr": "QR-Code auf der Stage (Standard aus)",
   "events.field.showStageQrHint": "Nur öffentliche Join-URL — Presenter kann den QR live ein- und ausblenden.",
@@ -959,6 +968,7 @@ function eventFieldsHtml(event = {}, opts = {}) {
     </label>
     <p class="muted">${esc(tx("events.field.startTimeHint"))}</p>
     ${countdownStageFieldsHtml(event)}
+    ${specialSlidesFieldsHtml(event)}
     <label class="field"><span>${esc(tx("events.field.category"))}</span>
       <input id="ev-cat" value="${esc(event.category || "")}" maxlength="80" />
     </label>
@@ -1003,6 +1013,59 @@ function countdownStageFieldsHtml(event = {}) {
     <label class="check"><input type="checkbox" id="ev-show-datetime" ${event.showStageDateTime !== false ? "checked" : ""} /> ${esc(tx("events.field.showStageDateTime"))}</label>
     <label class="check"><input type="checkbox" id="ev-show-stage-qr" ${event.showStageQr ? "checked" : ""} /> ${esc(tx("events.field.showStageQr"))}</label>
     <p class="muted">${esc(tx("events.field.showStageQrHint"))}</p>
+  `;
+}
+
+/** Editor: Start-, Pause- und Endfolie konfigurieren. */
+function specialSlidesFieldsHtml(event = {}) {
+  const kinds = [
+    { id: "start", key: "startSlide", label: tx("events.specialSlide.start") },
+    { id: "pause", key: "pauseSlide", label: tx("events.specialSlide.pause") },
+    { id: "end", key: "endSlide", label: tx("events.specialSlide.end") },
+  ];
+  const styles = [
+    { id: "classic", label: tx("events.countdownStyle.classic") },
+    { id: "modern", label: tx("events.countdownStyle.modern") },
+    { id: "retro", label: tx("events.countdownStyle.retro") },
+  ];
+  return `
+    <fieldset class="special-slides-picker" id="ev-special-slides-box">
+      <legend>${esc(tx("events.field.specialSlides"))}</legend>
+      <p class="muted">${esc(tx("events.field.specialSlidesHint"))}</p>
+      ${kinds
+        .map((k) => {
+          const cfg = event[k.key] || {};
+          const style = String(cfg.style || "modern");
+          return `
+        <div class="special-slide-block" data-special-block="${esc(k.id)}">
+          <label class="check">
+            <input type="checkbox" id="ev-${k.id}-enabled" ${cfg.enabled ? "checked" : ""} />
+            ${esc(k.label)} — ${esc(tx("events.specialSlide.enabled"))}
+          </label>
+          <label class="field">
+            <span>${esc(tx("events.specialSlide.title"))}</span>
+            <input id="ev-${k.id}-title" maxlength="120" value="${esc(cfg.title || "")}" />
+          </label>
+          <label class="field">
+            <span>${esc(tx("events.specialSlide.subtitle"))}</span>
+            <input id="ev-${k.id}-subtitle" maxlength="120" value="${esc(cfg.subtitle || "")}" />
+          </label>
+          <div class="special-slide-styles" role="radiogroup" aria-label="${esc(k.label)}">
+            ${styles
+              .map(
+                (s) => `
+              <label class="countdown-style-card ${s.id === style ? "is-selected" : ""}">
+                <input type="radio" name="ev-${k.id}-style" value="${esc(s.id)}" ${s.id === style ? "checked" : ""} />
+                <span class="countdown-style-card-title">${esc(s.label)}</span>
+              </label>`
+              )
+              .join("")}
+          </div>
+          ${k.id === "end" ? `<p class="muted">${esc(tx("events.specialSlide.endHint"))}</p>` : ""}
+        </div>`;
+        })
+        .join("")}
+    </fieldset>
   `;
 }
 
@@ -1065,6 +1128,18 @@ function readCountdownStyleField() {
   const checked = document.querySelector('input[name="ev-countdown-style"]:checked');
   const id = String(checked?.value || "modern");
   return ["classic", "modern", "retro"].includes(id) ? id : "modern";
+}
+
+/** Sonderfolien-Felder aus dem Event-Editor lesen. */
+function readSpecialSlideField(kind) {
+  const styleChecked = document.querySelector(`input[name="ev-${kind}-style"]:checked`);
+  const style = String(styleChecked?.value || "modern");
+  return {
+    enabled: Boolean(document.getElementById(`ev-${kind}-enabled`)?.checked),
+    title: String(document.getElementById(`ev-${kind}-title`)?.value || "").slice(0, 120),
+    subtitle: String(document.getElementById(`ev-${kind}-subtitle`)?.value || "").slice(0, 120),
+    style: ["classic", "modern", "retro"].includes(style) ? style : "modern",
+  };
 }
 
 function bindCountdownStyleCards() {
@@ -1228,6 +1303,9 @@ function readEventFields() {
     stageEffectIntensity: readStageEffectIntensityField(),
     showStageDateTime: document.getElementById("ev-show-datetime")?.checked !== false,
     showStageQr: Boolean(document.getElementById("ev-show-stage-qr")?.checked),
+    startSlide: readSpecialSlideField("start"),
+    pauseSlide: readSpecialSlideField("pause"),
+    endSlide: readSpecialSlideField("end"),
   };
   const teamId = readTeamField();
   if (document.getElementById("ev-team")) fields.teamId = teamId;

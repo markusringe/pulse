@@ -48,6 +48,10 @@ const backupService = require("./lib/backupService");
 const backupApi = require("./lib/backupApi");
 const teamApi = require("./lib/teamApi");
 const helpApi = require("./lib/helpApi");
+const {
+  sanitizeSpecialSlideKind,
+  specialSlideConfigFor,
+} = require("./lib/eventSpecialSlides");
 const { corsHeadersForRequest, corsHeaders } = require("./lib/cors");
 const teamService = require("./lib/teamService");
 const autoBackup = require("./lib/autoBackup");
@@ -1113,6 +1117,7 @@ async function createSession(body) {
     eventId: String(body.eventId || "").slice(0, 40),
     ownerUserId: String(body.ownerUserId || "").slice(0, 40),
     stateVersion: 0,
+    specialSlide: null,
   };
   sessions.set(code, session);
   await persistNow(session);
@@ -1155,6 +1160,7 @@ function hydrate(row) {
     eventId: payload.eventId || "",
     ownerUserId: payload.ownerUserId || "",
     stateVersion: Number(payload.stateVersion) || 0,
+    specialSlide: sanitizeSpecialSlideKind(payload.specialSlide) || null,
   };
 }
 
@@ -1192,6 +1198,7 @@ async function persistNow(session) {
         eventId: session.eventId || "",
         ownerUserId: session.ownerUserId || "",
         stateVersion: sessionVersion.getVersion(session),
+        specialSlide: session.specialSlide || null,
       },
     })
   );
@@ -1450,6 +1457,7 @@ function publicSession(session, opts = {}) {
     eventId: session.eventId || "",
     eventBranding: eventBrandingFor(session.eventId),
     eventMeta: eventStore.eventMetaFor(session.eventId),
+    specialSlide: session.specialSlide || null,
     serverNow: Date.now(),
     stateVersion: sessionVersion.getVersion(session),
   };
@@ -1830,6 +1838,50 @@ function announceEventMeta(session) {
 }
 
 /**
+ * Sonderfolie aktivieren (Start / Pause / Ende).
+ * Pause unterbricht die Anzeige, beendet Interaktionen nicht.
+ * Ende schließt alle Interaktionen und setzt Event-Status auf ended.
+ * @param {object} session
+ * @param {unknown} kindRaw
+ * @returns {{ ok?: true, error?: string, message?: string }}
+ */
+function applySpecialSlide(session, kindRaw) {
+  const kind = sanitizeSpecialSlideKind(kindRaw);
+  if (!kind) return { error: "invalid_special_slide", message: "Ungültige Sonderfolie." };
+  const ev = session.eventId ? eventStore.get(session.eventId) : eventByJoinCode(session.code);
+  if (!ev) return { error: "no_event", message: "Kein Event verknüpft." };
+  const cfg = specialSlideConfigFor(ev, kind);
+  if (!cfg) {
+    return { error: "special_disabled", message: "Diese Sonderfolie ist nicht aktiviert." };
+  }
+
+  if (kind === "end") {
+    const prevSlide = session.slides[session.activeSlideIndex];
+    if (prevSlide) {
+      clearInteractionEndTimer(session.code, prevSlide.id);
+      interactionState.finalizeSlide(prevSlide, "event_end");
+    }
+    for (const slide of session.slides) {
+      interactionState.finalizeSlide(slide, "event_end");
+      clearInteractionEndTimer(session.code, slide.id);
+    }
+    eventStore.setStatus(ev.id, "ended");
+    session.lobby = false;
+    session.specialSlide = "end";
+    announceEventMeta(session);
+    return { ok: true };
+  }
+
+  if (kind === "pause") {
+    session.specialSlide = "pause";
+    return { ok: true };
+  }
+
+  session.specialSlide = "start";
+  return { ok: true };
+}
+
+/**
  * Event-Countdown beenden und Session starten (manuell oder bei Ablauf).
  * @param {object} session
  * @param {object} [payload]
@@ -2179,17 +2231,31 @@ async function onWsMessage(client, data) {
       client.send({ type: "error", payload: conflict });
       return;
     }
-    const prevSlide = session.slides[session.activeSlideIndex];
-    session.activeSlideIndex = clamp(Number(payload.index) || 0, 0, session.slides.length - 1);
-    const slide = session.slides[session.activeSlideIndex];
-    if (prevSlide?.id !== slide?.id) {
-      clearInteractionEndTimer(session.code, prevSlide?.id);
-      interactionState.onSlideActivated(session, slide, prevSlide);
-      scheduleInteractionEnd(session, slide);
+    const kind = sanitizeSpecialSlideKind(payload.specialSlide);
+    if (kind) {
+      const out = applySpecialSlide(session, kind);
+      if (out.error) {
+        client.send({ type: "error", payload: out });
+        return;
+      }
+      if (payload.index != null) {
+        session.activeSlideIndex = clamp(Number(payload.index) || 0, 0, session.slides.length - 1);
+      }
+    } else {
+      session.specialSlide = null;
+      const prevSlide = session.slides[session.activeSlideIndex];
+      session.activeSlideIndex = clamp(Number(payload.index) || 0, 0, session.slides.length - 1);
+      const slide = session.slides[session.activeSlideIndex];
+      if (prevSlide?.id !== slide?.id) {
+        clearInteractionEndTimer(session.code, prevSlide?.id);
+        interactionState.onSlideActivated(session, slide, prevSlide);
+        scheduleInteractionEnd(session, slide);
+      }
     }
     commitPresenterVersion(session);
     schedulePersist(session);
     announceSlide(session);
+    if (session.specialSlide === "end") announceSession(session);
   } else if (type === "interaction") {
     if (client.role !== "presenter") return;
     const out = applyInteractionControl(session, payload);
@@ -2243,13 +2309,15 @@ function announceSession(session) {
 function announceSlide(session) {
   const index = session.activeSlideIndex;
   const slide = session.slides[index];
+  const specialSlide = session.specialSlide || null;
   for (const client of clients) {
     if (client.sessionCode !== session.code) continue;
     client.send({
       type: "slide",
       payload: {
         index,
-        slide: publicSlide(slide, publicOptsForClient(client)),
+        slide: slide ? publicSlide(slide, publicOptsForClient(client)) : undefined,
+        specialSlide,
         stateVersion: sessionVersion.getVersion(session),
       },
     });
@@ -2257,7 +2325,13 @@ function announceSlide(session) {
   }
   bus.publish(session.code, {
     type: "slide",
-    payload: { index, slide, internal: true, stateVersion: sessionVersion.getVersion(session) },
+    payload: {
+      index,
+      slide,
+      specialSlide,
+      internal: true,
+      stateVersion: sessionVersion.getVersion(session),
+    },
     stateVersion: sessionVersion.getVersion(session),
   });
   /* Zweites Signal für Clients, die das slide-Event verpasst haben (Mobile-Hintergrund). */
@@ -3107,6 +3181,13 @@ function participantEventGate(session) {
       ok: false,
       error: "event_archived",
       message: "Dieses Event ist archiviert.",
+    };
+  }
+  if (status === "ended") {
+    return {
+      ok: false,
+      error: "event_ended",
+      message: "Dieses Event ist beendet.",
     };
   }
   return null;

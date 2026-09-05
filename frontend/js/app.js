@@ -27,6 +27,11 @@ import {
   syncPresenterCountdownControl,
   destroyPresenterCountdownControl,
 } from "./presenterCountdownControl.js";
+import {
+  syncPresenterProgramControl,
+  destroyPresenterProgramControl,
+} from "./presenterProgramControl.js";
+import { activeSpecialSlideKind, mountSpecialSlide } from "./eventSpecialSlides.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
 import { initI18n, setLang, t, applyDom, currentLang, onLang } from "./i18n.js";
@@ -1668,6 +1673,7 @@ function teardownRealtime() {
   ctx.pendingVotePayload = null;
   destroyPresenterStats();
   destroyPresenterCountdownControl();
+  destroyPresenterProgramControl();
   ctx.rt?.disconnect();
   ctx.rt = null;
   destroyPoll();
@@ -1756,15 +1762,32 @@ function renderPresenterChrome() {
   refreshPresenterPanel();
 }
 
+/** Host für Sonderfolien-Vorschau in der Presenter-Ansicht. */
+function ensurePresentSpecialHost() {
+  const stage = document.getElementById("present-stage");
+  if (!stage || document.getElementById("present-special-slide")) return;
+  const host = document.createElement("div");
+  host.id = "present-special-slide";
+  host.className = "present-special-slide";
+  host.hidden = true;
+  stage.prepend(host);
+}
+
 function renderActiveSlide() {
   const s = ctx.session;
   if (!s) return;
   const countdownOn = syncPresentEventCountdown();
+  const specialKind = activeSpecialSlideKind(s);
   const index = s.activeSlideIndex || 0;
   const slide = s.slides[index];
-  if (!slide) return;
-  els.presentQuestion.textContent = slide.question;
-  els.slideIndicator.textContent = `${index + 1} / ${s.slides.length}`;
+  if (!slide && !specialKind) return;
+
+  if (slide) {
+    els.presentQuestion.textContent = slide.question;
+  }
+  els.slideIndicator.textContent = specialKind
+    ? t(`programControl.${specialKind}`)
+    : `${index + 1} / ${s.slides.length}`;
   renderPresentStrip(els.presentDeck, s, t, {
   onGoto: (i) => gotoSlideIndex(i),
     onAdd: openSlideDialog,
@@ -1785,6 +1808,35 @@ function renderActiveSlide() {
     return;
   }
 
+  if (specialKind) {
+    ensurePresentSpecialHost();
+    const host = document.getElementById("present-special-slide");
+    if (host) {
+      host.hidden = false;
+      mountSpecialSlide(host, specialKind, s.eventMeta, { t });
+    }
+    els.pollRoot.hidden = true;
+    els.wordcloudRoot.hidden = true;
+    els.qaRoot.hidden = true;
+    els.quizRoot.hidden = true;
+    if (els.presentQuestion) els.presentQuestion.hidden = true;
+    destroyPoll();
+    destroyWordCloud();
+    destroyQA();
+    destroyQuiz();
+    destroySlideInput(els.pollRoot);
+    refreshPresenterPanel();
+    return;
+  }
+
+  const specialHost = document.getElementById("present-special-slide");
+  if (specialHost) {
+    specialHost.hidden = true;
+    specialHost.replaceChildren();
+  }
+  if (els.presentQuestion) els.presentQuestion.hidden = false;
+
+  if (!slide) return;
   const type = slide.type;
   const pollTypes = new Set(["choice", "rating_scale", "ranking", "points100", "open_text", "image_choice", "datetime", "picker"]);
   els.pollRoot.hidden = !pollTypes.has(type);
@@ -2054,6 +2106,7 @@ function handleJoinParticipantError(payload) {
     "no_slide",
     "event_planned",
     "event_archived",
+    "event_ended",
   ]);
 
   if (code === "blocked") {
@@ -2312,8 +2365,9 @@ function shiftSlide(delta) {
 function gotoSlideIndex(index) {
   if (!ctx.session?.slides?.length || ctx.role !== "present") return;
   const next = Math.max(0, Math.min(ctx.session.slides.length - 1, Number(index) || 0));
-  if (next === ctx.session.activeSlideIndex) return;
+  if (next === ctx.session.activeSlideIndex && !ctx.session.specialSlide) return;
   ctx.session.activeSlideIndex = next;
+  ctx.session.specialSlide = null;
   normalizeSessionSlides(ctx.session);
   persistLocal(ctx.session);
   renderActiveSlide();
@@ -2329,6 +2383,7 @@ async function publishSlideChange(index) {
   const payload = {
     code: ctx.session.code,
     index,
+    specialSlide: null,
     slide: currentSlide(),
     expectedVersion: ctx.session.stateVersion ?? 0,
   };
@@ -2377,6 +2432,7 @@ function handleRemoteSlide(payload) {
     refreshJoinSlideUi();
   } else if (ctx.role === "present") {
     renderActiveSlide();
+    refreshPresenterPanel();
   }
 }
 
@@ -2626,6 +2682,11 @@ function refreshPresenterPanel() {
       if (ctx.session.eventMeta) ctx.session.eventMeta.showStageQr = show;
     },
   }, countdownOn);
+  syncPresenterProgramControl(document.getElementById("presenter-program-control"), {
+    session: ctx.session,
+    connectionOpen: els.connectionStatus?.dataset?.state === "open",
+    emit: emitLive,
+  });
 }
 
 /** Countdown lokal aktualisieren, solange Interaktion läuft oder pausiert ist. */

@@ -111,7 +111,7 @@ export function bindInteractionBar(opts) {
 
 export function joinInputsBlocked(slide, session) {
   const eventStatus = session?.eventMeta?.status;
-  if (eventStatus === "planned" || eventStatus === "archived") return true;
+  if (eventStatus === "planned" || eventStatus === "archived" || eventStatus === "ended") return true;
   if (!slide?.interaction) return false;
   if (slide.interaction.manualStart === false) return false;
   return effectiveInteractionState(slide) !== "running";
@@ -122,6 +122,7 @@ export function joinEventStatusMessage(session) {
   const status = session?.eventMeta?.status;
   if (status === "planned") return t("events.joinClosed");
   if (status === "archived") return t("join.eventArchived");
+  if (status === "ended") return t("programControl.eventEnded");
   return "";
 }
 

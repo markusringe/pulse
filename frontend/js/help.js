@@ -461,6 +461,23 @@ async function loadCatalog(admin = false) {
 }
 
 /**
+ * Hilfe-Artikel für Presenter-Modal (rollengefiltert, ohne volle Hilfe-View).
+ */
+export async function loadPresenterHelpArticles() {
+  const data = await loadCatalog(false);
+  await loadAuth();
+  const viewerRole =
+    resolveHelpRoleFromAuth({
+      user: getCurrentUser(),
+      viaSecret: isAuthViaSecret(),
+      authEnabled: isAuthEnabled(),
+      adminRoute: false,
+    }) || "presenter";
+  const articles = (data.articles || []).filter((a) => articleMatchesHelpRole(a, viewerRole));
+  return { articles, categories: data.categories || [], role: viewerRole };
+}
+
+/**
  * Rollenfilter aus Auth vorauswählen (einmal pro Tab, bis „Filter leeren“).
  * @param {boolean} admin
  */
