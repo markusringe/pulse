@@ -150,6 +150,17 @@ const allowed = resolveHelpArticleAccess({ user: { role: "admin" }, viaSecret: f
 });
 assert(allowed.ok && allowed.article.id === "installation", "Einzelartikel für Admin");
 
+assert(resolveHelpArticleIdFromWebPath("/help/installation.html") === "installation", "Pfad → Katalog-ID");
+assert(resolveHelpArticleIdFromWebPath("/help/guides/admin-checklist.html") === "roles-admin", "Guide-Alias");
+
+const htmlDenied = checkHelpStaticAccess({ user: null, viaSecret: false }, "/help/installation.html", {
+  authEnabled: true,
+});
+assert(!htmlDenied.ok && htmlDenied.status === 403, "HTML-Zugriff Installation verweigert");
+
+const htmlOk = checkHelpStaticAccess({ user: null, viaSecret: false }, "/help/welcome.html", { authEnabled: true });
+assert(htmlOk.ok && htmlOk.kind === "html", "HTML Welcome erlaubt");
+
 (async () => {
   const port = pickPort();
   const adminSecret = "help-api-phase2-secret";
@@ -186,6 +197,16 @@ assert(allowed.ok && allowed.article.id === "installation", "Einzelartikel für 
     });
     assert(withSecret.status === 200, "HTTP Einzelartikel mit ADMIN_SECRET");
     assert(withSecret.json.article?.id === "installation", "HTTP Installation mit Secret");
+
+    const staticJson = await httpGet(`http://127.0.0.1:${port}/help/articles.json`);
+    assert(staticJson.status === 200, "HTTP gefiltertes articles.json");
+    assert(!staticJson.json.articles.some((a) => a.id === "installation"), "articles.json ohne Installation");
+
+    const html403 = await httpGet(`http://127.0.0.1:${port}/help/installation.html`);
+    assert(html403.status === 403, "HTTP installation.html 403 ohne Auth");
+
+    const html200 = await httpGet(`http://127.0.0.1:${port}/help/welcome.html`);
+    assert(html200.status === 200, "HTTP welcome.html für Gast");
 
     console.log("test-help-api: ok", pub.json.articles.length, "Artikel (Gast)");
   } finally {
