@@ -35,3 +35,19 @@
 **Status: RC Pilot** — automatisierte Abnahme grün; manuelle Browser-Matrix und Auth Prod ausstehend.
 
 Siehe `docs/stabilization/prod-freigabe-checkliste.md`.
+
+---
+
+## Addendum 2026-09-05 — Sonderfolien v1.5.41
+
+| Bereich | Ergebnis |
+|---------|----------|
+| Prod-Deploy v1.5.41 | OK — `https://pulse.ringe.us` |
+| `test-special-slides-remote` | 15/15 |
+| Presenter/Stage Sonderfolien (Chrome) | OK — Townhall 807435 |
+| Safari Desktop-Stichprobe | OK |
+| Bugfix Kaltstart `countdownDismissed` | OK — v1.5.41 |
+| GitHub Release v1.5.41 | OK |
+| Firefox / Beamer / Screen-Share | offen |
+
+**Detail:** `docs/stabilization/abnahme-sonderfolien-v1.5.37-fortschritt.md`

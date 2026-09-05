@@ -20,3 +20,7 @@
 ```bash
 npm run test:presenter-special-slide-dock
 ```
+
+## Nachfolger
+
+- v1.5.41 — Stage-Kaltstart `countdownDismissed` — `CHANGELOG-v1.5.41.md`

@@ -75,5 +75,6 @@ npm run test:event-special-slides
 
 - ✅ Drei Sonderfolien-Buttons **nur** im Presenter
 - ❌ **Keine** Buttons auf der Stage
-- Stage bleibt professionelle Ausgabefläche
-- Keine Regression bei Countdown, Effekten, Join
+- ✅ Stage bleibt professionelle Ausgabefläche
+- ✅ Keine Regression bei Countdown, Effekten, Join (Chrome + Safari, Prod v1.5.41)
+- **Fortschritt:** `docs/stabilization/abnahme-sonderfolien-v1.5.37-fortschritt.md`

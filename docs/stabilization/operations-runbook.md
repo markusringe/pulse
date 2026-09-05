@@ -1,4 +1,6 @@
-# Operations-Runbook — Pulse v1.5.11
+# Operations-Runbook — Pulse v1.5.41
+
+**Prod-Stand:** v1.5.41 · https://pulse.ringe.us
 
 Kurzanleitung für Betrieb, Diagnose und Incident Response. **Keine Secrets in Logs/Konsole.**
 
@@ -39,7 +41,7 @@ docker images | grep pulse-app
 docker exec pulse-pulse-1 node scripts/diagnose-pulse.js
 curl -sS https://<domain>/api/health | jq .
 curl -sS https://<domain>/api/health/ready | jq '{ok, checks: [.checks[]|{id,ok}]}'
-npm run smoke:remote -- --url https://<domain> --expect-version 1.5.11
+npm run smoke:remote -- --url https://<domain> --expect-version 1.5.41
 ```
 
 ## Incident: Live-State divergiert (zwei Container)
@@ -60,7 +62,7 @@ npm run smoke:remote -- --url https://<domain> --expect-version 1.5.11
 
 ```bash
 cd /opt/pulse
-sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.11 --yes
+sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.41 --yes
 # Docker: compose build + up mit pulse-app:<version> — nicht nur Admin-UI-Update
 curl -sS https://<domain>/api/health/ready | jq '{ok, version, checks: .checks|map({id,ok})}'
 ```

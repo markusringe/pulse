@@ -87,9 +87,10 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 
 ## OBS — Beobachtungen
 
-- **Version:** `package.json` **1.5.32** · Prod: **v1.5.32**
-- **Live-Demo:** Event `241184` — `node scripts/prepare-live-demo.js` + Container-Neustart
-- **Remote-Tests:** `node scripts/smoke-remote-url.js --expect-version 1.5.27` · `node scripts/test-join-live-remote.js --vote`
+- **Version:** `package.json` **1.5.41** · Prod: **v1.5.41** (single, ready)
+- **Sonderfolien-Abnahme:** Chrome + Safari ✅ · Firefox/Beamer/Gerät offen — `abnahme-sonderfolien-v1.5.37-fortschritt.md`
+- **Live-Demo:** Event `241184`, Townhall `807435`
+- **Remote-Tests:** `test-special-slides-remote.js --expect-version 1.5.41` · `smoke-remote-url.js --expect-version 1.5.41`
 - **Last-Baseline:** `load-baseline-100.json`, `load-baseline-300.json` (lokal, Single, Gates grün)
 - **Betriebsmodi:** ADR `docs/stabilization/architecture-operation-modes.md`
 - **Lasttest:** `npm run load-test` · Gates in `release-gates.md`
@@ -110,6 +111,6 @@ Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedr
 8. ~~Rollback-Drill auf Prod~~ — **erledigt** (2026-09-04)
 9. ~~Automatisierte Stabilisierungs-Abnahme~~ — **erledigt** (`acceptance:stabilization` 2026-09-04)
 10. Browser-Pflichtpfad 19 Schritte + iOS/Android (manuell)
-11. ~~Sonderfolien Presenter/Stage v1.5.37~~ — **Architektur erledigt**; manuelle Abnahme: `abnahme-sonderfolien-v1.5.37.md` (Fortschritt: `abnahme-sonderfolien-v1.5.37-fortschritt.md`)
+11. ~~Sonderfolien Presenter/Stage v1.5.37~~ — **RC Pilot** (Chrome + Safari, v1.5.41 Prod); offen: Firefox, Beamer, Screen-Share, physische Mobilgeräte — `abnahme-sonderfolien-v1.5.37-fortschritt.md`
 12. Last-Dauerläufe 30/45 min (`npm run load:scenarios:full`)
 13. SSH-Key auf VPS rotieren (Key im Chat exponiert)

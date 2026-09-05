@@ -23,3 +23,7 @@ Container:
 docker exec pulse-pulse-1 node scripts/test-special-slides-remote.js --expect-version 1.5.40
 docker exec pulse-pulse-1 node scripts/test-presenter-special-slide-dock.js
 ```
+
+## Nachfolger
+
+- **v1.5.41** — Bugfix Stage-Kaltstart `countdownDismissed` — `CHANGELOG-v1.5.41.md`

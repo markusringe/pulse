@@ -2,7 +2,7 @@
 
 **Ist-Zustand / Spezifikation**
 
-**Stand:** Programmversion **v1.5.27** · Ist-Zustand aus dem Quellcode, 2026-09-04.
+**Stand:** Programmversion **v1.5.41** · Prod **v1.5.41** · Ist-Zustand aus dem Quellcode, 2026-09-05.
 **Kein Soll-Konzept:** Nur Funktionen und Technik, die im Repository tatsächlich vorhanden sind.  
 **Produktname:** Pulse. Technische Präfixe: `data/pulse.db`, `pulse:session:…`, Docker-Services `pulse` / `pulse-b`.
 

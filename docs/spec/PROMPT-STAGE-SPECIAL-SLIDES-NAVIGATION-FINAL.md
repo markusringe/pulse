@@ -84,3 +84,9 @@ Join-Antwort:
 
 - `scripts/test-event-special-slides.js` — Backend-Sanitize/Persistenz
 - Manuell: Stage ohne `share=1` als eingeloggter Presenter → FAB sichtbar; mit `?share=1` → ausgeblendet
+
+## Abnahme (Prod v1.5.41)
+
+- ✅ Stage **passiv** bei `#/stage/:code?share=1` — keine Sonderfolien-Steuer-UI
+- ✅ Presenter steuert Countdown/Pause/Ende; Stage folgt per WS
+- **Fortschritt:** `docs/stabilization/abnahme-sonderfolien-v1.5.37-fortschritt.md`

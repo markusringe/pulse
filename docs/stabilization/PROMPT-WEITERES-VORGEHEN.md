@@ -1,6 +1,6 @@
 # Weiteres Vorgehen — Stabilisierung bis Produktionsfreigabe
 
-**Stand:** Programmversion **v1.5.11** · 2026-09-04  
+**Stand:** Programmversion **v1.5.41** · 2026-09-05  
 **Zweck:** Arbeitsgrundlage für Browser-/Mobiltests, Lasttests, Backup/Restore, Betrieb und Freigabe.  
 **Feature-Freeze:** Keine neuen Endnutzerfunktionen — nur Tests, Ops, Doku.
 
@@ -25,8 +25,11 @@
 npm run acceptance:public -- --url https://pulse.ringe.us
 npm run test:mobile
 npm run test:accessibility
-npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.11
+npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.41
+npm run test:special-slides-remote -- --url https://pulse.ringe.us --expect-version 1.5.41
 ```
+
+**Sonderfolien (2026-09-05):** Chrome + Safari ✅ — `abnahme-sonderfolien-v1.5.37-fortschritt.md`. Offen: Firefox, Beamer, Screen-Share, physische Mobilgeräte.
 
 ### Manuell (Pflichtpfad 19 Schritte)
 

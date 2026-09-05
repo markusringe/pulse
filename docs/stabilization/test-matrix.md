@@ -1,6 +1,6 @@
 # Testmatrix — Feature-Freeze
 
-**Stand:** Programmversion **v1.5.11** · 2026-09-04
+**Stand:** Programmversion **v1.5.41** · 2026-09-05
 
 | Bereich | Automatisiert | Skript | Manuell |
 |---------|---------------|--------|---------|

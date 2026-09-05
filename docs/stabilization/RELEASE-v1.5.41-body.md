@@ -1,6 +1,7 @@
 # GitHub-Release-Body — v1.5.41
 
-Zum Einfügen unter: https://github.com/markusringe/pulse/releases/new?tag=v1.5.41
+**Status:** ✅ Veröffentlicht am 2026-09-05  
+**URL:** https://github.com/markusringe/pulse/releases/tag/v1.5.41
 
 **Title:** `v1.5.41: fix(stage): countdownDismissed beim Kaltstart`
 

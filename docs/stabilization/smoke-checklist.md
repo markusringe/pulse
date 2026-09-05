@@ -1,6 +1,6 @@
 # Manuelle Smoke-Checkliste — Stabilisierungsrelease
 
-Stand: **v1.5.11** · Prod `https://pulse.ringe.us` · geprüft **2026-09-04**
+Stand: **v1.5.41** · Prod `https://pulse.ringe.us` · geprüft **2026-09-05**
 
 Browser: Chrome (Desktop) + iOS Safari / Android Chrome (Kernabläufe). Mobil-Emulation: 320 / 375 / 430 px.
 
@@ -15,6 +15,8 @@ npm run smoke:remote -- --url https://pulse.ringe.us --expect-version X.Y.Z
 npm run test:update-rollback
 curl -fsS https://pulse.ringe.us/api/health/ready | jq '.ok, .checks[] | select(.id=="asset_manifest")'
 ```
+
+**Prod v1.5.41 (2026-09-05):** Sonderfolien — Chrome + Safari ✅, Remote 15/15, Release veröffentlicht. Details: **`abnahme-sonderfolien-v1.5.37-fortschritt.md`**.
 
 **Prod v1.5.37 (2026-09-05):** Sonderfolien Presenter/Stage — siehe **`abnahme-sonderfolien-v1.5.37.md`** (Dock, Folienleiste, Beamer, Screen-Share).
 
@@ -200,13 +202,15 @@ docker images | grep pulse-app
 
 | Kriterium | Status |
 |-----------|--------|
-| Remote-Smoke 16/16 | ✓ (v1.5.11) |
+| Remote-Smoke 16/16 | ✓ (v1.5.41 Prod) |
+| Sonderfolien Remote 15/15 | ✓ (v1.5.41) |
 | `asset_manifest` Ready | ✓ |
 | Automatisierter Rollback (Code) | ✓ (v1.5.11) |
 | Rollback-Drill Prod | ✓ (2026-09-04, success) |
+| Sonderfolien Chrome + Safari | ✓ / ☐ FF |
 | Browser-Pflichtpfad (19 Schritte) | ✗ |
 | Admin/Login/Rollen Prod | ✗ (SMTP) |
-| Gesamt Freigabe | **RC Pilot** — automatisierte Abnahme OK; manuell: Browser 19 Schritte, Auth Prod, Mobilgeräte |
+| Gesamt Freigabe | **RC Pilot** — Sonderfolien funktional (v1.5.41); manuell: Browser 19 Schritte, Auth Prod, Firefox, Beamer, Mobilgeräte |
 
 ### Automatisierte Abnahme (2026-09-04)
 

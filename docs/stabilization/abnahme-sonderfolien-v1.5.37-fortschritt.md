@@ -154,13 +154,13 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 | — | Firefox + Safari geöffnet (807435) | Firefox ☐ · **Safari ✅** 2026-09-05 |
 | — | GitHub Release v1.5.41 | ✅ [Release](https://github.com/markusringe/pulse/releases/tag/v1.5.41) |
 
-**Townhall 807435:** `status: active`, `countdownDismissed: true` — bereit für FF/Safari.
+**Townhall 807435:** `status: active`, `countdownDismissed: true` — Safari ✅, Firefox offen.
 
 ---
 
 ## Nächste Schritte
 
-1. Firefox/Safari-Stichprobe → [abnahme-ff-safari-stichprobe.md](abnahme-ff-safari-stichprobe.md) (15–20 Min./Browser).
+1. Firefox-Stichprobe → [abnahme-ff-safari-stichprobe.md](abnahme-ff-safari-stichprobe.md) (~15 Min.).
 2. Beamer ~3 m + Screen-Share (Abschnitt 4–5) beim nächsten Pilot.
 3. Physische Geräte iOS/Android (Abschnitt 6).
 4. Feature-Freeze 2–3 Tage — nur Bugfixes aus Abnahme.

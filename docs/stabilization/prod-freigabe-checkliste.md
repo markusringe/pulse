@@ -1,8 +1,10 @@
 # Produktionsfreigabe — Checkliste
 
-**Stand:** v1.5.11 · 2026-09-04  
+**Stand:** v1.5.41 · 2026-09-05  
 **Verantwortlich:** Betrieb / Produktowner  
-**Ergebnis:** ☐ Freigegeben · ☐ RC Pilot · ☐ Nicht freigegeben
+**Ergebnis:** ☐ Freigegeben · ☑ **RC Pilot** · ☐ Nicht freigegeben
+
+**Prod:** https://pulse.ringe.us · Release: https://github.com/markusringe/pulse/releases/tag/v1.5.41
 
 ---
 
@@ -25,7 +27,7 @@
 
 | # | Kriterium | Status |
 |---|-----------|--------|
-| B1 | Prod-Deploy v1.5.11, Ready `ok:true` | |
+| B1 | Prod-Deploy v1.5.41, Ready `ok:true` | ✓ |
 | B2 | Rollback-Drill Prod (`outcome: success`) | |
 | B3 | Rollback-Image `pulse-app:<vorherige>` vorhanden | |
 | B4 | Betriebsmodus dokumentiert (single vs. cluster) | |
@@ -62,6 +64,22 @@
 - [ ] L-300 Fehlerrate > 1 % oder p95 Join > 800 ms
 - [ ] Rollback-Drill nicht dokumentiert
 - [ ] Admin-Login auf Prod nicht nutzbar
+
+---
+
+## F — Sonderfolien Presenter/Stage (v1.5.37+)
+
+Siehe [abnahme-sonderfolien-v1.5.37.md](abnahme-sonderfolien-v1.5.37.md) und [Fortschritt](abnahme-sonderfolien-v1.5.37-fortschritt.md).
+
+| # | Kriterium | Status |
+|---|-----------|--------|
+| F1 | Remote `test-special-slides-remote` 15/15 | ✓ v1.5.41 |
+| F2 | Presenter-Dock + Folienleiste (Chrome) | ✓ |
+| F3 | Stage passiv, kein Steuer-UI | ✓ |
+| F4 | Safari Desktop-Stichprobe | ✓ 2026-09-05 |
+| F5 | Firefox Desktop-Stichprobe | ☐ |
+| F6 | Beamer ~3 m / Screen-Share | ☐ Pilot |
+| F7 | Bugfix Kaltstart `countdownDismissed` | ✓ v1.5.41 |
 
 ---
 

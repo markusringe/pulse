@@ -300,13 +300,13 @@ Remote One-Liner:
 curl -fsSL https://raw.githubusercontent.com/markusringe/pulse/main/scripts/update-vps-ubuntu.sh | sudo bash
 ```
 
-Optionen: `--tag v1.5.11` (festes Release), `--npm` / `--docker`, `--yes`, `--skip-backup`, `--json`.  
+Optionen: `--tag v1.5.41` (festes Release), `--npm` / `--docker`, `--yes`, `--skip-backup`, `--json`.  
 Erkennt automatisch Docker-Stack (Standard) oder npm-Modus. **Updater v1.1:** versionierte Images (`pulse-app:<version>`), automatischer Rollback bei Build- oder Readiness-Fehler, strikte Ready-Prüfung (`ok:true`).
 
 ```bash
 # Beispiel Produktion
-sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.11 --yes
-npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.11
+sudo ./scripts/update-vps-ubuntu.sh --tag v1.5.41 --yes
+npm run smoke:remote -- --url https://pulse.ringe.us --expect-version 1.5.41
 ```
 
 ### Lokal (Git + npm)
@@ -323,8 +323,8 @@ npm test          # optional
 
 ```bash
 git pull
-PULSE_IMAGE_TAG=1.5.11 docker compose build
-PULSE_IMAGE_TAG=1.5.11 docker compose up -d
+PULSE_IMAGE_TAG=1.5.41 docker compose build
+PULSE_IMAGE_TAG=1.5.41 docker compose up -d
 ```
 
 Alternativ: In-App-Update unter `#/admin/updates` (npm-Installation mit Git-Repo).

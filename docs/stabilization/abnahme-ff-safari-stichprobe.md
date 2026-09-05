@@ -72,12 +72,10 @@ Presenter-URL im **privaten Tab** (kein Desktop-Layout nötig):
 
 ---
 
-## Ergebnis eintragen
+## Ergebnis
 
-Nach Abschluss in `abnahme-sonderfolien-v1.5.37-fortschritt.md` unter **Noch offen** aktualisieren:
-
-- Firefox: ☐ offen → ✅ / ❌ (Ticket)
-- Safari: ✅ **2026-09-05** (Townhall 807435, Presenter + Stage)
+- Firefox: ☐ offen → [Checkliste](abnahme-ff-safari-stichprobe.md)
+- Safari: ✅ **2026-09-05** (Townhall 807435, Presenter + Stage, Desktop macOS)
 
 **Bei Abweichung:** Browser-Version, OS, Screenshot, Konsole (F12 → Console), ggf. `#/stage/…` + Presenter-URL notieren.
 
