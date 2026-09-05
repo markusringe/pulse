@@ -512,7 +512,7 @@
             aria-live="polite"
           >
             <!-- Feste Referenz-Leinwand (16:9), per CSS in die Box skaliert — ganze Grafik sichtbar -->
-            <div class="present-slide-canvas-fit" data-present-canvas-fit></div>
+            <div id="present-slide-canvas-fit" class="present-slide-canvas-fit" data-present-canvas-fit></div>
           </div>
           <div id="poll-root" class="stage-panel" hidden></div>
           <div id="wordcloud-root" class="stage-panel wordcloud-stage" hidden>
@@ -528,16 +528,18 @@
 
         <footer class="present-dock pulse-present-dock">
           <div id="present-deck" class="present-deck"></div>
-          <div class="join-block">
-            <canvas id="qr-canvas" class="qr" width="200" height="200" aria-label="QR-Code zum Beitreten"></canvas>
-            <div class="join-copy">
-              <p class="eyebrow">Beitreten</p>
-              <p id="join-code-display" class="join-code">------</p>
-              <p id="join-url" class="join-url muted"></p>
-              <button type="button" id="btn-copy-link" class="btn ghost pulse-btn-ghost" data-i18n="present.copy">Link kopieren</button>
+          <div class="present-dock-toolbar">
+            <div class="join-block join-block--present-compact">
+              <div class="join-copy">
+                <span class="eyebrow join-block__label" data-i18n="present.join">Beitreten</span>
+                <p id="join-code-display" class="join-code">------</p>
+                <button type="button" id="btn-copy-link" class="btn ghost pulse-btn-ghost btn--sm" data-i18n="present.copy">Link kopieren</button>
+              </div>
+              <!-- QR nur in Lobby/Stage — im Dock Platz sparen -->
+              <canvas id="qr-canvas" class="qr present-dock-qr-sr" width="200" height="200" hidden aria-hidden="true"></canvas>
+              <p id="join-url" class="join-url muted sr-only" aria-hidden="true"></p>
             </div>
-          </div>
-          <nav class="slide-nav present-slide-nav" aria-label="Folien">
+            <nav class="slide-nav present-slide-nav" aria-label="Folien">
             <div class="present-nav-core">
               <button type="button" id="btn-prev" class="btn ghost pulse-btn-ghost" data-i18n="present.prev">Zurück</button>
               <span id="slide-indicator" class="muted" aria-live="polite">1 / 1</span>
@@ -559,6 +561,7 @@
             </details>
             <button type="button" id="panic-button" class="btn present-panic-btn" data-i18n="present.panic">Notfall</button>
           </nav>
+          </div>
         </footer>
 
         <aside id="presenter-stats" class="presenter-stats" hidden></aside>

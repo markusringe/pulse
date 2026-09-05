@@ -737,7 +737,8 @@ a#btn-admin-home {
 
 /* ----- Presenter ----- */
 .view-present {
-  grid-template-rows: auto minmax(0, 2fr) minmax(0, 1fr) auto;
+  /* Kopf | Bühne | Dock (kompakt) | Statistik */
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 12px;
 }
 
@@ -759,9 +760,9 @@ a#btn-admin-home {
 
 .view-present .present-dock {
   min-height: 0;
-  max-height: min(32vh, 280px);
-  overflow-y: auto;
-  align-items: flex-start;
+  max-height: none;
+  overflow: visible;
+  align-items: stretch;
 }
 
 .view-present .present-deck {

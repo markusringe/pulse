@@ -79,37 +79,119 @@
   }
 }
 
-/* Dock — Join-Block und Navigation */
+/* Dock — kompakte Toolbar (ohne QR), kein vertikales Scrollen */
 .pulse-present-dock,
 .view-present .present-dock {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   padding-bottom: max(8px, env(safe-area-inset-bottom));
   min-width: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+.view-present .present-dock-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  min-width: 0;
+}
+
+.view-present .join-block--present-compact {
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.view-present .join-block--present-compact .join-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.view-present .join-block--present-compact .join-block__label {
+  margin: 0;
+  font-size: 0.72rem;
+}
+
+.view-present .join-block--present-compact .join-code {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.view-present .join-block--present-compact .btn--sm {
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}
+
+.view-present .present-dock-qr-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
 }
 
 .view-present .present-deck {
   flex: none;
   width: 100%;
   -webkit-overflow-scrolling: touch;
+  max-height: 64px;
 }
 
-.view-present .join-block {
-  flex-wrap: wrap;
-  gap: 12px;
+.view-present .present-slide-nav {
+  flex: 1 1 280px;
+  min-width: 0;
+  gap: 6px;
+}
+
+.view-present .present-nav-core {
+  gap: 6px;
+}
+
+.view-present .present-nav-core .btn,
+.view-present .present-nav-overflow summary,
+.view-present .present-panic-btn {
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}
+
+.view-present .present-special-slide-nav {
+  flex: 1 1 100%;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.view-present .present-special-btns {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  gap: 4px;
+}
+
+.view-present .present-special-btn {
+  min-height: 36px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
 }
 
 @media (max-width: 720px) {
-  .view-present .join-block {
+  .view-present .present-dock-toolbar {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: stretch;
   }
 
-  .view-present .join-block .qr {
-    width: min(140px, 40vw);
-    height: auto;
+  .view-present .present-slide-nav {
+    width: 100%;
   }
 }
 
@@ -133,7 +215,7 @@
 
 .view-present .present-nav-core .btn,
 .view-present .present-nav-overflow summary {
-  min-height: 44px;
+  min-height: 36px;
 }
 
 .view-present .present-nav-overflow {

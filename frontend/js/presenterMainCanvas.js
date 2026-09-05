@@ -8,14 +8,26 @@ import { renderSpecialSlideInto, stopSpecialSlideCountdown } from "./specialSlid
 import { currentLang } from "./i18n.js";
 import { joinUrlFromLocation, drawQrCode } from "./qrRender.js";
 
-/** Innere Leinwand — Stage-Parität 16:9, äußere Box skaliert per CSS. */
-function getPresenterCanvasFit(host) {
-  if (!host) return null;
-  return host.querySelector("[data-present-canvas-fit]") || host;
-}
-
 /** Zuletzt gemountete Sonderfolie — verhindert unnötiges Remount bei gleichem Modus. */
 let mountedKind = null;
+
+/**
+ * Innere 16:9-Leinwand sicherstellen (wird nie durch replaceChildren entfernt).
+ * @param {HTMLElement | null} host #present-slide-canvas
+ * @returns {HTMLElement | null}
+ */
+function ensurePresenterCanvasFit(host) {
+  if (!host) return null;
+  let fit = host.querySelector("[data-present-canvas-fit]");
+  if (!fit) {
+    fit = document.createElement("div");
+    fit.id = "present-slide-canvas-fit";
+    fit.className = "present-slide-canvas-fit";
+    fit.dataset.presentCanvasFit = "";
+    host.appendChild(fit);
+  }
+  return fit;
+}
 
 /**
  * Aktiven Sonderfolien-Modus für die Presenter-Hauptbox ermitteln.
@@ -30,6 +42,14 @@ export function resolvePresenterSpecialKind(session) {
   return activeSpecialSlideKind(session);
 }
 
+/** Sonderfolien-Inhalt in der Fit-Leinwand leeren (Wrapper bleibt erhalten). */
+function clearPresenterCanvasContent(fit) {
+  if (!fit) return;
+  stopSpecialSlideCountdown(fit);
+  fit.replaceChildren();
+  fit.classList.remove("event-countdown-host");
+}
+
 /**
  * Sonderfolie in der Haupt-Präsentationsbox synchronisieren (Darstellung wie Stage).
  * @param {HTMLElement | null} host Element mit data-slide-canvas
@@ -41,16 +61,14 @@ export function syncPresenterMainCanvas(host, session, opts = {}) {
   const kind = resolvePresenterSpecialKind(session);
 
   if (!host) return null;
-  const fit = getPresenterCanvasFit(host);
+  const fit = ensurePresenterCanvasFit(host);
 
   if (!kind) {
-    if (mountedKind) {
-      stopSpecialSlideCountdown(fit);
-      fit?.replaceChildren();
-      fit?.classList.remove("event-countdown-host");
-      host.hidden = true;
-      mountedKind = null;
+    if (mountedKind || !host.hidden || fit.querySelector(".ess, .event-countdown-panel")) {
+      clearPresenterCanvasContent(fit);
     }
+    host.hidden = true;
+    mountedKind = null;
     return null;
   }
 
@@ -66,20 +84,15 @@ export function syncPresenterMainCanvas(host, session, opts = {}) {
   const joinUrl = joinUrlFromLocation(session.code || session.joinCode || "");
 
   /* Countdown: einmal mounten — Sekunden-Tick läuft in mountCountdown ohne Shell-Rebuild. */
-  if (kind === "countdown" && mountedKind === "countdown" && fit?.querySelector(".event-countdown-panel")) {
-    return kind;
-  }
-
-  /* Pause/Ende: mountSpecialSlide cached intern — nur bei fehlendem DOM neu rendern. */
-  if (kind !== "countdown" && kind === mountedKind && fit?.querySelector(".ess")) {
+  if (kind === "countdown" && mountedKind === "countdown" && fit.querySelector(".event-countdown-panel")) {
     return kind;
   }
 
   if (kind !== mountedKind) {
-    stopSpecialSlideCountdown(fit);
+    clearPresenterCanvasContent(fit);
   }
 
-  renderSpecialSlideInto(fit, kind, meta, {
+  const rendered = renderSpecialSlideInto(fit, kind, meta, {
     variant: "stage",
     t: opts.t,
     locale,
@@ -90,6 +103,13 @@ export function syncPresenterMainCanvas(host, session, opts = {}) {
     showQr: Boolean(meta.showStageQr),
     syncEveryMs: 1000,
   });
+
+  if (!rendered && kind !== "countdown") {
+    clearPresenterCanvasContent(fit);
+    host.hidden = true;
+    mountedKind = null;
+    return null;
+  }
 
   mountedKind = kind;
   return kind;
@@ -102,10 +122,8 @@ export function destroyPresenterMainCanvas() {
     mountedKind = null;
     return;
   }
-  const fit = getPresenterCanvasFit(host);
-  stopSpecialSlideCountdown(fit);
-  fit?.replaceChildren();
-  fit?.classList.remove("event-countdown-host");
+  const fit = ensurePresenterCanvasFit(host);
+  clearPresenterCanvasContent(fit);
   host.hidden = true;
   mountedKind = null;
 }

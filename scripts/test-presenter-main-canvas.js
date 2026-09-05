@@ -30,7 +30,10 @@ assert(resolveBlock && !resolveBlock.includes("shouldShowCountdown"), "kein Auto
 assert(!canvasJs.includes("shouldShowCountdown"), "shouldShowCountdown nicht importieren");
 assert(canvasJs.includes("syncPresenterMainCanvas"), "syncPresenterMainCanvas fehlt");
 assert(canvasJs.includes("renderSpecialSlideInto"), "gemeinsamer Renderer");
-assert(canvasJs.includes("destroyPresenterMainCanvas"), "Teardown Hauptbox");
+assert(canvasJs.includes("ensurePresenterCanvasFit"), "Fit-Leinwand absichern");
+assert(indexHtml.includes("present-dock-toolbar"), "kompakte Dock-Toolbar");
+assert(indexHtml.includes('id="present-slide-canvas-fit"'), "Fit-Container mit ID");
+assert(!indexHtml.includes('aria-label="QR-Code zum Beitreten"') || indexHtml.includes("present-dock-qr-sr"), "kein sichtbarer Dock-QR");
 assert(renderJs.includes("mountSpecialSlide"), "renderSpecialSlide re-export");
 assert(appJs.includes("syncPresenterMainCanvas"), "app.js bindet Hauptbox");
 assert(appJs.includes("destroyPresenterMainCanvas"), "app.js Teardown Hauptbox");
