@@ -907,6 +907,48 @@ a#btn-admin-home {
   font-size: 1.2rem;
 }
 
+/* Sonderfolien-Chips in der Presenter-Folienleiste (Countdown / Pause / Ende) */
+.deck-chip-special {
+  min-width: auto;
+  padding: 0 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-style: dashed;
+}
+
+.deck-chip-special-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.deck-chip-special-label {
+  max-width: 5.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deck-chip-special.is-active {
+  border-style: solid;
+  border-color: var(--btn-primary-bg, var(--accent, #2563eb));
+  background: color-mix(in srgb, var(--btn-primary-bg, var(--accent, #2563eb)) 12%, var(--bg-soft));
+}
+
+.deck-chip-special--end.is-active.is-confirmed {
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .deck-chip-special-label {
+    display: none;
+  }
+
+  .deck-chip-special {
+    min-width: 44px;
+    padding: 0;
+  }
+}
+
 .deck-editor {
   margin-top: 0;
   padding-top: 0;

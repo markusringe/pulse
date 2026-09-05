@@ -33,6 +33,7 @@ import {
   updateSpecialSlideButtons,
 } from "./presenterSpecialSlideButtons.js";
 import { activeSpecialSlideKind, getCurrentSpecialSlide, mountSpecialSlide, isCountdownSpecialActive } from "./eventSpecialSlides.js";
+import { confirmSpecialSlideEnd, sendSpecialSlideCommand } from "./specialSlideNavCore.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
 import { initI18n, setLang, t, applyDom, currentLang, onLang } from "./i18n.js";
@@ -1794,7 +1795,8 @@ function renderActiveSlide() {
     ? t(`programControl.${current}`)
     : `${index + 1} / ${s.slides.length}`;
   renderPresentStrip(els.presentDeck, s, t, {
-  onGoto: (i) => gotoSlideIndex(i),
+    onGoto: (i) => gotoSlideIndex(i),
+    onGotoSpecial: (kind) => gotoSpecialSlide(kind),
     onAdd: openSlideDialog,
   });
 
@@ -2378,6 +2380,34 @@ function gotoSlideIndex(index) {
   persistLocal(ctx.session);
   renderActiveSlide();
   void publishSlideChange(next);
+}
+
+/**
+ * Presenter: Sonderfolie aus der Folienleiste aktivieren (Countdown / Pause / Ende).
+ * @param {"countdown"|"pause"|"end"} kind
+ */
+function gotoSpecialSlide(kind) {
+  if (!ctx.session?.eventId || ctx.role !== "present") return;
+  const meta = ctx.session.eventMeta || {};
+  const current = getCurrentSpecialSlide(ctx.session);
+  if (kind === "end") {
+    if (current === "end" || meta.status === "ended") return;
+    confirmSpecialSlideEnd(() => applySpecialSlideFromPresenter("end"));
+    return;
+  }
+  if (current === kind) return;
+  applySpecialSlideFromPresenter(kind);
+}
+
+/** Sonderfolie per WebSocket setzen und Presenter-Ansicht aktualisieren. */
+function applySpecialSlideFromPresenter(kind) {
+  const nav = document.getElementById("present-special-slide-nav");
+  sendSpecialSlideCommand(
+    { session: ctx.session, emit: emitLive },
+    kind,
+    nav && !nav.hidden ? nav : null
+  );
+  renderActiveSlide();
 }
 
 /**

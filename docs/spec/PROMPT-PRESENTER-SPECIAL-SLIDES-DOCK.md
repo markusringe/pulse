@@ -7,8 +7,8 @@
 
 ### Presenter (`#/present/:code`)
 
-- **Sonderfolien-Buttons:** Countdown, Pause, Ende (+ optional Hilfe `?`)
-- **Position:** Im bestehenden Presenter-Dock / Leiste (`#present-special-slide-nav`)
+- **Sonderfolien in der Folienleiste:** Countdown (vor 1), Pause, Folien, `+`, Ende (nach `+`)
+- **Zusätzlich Dock:** Countdown, Pause, Ende (+ Hilfe `?`) in `#present-special-slide-nav`
 - **Steuerung:** Volle Kontrolle über Event (nur Rolle `presenter` / Admin-Auth)
 - **Ziel:** Presenter steuert vom Laptop/Tablet aus
 

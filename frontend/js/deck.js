@@ -3,6 +3,8 @@
  * Icons bleiben kurz, damit der Streifen auf dem Beamer lesbar bleibt.
  */
 
+import { getCurrentSpecialSlide, getSpecialSlideConfig } from "./eventSpecialSlides.js";
+
 const TYPE_ICON = {
   choice: "📊",
   wordcloud: "☁️",
@@ -119,26 +121,62 @@ export function renderDraftList(root, t, handlers) {
 }
 
 /**
- * Klickbare Folienleiste im Präsentator.
+ * Klickbare Folienleiste im Präsentator inkl. Sonderfolien (Countdown, Pause, Ende).
+ * Reihenfolge: Countdown → Pause → Folien 1…n → (+) → Ende
  * @param {HTMLElement} root
- * @param {{ slides: any[], activeSlideIndex: number }} session
+ * @param {{ slides: any[], activeSlideIndex: number, eventMeta?: object }} session
  */
 export function renderPresentStrip(root, session, t, handlers) {
   if (!root || !session?.slides) return;
   root.replaceChildren();
   root.setAttribute("role", "tablist");
   root.setAttribute("aria-label", t ? t("deck.strip") : "Folien");
+
+  const meta = session.eventMeta || {};
+  const currentSpecial = getCurrentSpecialSlide(session);
+  const eventEnded = meta.status === "ended" || currentSpecial === "end";
+
+  const hasCountdown = Boolean(getSpecialSlideConfig(meta, "countdown"));
+  const hasPause = Boolean(getSpecialSlideConfig(meta, "pause"));
+  const hasEnd = Boolean(getSpecialSlideConfig(meta, "end"));
+  const isEventSession = Boolean(session.eventId);
+
+  /* Countdown immer vor Folie 1 (bei Event-Sessions); ohne Startzeit nur angezeigt, nicht klickbar. */
+  if (isEventSession) {
+    appendSpecialChip(root, {
+      kind: "countdown",
+      icon: "⏱",
+      label: t ? t("programControl.countdown") : "Countdown",
+      isActive: currentSpecial === "countdown",
+      disabled: eventEnded || !hasCountdown,
+      onClick: () => handlers.onGotoSpecial?.("countdown"),
+    });
+  }
+
+  if (hasPause) {
+    appendSpecialChip(root, {
+      kind: "pause",
+      icon: "⏸",
+      label: t ? t("programControl.pause") : "Pause",
+      isActive: currentSpecial === "pause",
+      disabled: eventEnded,
+      onClick: () => handlers.onGotoSpecial?.("pause"),
+    });
+  }
+
   session.slides.forEach((slide, i) => {
     const btn = document.createElement("button");
+    const isActive = !currentSpecial && i === (session.activeSlideIndex || 0);
     btn.type = "button";
-    btn.className = "deck-chip" + (i === (session.activeSlideIndex || 0) ? " is-active" : "");
+    btn.className = "deck-chip" + (isActive ? " is-active" : "");
     btn.setAttribute("role", "tab");
-    btn.setAttribute("aria-selected", String(i === (session.activeSlideIndex || 0)));
+    btn.setAttribute("aria-selected", String(isActive));
     btn.title = slide.question || "";
     btn.innerHTML = `<span aria-hidden="true">${typeIcon(slide.type)}</span><span>${i + 1}</span>`;
     btn.addEventListener("click", () => handlers.onGoto(i));
     root.append(btn);
   });
+
   const add = document.createElement("button");
   add.type = "button";
   add.className = "deck-chip deck-chip-add";
@@ -146,6 +184,47 @@ export function renderPresentStrip(root, session, t, handlers) {
   add.setAttribute("aria-label", t ? t("deck.addLive") : "Folie hinzufügen");
   add.addEventListener("click", () => handlers.onAdd());
   root.append(add);
+
+  if (hasEnd) {
+    appendSpecialChip(root, {
+      kind: "end",
+      icon: "✓",
+      label: t ? t("programControl.end") : "Ende",
+      isActive: currentSpecial === "end",
+      disabled: eventEnded && currentSpecial === "end",
+      onClick: () => handlers.onGotoSpecial?.("end"),
+    });
+  }
+}
+
+/**
+ * Chip für Sonderfolie (Countdown / Pause / Ende) in der Presenter-Leiste.
+ * @param {HTMLElement} root
+ * @param {{
+ *   kind: string,
+ *   icon: string,
+ *   label: string,
+ *   isActive?: boolean,
+ *   disabled?: boolean,
+ *   onClick?: () => void,
+ * }} opts
+ */
+function appendSpecialChip(root, opts) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className =
+    "deck-chip deck-chip-special deck-chip-special--" +
+    opts.kind +
+    (opts.isActive ? " is-active" : "") +
+    (opts.disabled && opts.kind === "end" ? " is-confirmed" : "");
+  btn.setAttribute("role", "tab");
+  btn.setAttribute("aria-selected", String(Boolean(opts.isActive)));
+  btn.setAttribute("aria-pressed", String(Boolean(opts.isActive)));
+  btn.title = opts.label;
+  btn.disabled = Boolean(opts.disabled);
+  btn.innerHTML = `<span class="deck-chip-special-icon" aria-hidden="true">${opts.icon}</span><span class="deck-chip-special-label">${escapeHtml(opts.label)}</span>`;
+  if (opts.onClick) btn.addEventListener("click", opts.onClick);
+  root.append(btn);
 }
 
 /**
