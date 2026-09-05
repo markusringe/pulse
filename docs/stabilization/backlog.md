@@ -1,6 +1,6 @@
 # Fehler-Backlog — Stabilisierungszyklus
 
-Stand: v1.5.37 · Prod **v1.5.37** (single, ready) · Branch `main`
+Stand: v1.5.39 · Prod **v1.5.39** (single, ready) · Branch `main`
 
 Legende: **P0** Blocker · **P1** Kritisch · **P2** Hoch · **P3** Mittel/Niedrig · **OBS** Beobachtung
 
