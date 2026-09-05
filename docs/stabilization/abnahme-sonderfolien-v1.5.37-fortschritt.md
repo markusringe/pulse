@@ -152,7 +152,7 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 | — | `test-presenter-special-slide-dock` (Container) | ✅ |
 | — | Stage Kaltstart `#/stage/807435?share=1` | ✅ „Willkommen — erste Frage“, 0× `[data-pss-kind]` |
 | — | Firefox + Safari geöffnet (807435) | Firefox ☐ · **Safari ✅** 2026-09-05 |
-| — | GitHub Release-Body | ☐ PAT/API 403 — [Body-Vorlage](RELEASE-v1.5.41-body.md) |
+| — | GitHub Release v1.5.41 | ✅ [Release](https://github.com/markusringe/pulse/releases/tag/v1.5.41) |
 
 **Townhall 807435:** `status: active`, `countdownDismissed: true` — bereit für FF/Safari.
 
@@ -164,4 +164,3 @@ Presenter: `markus@ringe.us` · Chrome (Prod)
 2. Beamer ~3 m + Screen-Share (Abschnitt 4–5) beim nächsten Pilot.
 3. Physische Geräte iOS/Android (Abschnitt 6).
 4. Feature-Freeze 2–3 Tage — nur Bugfixes aus Abnahme.
-5. GitHub Release: [Neues Release](https://github.com/markusringe/pulse/releases/new?tag=v1.5.41) — Body aus [RELEASE-v1.5.41-body.md](RELEASE-v1.5.41-body.md).
