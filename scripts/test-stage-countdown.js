@@ -26,6 +26,11 @@ assert(formatted.includes("2026") && formatted.includes("Uhr"), "DE datetime for
 assert(meta.countdownStatusLabel(60000) === "Wir starten in", "status running");
 assert(meta.countdownStatusLabel(0) === "Beginnt gleich", "status expired");
 
+assert(
+  meta.formatJoinUrlDisplay("https://pulse.ringe.us/j/123456") === "pulse.ringe.us/j/123456",
+  "join url display"
+);
+
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tt-countdown-meta-"));
 const origCwd = process.cwd();
 process.chdir(dir);

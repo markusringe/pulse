@@ -245,6 +245,7 @@
   "countdown.shareMode": "Screen-share view",
   "countdown.qr.toggle": "QR on stage",
   "countdown.qr.label": "Join QR code",
+  "countdown.qr.hint": "Scan to join",
   "countdown.control.label": "Countdown control",
   "countdown.editTime": "Adjust start time",
   "countdown.customTime": "New start time",

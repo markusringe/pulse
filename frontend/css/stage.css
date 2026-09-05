@@ -459,6 +459,15 @@ body.stage-mode .app {
   font-size: clamp(1.35rem, 3.5vw, 2.5rem);
 }
 
+.view-stage[data-stage-mode="share"] .event-countdown-qr-card {
+  max-width: min(24rem, 92vw);
+  padding: 1.25rem 1.5rem;
+}
+
+.view-stage[data-stage-mode="share"] .event-countdown-qr-canvas {
+  max-width: min(240px, 44vw);
+}
+
 .view-stage[data-stage-mode="share"] .event-countdown-bg {
   animation: none;
 }

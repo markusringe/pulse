@@ -69,6 +69,24 @@ export function countdownStatusLabel(ms, opts = {}) {
 }
 
 /**
+ * Join-URL für die Stage-Karte verkürzen (Host + Pfad).
+ * @param {string} url
+ * @returns {string}
+ */
+export function formatJoinUrlDisplay(url) {
+  try {
+    const u = new URL(String(url || ""));
+    const host = u.host.replace(/^www\./i, "");
+    const path = u.pathname.replace(/\/$/, "") || "";
+    return `${host}${path}`;
+  } catch {
+    return String(url || "")
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/$/, "");
+  }
+}
+
+/**
  * Verbleibende ms bis startTime (ISO), inkl. optionaler Client-Skew-Korrektur.
  * @param {string} startTime
  * @param {number} [clockSkew=0] — serverNow - Date.now()
@@ -170,6 +188,7 @@ export function renderCountdownPanel(meta, ms, opts = {}) {
   const datetime = showDateTime ? formatEventStartDisplay(meta.startTime, locale, opts.timeZone) : "";
   const status = countdownStatusLabel(ms, { paused: opts.paused, t: opts.t });
   const showQr = Boolean(opts.showQr && opts.joinUrl && variant === "stage");
+  const joinUrlShort = showQr ? formatJoinUrlDisplay(opts.joinUrl) : "";
 
   const bg = meta?.eventImage
     ? `<div class="event-countdown-bg" style="background-image:url('${escapeAttr(meta.eventImage)}')" aria-hidden="true"></div>`
@@ -198,7 +217,13 @@ export function renderCountdownPanel(meta, ms, opts = {}) {
       ${imminent ? `<p class="event-countdown-imminent">${esc(opts.t?.("countdown.imminent") || "In wenigen Augenblicken geht es los…")}</p>` : ""}
       ${digits}
       ${datetime ? `<p class="event-countdown-datetime">${esc(datetime)}</p>` : ""}
-      ${showQr ? `<div class="event-countdown-qr"><canvas class="event-countdown-qr-canvas" width="200" height="200" data-join-url="${escapeAttr(opts.joinUrl)}" aria-label="${esc(opts.t?.("countdown.qr.label") || "QR-Code zum Beitreten")}"></canvas></div>` : ""}
+      ${showQr ? `<div class="event-countdown-qr-card">
+        <p class="event-countdown-qr-hint">${esc(opts.t?.("countdown.qr.hint") || "Scannen zum Beitreten")}</p>
+        <div class="event-countdown-qr">
+          <canvas class="event-countdown-qr-canvas" width="200" height="200" data-join-url="${escapeAttr(opts.joinUrl)}" aria-label="${esc(opts.t?.("countdown.qr.label") || "QR-Code zum Beitreten")}"></canvas>
+        </div>
+        <p class="event-countdown-qr-url" aria-hidden="true">${esc(joinUrlShort)}</p>
+      </div>` : ""}
       <p class="event-countdown-label sr-only">${esc(formatCountdownLabel(ms))}</p>
       <div class="event-countdown-bar" aria-hidden="true"><span style="width:${progressPct(ms)}%"></span></div>
       ${opts.showSkip ? `<button type="button" class="btn ghost event-countdown-skip" data-countdown-skip>${esc(opts.skipLabel || "Countdown überspringen")}</button>` : ""}

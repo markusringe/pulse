@@ -972,7 +972,12 @@ function countdownStageFieldsHtml(event = {}) {
             (s) => `
           <label class="countdown-style-card ${s.id === style ? "is-selected" : ""}" data-style-card="${esc(s.id)}">
             <input type="radio" name="ev-countdown-style" value="${esc(s.id)}" ${s.id === style ? "checked" : ""} />
-            <span class="countdown-style-card-preview" data-countdown-style="${esc(s.id)}" aria-hidden="true"></span>
+            <span class="countdown-style-card-preview" data-countdown-style="${esc(s.id)}" aria-hidden="true">
+              <span class="countdown-style-card-mock">
+                <span class="mock-bar"></span>
+                <span class="mock-digits">05:00</span>
+              </span>
+            </span>
             <span class="countdown-style-card-title">${esc(s.label)}</span>
             <span class="countdown-style-card-hint muted">${esc(s.hint)}</span>
           </label>`

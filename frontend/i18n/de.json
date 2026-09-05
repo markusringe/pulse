@@ -245,6 +245,7 @@
   "countdown.shareMode": "Screen-Share-Ansicht",
   "countdown.qr.toggle": "QR auf Stage",
   "countdown.qr.label": "QR-Code zum Beitreten",
+  "countdown.qr.hint": "Scannen zum Beitreten",
   "countdown.control.label": "Countdown-Steuerung",
   "countdown.editTime": "Startzeit anpassen",
   "countdown.customTime": "Neue Startzeit",

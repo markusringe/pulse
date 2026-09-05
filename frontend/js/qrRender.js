@@ -99,6 +99,24 @@ export function joinUrlFromLocation(code) {
 }
 
 /**
+ * Join-URL für die Stage-Anzeige verkürzen (Host + Pfad, ohne Schema).
+ * @param {string} url
+ * @returns {string}
+ */
+export function formatJoinUrlDisplay(url) {
+  try {
+    const u = new URL(String(url || ""));
+    const host = u.host.replace(/^www\./i, "");
+    const path = u.pathname.replace(/\/$/, "") || "";
+    return `${host}${path}`;
+  } catch {
+    return String(url || "")
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/$/, "");
+  }
+}
+
+/**
  * /j/123456 in Hash-Route umwandeln (nach QR-Scan).
  * @returns {boolean} true wenn umgeleitet wurde
  */

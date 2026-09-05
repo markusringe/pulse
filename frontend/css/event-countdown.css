@@ -11,6 +11,24 @@
   overflow: hidden;
   color: #fff;
   text-align: center;
+  /* Design-Tokens — pro data-countdown-style überschrieben */
+  --cd-accent: var(--primary-color, #007cc1);
+  --cd-accent-2: var(--secondary-color, #f99700);
+  --cd-panel-bg: rgba(8, 14, 24, 0.42);
+  --cd-panel-border: rgba(255, 255, 255, 0.14);
+  --cd-panel-radius: 1rem;
+  --cd-title-font: inherit;
+  --cd-digit-font: inherit;
+  --cd-digit-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+  --cd-status-opacity: 0.9;
+}
+
+/* Home-Countdown: flaches Panel ohne Glas-Rahmen */
+.home-event-countdown.event-countdown-host .event-countdown-panel {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .event-countdown-host[hidden] {
@@ -52,12 +70,18 @@
   display: grid;
   gap: 0.75rem;
   justify-items: center;
+  background: var(--cd-panel-bg);
+  border: 1px solid var(--cd-panel-border);
+  border-radius: var(--cd-panel-radius);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
 }
 
 .event-countdown-title {
   margin: 0;
   font-size: clamp(1.25rem, 2.5vw, 2rem);
   font-weight: 650;
+  font-family: var(--cd-title-font);
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
 }
 
@@ -91,11 +115,13 @@
 
 .event-countdown-num {
   font-variant-numeric: tabular-nums;
+  font-family: var(--cd-digit-font);
   font-size: clamp(3rem, 10vw, 7.5rem);
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.02em;
-  text-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
+  text-shadow: var(--cd-digit-shadow);
+  color: var(--cd-digit-color, inherit);
 }
 
 .event-countdown-digits--sec .event-countdown-num {
@@ -122,7 +148,7 @@
 .event-countdown-bar > span {
   display: block;
   height: 100%;
-  background: color-mix(in srgb, var(--secondary-color, #f99700) 80%, #fff);
+  background: color-mix(in srgb, var(--cd-accent-2) 80%, #fff);
   border-radius: inherit;
   transition: width 0.9s linear;
 }
@@ -258,9 +284,10 @@
 .event-countdown-status {
   margin: 0;
   font-size: clamp(1rem, 2.2vw, 1.5rem);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.9;
+  opacity: var(--cd-status-opacity);
+  color: var(--cd-status-color, inherit);
 }
 
 .event-countdown-datetime {
@@ -268,41 +295,192 @@
   font-size: clamp(1.1rem, 2.8vw, 2rem);
   font-weight: 600;
   opacity: 0.95;
+  color: var(--cd-datetime-color, inherit);
+}
+
+/* QR-Join-Karte auf der Stage */
+.event-countdown-qr-card {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #111;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  display: grid;
+  gap: 0.65rem;
+  justify-items: center;
+  max-width: min(20rem, 88vw);
+}
+
+.event-countdown-qr-hint {
+  margin: 0;
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #333;
 }
 
 .event-countdown-qr {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.12);
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: #fff;
+  border: 2px solid #e8e8e8;
 }
 
 .event-countdown-qr-canvas {
   display: block;
   margin: 0 auto;
-  max-width: min(220px, 40vw);
+  max-width: min(200px, 38vw);
   height: auto;
 }
 
-/* Countdown-Stile — data-countdown-style am Host */
+.event-countdown-qr-url {
+  margin: 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: clamp(0.8rem, 1.6vw, 0.95rem);
+  font-weight: 600;
+  color: #222;
+  word-break: break-all;
+  line-height: 1.35;
+}
+
+/* —— Modern (Standard): Glas, lebendige Markenfarben —— */
+.event-countdown-host[data-countdown-style="modern"] {
+  --cd-panel-bg: rgba(8, 18, 32, 0.52);
+  --cd-panel-border: rgba(255, 255, 255, 0.2);
+  --cd-panel-radius: 1.25rem;
+  --cd-accent: var(--primary-color, #007cc1);
+  --cd-accent-2: var(--secondary-color, #f99700);
+}
+
+.event-countdown-host[data-countdown-style="modern"] .event-countdown-bg--plain {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--primary-color, #007cc1) 48%, #060d18) 0%,
+    color-mix(in srgb, var(--secondary-color, #f99700) 28%, #0a1628) 55%,
+    #060d18 100%
+  );
+}
+
+.event-countdown-host[data-countdown-style="modern"] .event-countdown-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cd-accent), var(--cd-accent-2));
+}
+
+.event-countdown-host[data-countdown-style="modern"] .event-countdown-status {
+  color: color-mix(in srgb, var(--cd-accent-2) 65%, #fff);
+}
+
+/* —— Classic: seriös, behördlich, ohne Bewegung —— */
+.event-countdown-host[data-countdown-style="classic"] {
+  --cd-panel-bg: rgba(22, 32, 48, 0.88);
+  --cd-panel-border: rgba(212, 175, 95, 0.35);
+  --cd-panel-radius: 4px;
+  --cd-title-font: Georgia, "Times New Roman", serif;
+  --cd-accent: #d4af5f;
+  --cd-accent-2: #8b9cb3;
+  --cd-digit-color: #f5f5f0;
+  --cd-status-color: #c8d4e0;
+  --cd-datetime-color: #e8e4dc;
+}
+
+.event-countdown-host[data-countdown-style="classic"] .event-countdown-bg,
+.event-countdown-host[data-countdown-style="classic"] .event-countdown-bg,
 .event-countdown-host[data-countdown-style="classic"] .event-countdown-bg--plain {
   animation: none;
-  background: linear-gradient(160deg, #1a2332 0%, #2c3e50 100%);
+  opacity: 1;
+  background: linear-gradient(165deg, #0f1824 0%, #1e2d3d 45%, #152028 100%);
 }
 
 .event-countdown-host[data-countdown-style="classic"] .event-countdown-panel {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 4px;
-  padding: 2rem;
+  backdrop-filter: none;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  padding: 2rem 2.25rem;
 }
 
-.event-countdown-host[data-countdown-style="retro"] .event-countdown-num {
-  font-family: ui-monospace, "Courier New", monospace;
-  letter-spacing: 0.06em;
+.event-countdown-host[data-countdown-style="classic"] .event-countdown-title::after {
+  content: "";
+  display: block;
+  width: min(6rem, 30vw);
+  height: 2px;
+  margin: 0.65rem auto 0;
+  background: linear-gradient(90deg, transparent, var(--cd-accent), transparent);
+}
+
+.event-countdown-host[data-countdown-style="classic"] .event-countdown-bar {
+  background: rgba(212, 175, 95, 0.2);
+}
+
+.event-countdown-host[data-countdown-style="classic"] .event-countdown-bar > span {
+  background: var(--cd-accent);
+}
+
+/* —— Retro: Arcade, Monospace, Neon-Akzente —— */
+.event-countdown-host[data-countdown-style="retro"] {
+  --cd-panel-bg: rgba(20, 8, 36, 0.82);
+  --cd-panel-border: #ff6b9d;
+  --cd-panel-radius: 0;
+  --cd-digit-font: ui-monospace, "Courier New", Consolas, monospace;
+  --cd-digit-shadow: 0 0 24px rgba(255, 107, 157, 0.55), 0 4px 12px rgba(0, 0, 0, 0.5);
+  --cd-digit-color: #ffe566;
+  --cd-accent: #ff6b9d;
+  --cd-accent-2: #ffe566;
 }
 
 .event-countdown-host[data-countdown-style="retro"] .event-countdown-bg--plain {
-  background: linear-gradient(135deg, #2d1b4e 0%, #c44569 55%, #f8b500 100%);
+  animation: none;
+  background: linear-gradient(160deg, #1a0a2e 0%, #3d1a5c 40%, #c44569 75%, #2a1050 100%);
+}
+
+.event-countdown-host[data-countdown-style="retro"] .event-countdown-panel {
+  border-width: 3px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 229, 102, 0.25),
+    0 0 40px rgba(196, 69, 105, 0.35);
+  backdrop-filter: none;
+}
+
+/* Statische Scanlines — keine Animation (Phase B: kein neues Motion) */
+.event-countdown-host[data-countdown-style="retro"] .event-countdown-panel::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.07) 3px,
+    rgba(0, 0, 0, 0.07) 4px
+  );
+  opacity: 0.5;
+}
+
+.event-countdown-host[data-countdown-style="retro"] .event-countdown-num {
+  letter-spacing: 0.08em;
+}
+
+.event-countdown-host[data-countdown-style="retro"] .event-countdown-status {
+  color: var(--cd-accent);
+  letter-spacing: 0.18em;
+}
+
+.event-countdown-host[data-countdown-style="retro"] .event-countdown-unit {
+  color: #ffb3cc;
+}
+
+/* Share-Modus: keine Hintergrundbewegung (alle Stile) */
+.view-stage[data-stage-mode="share"] .event-countdown-bg,
+.view-stage[data-stage-mode="share"] .event-countdown-bg--plain {
+  animation: none !important;
 }
 
 /* Presenter-Countdown-Leiste */
@@ -390,17 +568,64 @@
 }
 
 .countdown-style-card-preview {
-  height: 3.5rem;
+  height: 4.25rem;
   border-radius: 8px;
   background: linear-gradient(135deg, var(--primary-color, #007cc1), var(--secondary-color, #f99700));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.countdown-style-card-mock {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.countdown-style-card-mock .mock-bar {
+  width: 2.5rem;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.countdown-style-card-mock .mock-digits {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.1rem;
 }
 
 .countdown-style-card-preview[data-countdown-style="classic"] {
-  background: linear-gradient(160deg, #1a2332, #2c3e50);
+  background: linear-gradient(165deg, #0f1824, #1e2d3d);
+  border: 1px solid rgba(212, 175, 95, 0.35);
+}
+
+.countdown-style-card-preview[data-countdown-style="classic"] .mock-bar {
+  background: #d4af5f;
+}
+
+.countdown-style-card-preview[data-countdown-style="classic"] .mock-digits {
+  font-family: Georgia, serif;
+  color: #f5f5f0;
 }
 
 .countdown-style-card-preview[data-countdown-style="retro"] {
-  background: linear-gradient(135deg, #2d1b4e, #f8b500);
+  background: linear-gradient(160deg, #1a0a2e, #c44569);
+  border: 2px solid #ff6b9d;
+}
+
+.countdown-style-card-preview[data-countdown-style="retro"] .mock-digits {
+  font-family: ui-monospace, monospace;
+  color: #ffe566;
+  text-shadow: 0 0 8px rgba(255, 107, 157, 0.6);
+}
+
+.countdown-style-card-preview[data-countdown-style="modern"] .mock-bar {
+  background: linear-gradient(90deg, var(--primary-color, #007cc1), var(--secondary-color, #f99700));
 }
 
 .countdown-style-card-title {
