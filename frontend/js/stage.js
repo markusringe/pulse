@@ -14,7 +14,7 @@ import { renderTypedResults } from "./slideResults.js";
 import { connectionLabel } from "./errors.js";
 import { normalizeSessionSlides, acceptIncoming, acceptStructural, applyIncoming, applySlidePayload } from "./sessionSync.js";
 import { mountCountdown, shouldShowCountdown } from "./eventCountdown.js";
-import { activeSpecialSlideKind, mountSpecialSlide } from "./eventSpecialSlides.js";
+import { activeSpecialSlideKind, mountSpecialSlide, isCountdownSpecialActive, getCurrentSpecialSlide } from "./eventSpecialSlides.js";
 import { drawQrCode, joinUrlFromLocation } from "./qrRender.js";
 import { stageStatusMessage } from "./interactionPresenter.js";
 import { syncHelpFabVisibility } from "./help.js";
@@ -316,16 +316,24 @@ function renderStage() {
   }
   stopClock();
 
-  /* Event-Countdown vor Lobby/Folien — bis Startzeit oder Überspringen. */
-  if (syncEventCountdown()) {
-    fadeIfNeeded("countdown");
-    frame.innerHTML = "";
+  const currentSpecial = getCurrentSpecialSlide(session);
+
+  /* Endfolie — höchste Priorität. */
+  if (currentSpecial === "end" && syncSpecialSlide(frame, "end")) {
+    fadeIfNeeded("special:end");
     return;
   }
 
-  /* Sonderfolie (Start / Pause / Ende) — vor Warteraum und Deck. */
-  if (syncSpecialSlide(frame)) {
-    fadeIfNeeded(`special:${session?.specialSlide || ""}`);
+  /* Pausefolie. */
+  if (currentSpecial === "pause" && syncSpecialSlide(frame, "pause")) {
+    fadeIfNeeded("special:pause");
+    return;
+  }
+
+  /* Countdown (Presenter-Button oder automatisch vor Start). */
+  if (syncEventCountdown()) {
+    fadeIfNeeded("countdown");
+    frame.innerHTML = "";
     return;
   }
 
@@ -387,14 +395,15 @@ function stopEventCountdown() {
 }
 
 /**
- * Sonderfolie rendern, falls aktiv.
+ * Pause- oder Endfolie rendern.
  * @param {HTMLElement} frame
+ * @param {'pause'|'end'} [kindOverride]
  * @returns {boolean}
  */
-function syncSpecialSlide(frame) {
-  const kind = activeSpecialSlideKind(session);
+function syncSpecialSlide(frame, kindOverride) {
+  const kind = kindOverride || activeSpecialSlideKind(session);
   if (!kind || !session?.eventMeta) {
-    frame.innerHTML = "";
+    if (!kindOverride) frame.innerHTML = "";
     return false;
   }
   mountSpecialSlide(frame, kind, session.eventMeta, { t });
@@ -412,7 +421,13 @@ function syncEventCountdown() {
   if (root && meta) {
     root.dataset.countdownStyle = meta.countdownStyle || "modern";
   }
-  if (!host || !shouldShowCountdown(meta, clockSkew, { skipped: countdownSkipped })) {
+  if (!host || !meta?.startTime) {
+    stopEventCountdown();
+    if (host) host.hidden = true;
+    return false;
+  }
+  const forceCountdown = isCountdownSpecialActive(session);
+  if (!forceCountdown && !shouldShowCountdown(meta, clockSkew, { skipped: countdownSkipped })) {
     stopEventCountdown();
     if (host) host.hidden = true;
     return false;

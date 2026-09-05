@@ -1,6 +1,6 @@
 /**
- * Sonderfolien (Start / Pause / Ende) — Rendering für Stage und Presenter.
- * Stile analog zum Event-Countdown (classic, modern, retro).
+ * Sonderfolien (Countdown / Pause / Ende) — Rendering für Stage und Presenter.
+ * Steuerung via eventMeta.currentSpecialSlide (serverseitig persistiert).
  */
 
 import { sanitizeCountdownStyle } from "./eventCountdown.js";
@@ -9,12 +9,28 @@ import { sanitizeCountdownStyle } from "./eventCountdown.js";
 const mountCache = new Map();
 
 /**
+ * Aktive Sonderansicht aus Session/eventMeta.
+ * @param {object | null | undefined} session
+ * @returns {'countdown'|'pause'|'end'|null}
+ */
+export function getCurrentSpecialSlide(session) {
+  const raw = session?.eventMeta?.currentSpecialSlide ?? session?.currentSpecialSlide;
+  const k = String(raw || "")
+    .trim()
+    .toLowerCase();
+  return k === "countdown" || k === "pause" || k === "end" ? k : null;
+}
+
+/**
  * Konfiguration einer Sonderfolie aus eventMeta lesen.
  * @param {object | null | undefined} meta
- * @param {'start'|'pause'|'end'} kind
+ * @param {'start'|'pause'|'end'|'countdown'} kind
  */
 export function getSpecialSlideConfig(meta, kind) {
   if (!meta || !kind) return null;
+  if (kind === "countdown") {
+    return meta.startTime ? { enabled: true, style: sanitizeCountdownStyle(meta.countdownStyle) } : null;
+  }
   const key = kind === "start" ? "startSlide" : kind === "pause" ? "pauseSlide" : "endSlide";
   const cfg = meta[key];
   if (!cfg?.enabled) return null;
@@ -25,21 +41,27 @@ export function getSpecialSlideConfig(meta, kind) {
 }
 
 /**
- * Prüfen, ob eine Sonderfolie angezeigt werden soll.
+ * Pause- oder Endfolie für Stage/Presenter (nicht Countdown).
  * @param {object | null | undefined} session
  */
 export function activeSpecialSlideKind(session) {
-  const kind = String(session?.specialSlide || "")
-    .trim()
-    .toLowerCase();
-  if (!["start", "pause", "end"].includes(kind)) return null;
-  return getSpecialSlideConfig(session?.eventMeta, kind) ? kind : null;
+  const current = getCurrentSpecialSlide(session);
+  if (current !== "pause" && current !== "end") return null;
+  return getSpecialSlideConfig(session?.eventMeta, current) ? current : null;
+}
+
+/**
+ * Countdown auf Stage erzwingen (Presenter-Button).
+ * @param {object | null | undefined} session
+ */
+export function isCountdownSpecialActive(session) {
+  return getCurrentSpecialSlide(session) === "countdown";
 }
 
 /**
  * Sonderfolie in einen Host mounten (Mount-once, nur Text bei Updates).
  * @param {HTMLElement} host
- * @param {'start'|'pause'|'end'} kind
+ * @param {'pause'|'end'|'start'} kind
  * @param {object} meta eventMeta
  * @param {{ t?: (k: string, vars?: object) => string }} [opts]
  */
@@ -59,10 +81,10 @@ export function mountSpecialSlide(host, kind, meta, opts = {}) {
     host.dataset.specialSlide = kind;
     host.dataset.essStyle = style;
     host.innerHTML = `
-      <div class="ess ess--${esc(style)} ess--kind-${esc(kind)}" role="region" aria-live="polite">
+      <div class="ess ess--${esc(style)} ess--kind-${esc(kind)}" data-style="${esc(style)}" role="region" aria-live="polite">
         <div class="ess-inner">
           <div class="ess-icon" aria-hidden="true">
-            ${kind === "pause" ? pauseIconSvg() : kind === "end" ? endIconSvg() : startIconSvg()}
+            ${kind === "pause" ? pauseIconSvg() : endIconSvg()}
           </div>
           <h1 class="ess-title" data-ess-title></h1>
           <p class="ess-subtitle" data-ess-subtitle></p>
@@ -84,21 +106,6 @@ export function mountSpecialSlide(host, kind, meta, opts = {}) {
   if (titleEl) titleEl.textContent = cfg.title || "";
   if (subEl) subEl.textContent = cfg.subtitle || "";
   return cfg;
-}
-
-/** Presenter-Mini-Vorschau für Programm-Kacheln. */
-export function specialSlidePreviewHtml(kind, cfg) {
-  if (!cfg?.enabled) return "";
-  const style = sanitizeCountdownStyle(cfg.style);
-  return `
-    <span class="ppc-preview ess-preview ess-preview--${esc(style)}" aria-hidden="true">
-      <span class="ppc-preview-title">${esc((cfg.title || "").slice(0, 24))}</span>
-    </span>
-  `;
-}
-
-function startIconSvg() {
-  return `<svg viewBox="0 0 64 64" class="ess-svg"><circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="2"/><path d="M26 20v24l20-12z" fill="currentColor"/></svg>`;
 }
 
 function pauseIconSvg() {

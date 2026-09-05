@@ -28,10 +28,11 @@ import {
   destroyPresenterCountdownControl,
 } from "./presenterCountdownControl.js";
 import {
-  syncPresenterProgramControl,
-  destroyPresenterProgramControl,
-} from "./presenterProgramControl.js";
-import { activeSpecialSlideKind, mountSpecialSlide } from "./eventSpecialSlides.js";
+  syncPresenterSpecialSlideButtons,
+  destroyPresenterSpecialSlideButtons,
+  updateSpecialSlideButtons,
+} from "./presenterSpecialSlideButtons.js";
+import { activeSpecialSlideKind, getCurrentSpecialSlide, mountSpecialSlide, isCountdownSpecialActive } from "./eventSpecialSlides.js";
 import { initQuiz, startQuizRound, setQuizRemaining, showQuizResults, destroyQuiz, applyFiftyFifty, showOverallLeaderboard } from "./quiz.js";
 import { updateLeaderboard } from "./leaderboard.js";
 import { initI18n, setLang, t, applyDom, currentLang, onLang } from "./i18n.js";
@@ -1504,6 +1505,8 @@ function connectRealtime(role) {
     if (ctx.role === "present") {
       renderLobby();
       renderActiveSlide();
+      const nav = document.getElementById("present-special-slide-nav");
+      if (nav && ctx.session.eventMeta) updateSpecialSlideButtons(nav, ctx.session.eventMeta);
     }
   });
   rt.on("results", (payload) => {
@@ -1673,7 +1676,7 @@ function teardownRealtime() {
   ctx.pendingVotePayload = null;
   destroyPresenterStats();
   destroyPresenterCountdownControl();
-  destroyPresenterProgramControl();
+  destroyPresenterSpecialSlideButtons();
   ctx.rt?.disconnect();
   ctx.rt = null;
   destroyPoll();
@@ -1778,22 +1781,24 @@ function renderActiveSlide() {
   if (!s) return;
   const countdownOn = syncPresentEventCountdown();
   const specialKind = activeSpecialSlideKind(s);
+  const countdownForced = isCountdownSpecialActive(s);
   const index = s.activeSlideIndex || 0;
   const slide = s.slides[index];
-  if (!slide && !specialKind) return;
+  if (!slide && !specialKind && !countdownForced) return;
 
   if (slide) {
     els.presentQuestion.textContent = slide.question;
   }
-  els.slideIndicator.textContent = specialKind
-    ? t(`programControl.${specialKind}`)
+  const current = getCurrentSpecialSlide(s);
+  els.slideIndicator.textContent = current
+    ? t(`programControl.${current}`)
     : `${index + 1} / ${s.slides.length}`;
   renderPresentStrip(els.presentDeck, s, t, {
   onGoto: (i) => gotoSlideIndex(i),
     onAdd: openSlideDialog,
   });
 
-  if (countdownOn) {
+  if (countdownOn || countdownForced) {
     els.pollRoot.hidden = true;
     els.wordcloudRoot.hidden = true;
     els.qaRoot.hidden = true;
@@ -2365,8 +2370,9 @@ function shiftSlide(delta) {
 function gotoSlideIndex(index) {
   if (!ctx.session?.slides?.length || ctx.role !== "present") return;
   const next = Math.max(0, Math.min(ctx.session.slides.length - 1, Number(index) || 0));
-  if (next === ctx.session.activeSlideIndex && !ctx.session.specialSlide) return;
+  if (next === ctx.session.activeSlideIndex && !getCurrentSpecialSlide(ctx.session)) return;
   ctx.session.activeSlideIndex = next;
+  if (ctx.session.eventMeta) ctx.session.eventMeta.currentSpecialSlide = null;
   ctx.session.specialSlide = null;
   normalizeSessionSlides(ctx.session);
   persistLocal(ctx.session);
@@ -2682,9 +2688,8 @@ function refreshPresenterPanel() {
       if (ctx.session.eventMeta) ctx.session.eventMeta.showStageQr = show;
     },
   }, countdownOn);
-  syncPresenterProgramControl(document.getElementById("presenter-program-control"), {
+  syncPresenterSpecialSlideButtons(document.getElementById("present-special-slide-nav"), {
     session: ctx.session,
-    connectionOpen: els.connectionStatus?.dataset?.state === "open",
     emit: emitLive,
   });
 }
@@ -3258,7 +3263,8 @@ function syncPresentEventCountdown() {
   const meta = ctx.session?.eventMeta;
   const active =
     ctx.role === "present" &&
-    shouldShowCountdown(meta, ctx.eventClockSkew, { skipped: ctx.eventCountdownSkipped });
+    (isCountdownSpecialActive(ctx.session) ||
+      shouldShowCountdown(meta, ctx.eventClockSkew, { skipped: ctx.eventCountdownSkipped }));
   const host = document.getElementById("present-event-countdown");
   if (host) host.hidden = true;
   return active;

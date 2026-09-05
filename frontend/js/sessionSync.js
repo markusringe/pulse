@@ -128,7 +128,13 @@ export function applySlidePayload(session, payload, opts = {}) {
     const kind = String(raw || "")
       .trim()
       .toLowerCase();
-    session.specialSlide = ["start", "pause", "end"].includes(kind) ? kind : null;
+    const mapped = kind === "start" ? "countdown" : kind;
+    session.specialSlide = ["pause", "end"].includes(mapped) ? mapped : null;
+    if (session.eventMeta && ["countdown", "pause", "end"].includes(mapped)) {
+      session.eventMeta.currentSpecialSlide = mapped;
+    } else if (session.eventMeta && !kind) {
+      session.eventMeta.currentSpecialSlide = null;
+    }
   }
   if (payload?.index == null) return session.activeSlideIndex;
   const index = Number(payload.index);

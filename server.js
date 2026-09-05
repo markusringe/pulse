@@ -50,6 +50,7 @@ const teamApi = require("./lib/teamApi");
 const helpApi = require("./lib/helpApi");
 const {
   sanitizeSpecialSlideKind,
+  sanitizeCurrentSpecialSlide,
   specialSlideConfigFor,
 } = require("./lib/eventSpecialSlides");
 const { corsHeadersForRequest, corsHeaders } = require("./lib/cors");
@@ -1838,24 +1839,52 @@ function announceEventMeta(session) {
 }
 
 /**
- * Sonderfolie aktivieren (Start / Pause / Ende).
- * Pause unterbricht die Anzeige, beendet Interaktionen nicht.
- * Ende schließt alle Interaktionen und setzt Event-Status auf ended.
+ * Sonderansicht am Event setzen (Countdown / Pause / Ende).
+ * Persistiert in events.json, broadcast via event_meta.
  * @param {object} session
- * @param {unknown} kindRaw
- * @returns {{ ok?: true, error?: string, message?: string }}
+ * @param {unknown} kindRaw countdown|pause|end|null
+ * @returns {{ ok?: true, already?: boolean, error?: string, message?: string, eventMeta?: object }}
  */
-function applySpecialSlide(session, kindRaw) {
-  const kind = sanitizeSpecialSlideKind(kindRaw);
-  if (!kind) return { error: "invalid_special_slide", message: "Ungültige Sonderfolie." };
-  const ev = session.eventId ? eventStore.get(session.eventId) : eventByJoinCode(session.code);
+function applyCurrentSpecialSlide(session, kindRaw) {
+  if (!session?.eventId) return { error: "no_event", message: "Kein Event verknüpft." };
+  const ev = eventStore.get(session.eventId);
   if (!ev) return { error: "no_event", message: "Kein Event verknüpft." };
-  const cfg = specialSlideConfigFor(ev, kind);
-  if (!cfg) {
-    return { error: "special_disabled", message: "Diese Sonderfolie ist nicht aktiviert." };
+
+  const kind = kindRaw == null || kindRaw === "" ? null : sanitizeCurrentSpecialSlide(kindRaw);
+  if (kindRaw != null && kindRaw !== "" && !kind) {
+    return { error: "invalid_special_slide", message: "Ungültige Sonderansicht." };
+  }
+
+  const prev = sanitizeCurrentSpecialSlide(ev.currentSpecialSlide);
+  if (prev === kind) return { ok: true, already: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+
+  if (kind === "countdown") {
+    if (!ev.startTime) {
+      return { error: "no_countdown", message: "Keine Startzeit für Countdown konfiguriert." };
+    }
+    eventStore.patchEventMeta(session.eventId, { currentSpecialSlide: "countdown" });
+    session.specialSlide = null;
+    schedulePersist(session);
+    announceEventMeta(session);
+    return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+  }
+
+  if (kind === "pause") {
+    if (!specialSlideConfigFor(ev, "pause")) {
+      return { error: "special_disabled", message: "Pausefolie ist nicht aktiviert." };
+    }
+    eventStore.patchEventMeta(session.eventId, { currentSpecialSlide: "pause" });
+    session.specialSlide = "pause";
+    schedulePersist(session);
+    announceEventMeta(session);
+    announceSlide(session);
+    return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
   }
 
   if (kind === "end") {
+    if (!specialSlideConfigFor(ev, "end")) {
+      return { error: "special_disabled", message: "Endfolie ist nicht aktiviert." };
+    }
     const prevSlide = session.slides[session.activeSlideIndex];
     if (prevSlide) {
       clearInteractionEndTimer(session.code, prevSlide.id);
@@ -1866,19 +1895,34 @@ function applySpecialSlide(session, kindRaw) {
       clearInteractionEndTimer(session.code, slide.id);
     }
     eventStore.setStatus(ev.id, "ended");
+    eventStore.patchEventMeta(session.eventId, { currentSpecialSlide: "end" });
     session.lobby = false;
     session.specialSlide = "end";
+    schedulePersist(session);
     announceEventMeta(session);
-    return { ok: true };
+    announceSlide(session);
+    announceSession(session);
+    return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
   }
 
-  if (kind === "pause") {
-    session.specialSlide = "pause";
-    return { ok: true };
-  }
+  /* Zurück zu regulären Folien. */
+  eventStore.patchEventMeta(session.eventId, { currentSpecialSlide: null });
+  session.specialSlide = null;
+  schedulePersist(session);
+  announceEventMeta(session);
+  announceSlide(session);
+  return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+}
 
-  session.specialSlide = "start";
-  return { ok: true };
+/**
+ * Legacy: Sonderfolie per slide-WS (start → countdown-Migration).
+ * @deprecated Nutze applyCurrentSpecialSlide via event_countdown.
+ */
+function applySpecialSlide(session, kindRaw) {
+  const kind = sanitizeSpecialSlideKind(kindRaw);
+  if (!kind) return { error: "invalid_special_slide", message: "Ungültige Sonderfolie." };
+  const mapped = kind === "start" ? "countdown" : kind;
+  return applyCurrentSpecialSlide(session, mapped);
 }
 
 /**
@@ -1937,6 +1981,12 @@ function applyEventCountdownControl(session, payload = {}, client = {}) {
     schedulePersist(session);
     announceEventMeta(session);
     return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+  }
+
+  if (action === "set_current_special_slide") {
+    const out = applyCurrentSpecialSlide(session, payload.currentSpecialSlide);
+    if (out.error) return out;
+    return { ok: true, eventMeta: out.eventMeta };
   }
 
   return { error: "unknown_action" };
@@ -2233,7 +2283,8 @@ async function onWsMessage(client, data) {
     }
     const kind = sanitizeSpecialSlideKind(payload.specialSlide);
     if (kind) {
-      const out = applySpecialSlide(session, kind);
+      const mapped = kind === "start" ? "countdown" : kind;
+      const out = applyCurrentSpecialSlide(session, mapped);
       if (out.error) {
         client.send({ type: "error", payload: out });
         return;
@@ -2243,6 +2294,12 @@ async function onWsMessage(client, data) {
       }
     } else {
       session.specialSlide = null;
+      if (session.eventId) {
+        const ev = eventStore.get(session.eventId);
+        if (ev?.currentSpecialSlide) {
+          applyCurrentSpecialSlide(session, null);
+        }
+      }
       const prevSlide = session.slides[session.activeSlideIndex];
       session.activeSlideIndex = clamp(Number(payload.index) || 0, 0, session.slides.length - 1);
       const slide = session.slides[session.activeSlideIndex];
