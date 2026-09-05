@@ -88,10 +88,24 @@ const DE = {
   "events.countdownStyle.modernHint": "Standard — zeitgemäß und lebendig",
   "events.countdownStyle.retro": "Retro",
   "events.countdownStyle.retroHint": "Charaktervoll — für lockere Formate",
+  "events.field.stageEffect": "Hintergrundeffekt (Stage)",
+  "events.field.stageEffectHint": "Sanfte Bewegung hinter dem Countdown — getrennt vom Stil. Bei laufendem Event sieht das Publikum Änderungen sofort.",
+  "events.stageEffect.none": "Keine Animation",
+  "events.stageEffect.noneHint": "Ruhiger Hintergrund ohne Bewegung",
+  "events.stageEffect.sunrise": "Sunrise",
+  "events.stageEffect.sunriseHint": "Warmer Lichtkegel von unten",
+  "events.stageEffect.waterfall": "Wasserfall",
+  "events.stageEffect.waterfallHint": "Kühle seitliche Lichtbahnen",
+  "events.stageEffect.parallax": "Parallaxe",
+  "events.stageEffect.parallaxHint": "Langsame Tiefenbewegung",
+  "events.field.stageEffectIntensity": "Intensität",
+  "events.stageEffectIntensity.low": "Niedrig",
+  "events.stageEffectIntensity.medium": "Mittel",
+  "events.stageEffectIntensity.high": "Hoch",
   "events.field.showStageDateTime": "Datum und Uhrzeit auf der Stage anzeigen",
   "events.field.showStageQr": "QR-Code auf der Stage (Standard aus)",
   "events.field.showStageQrHint": "Nur öffentliche Join-URL — Presenter kann den QR live ein- und ausblenden.",
-  "events.liveChangeConfirm": "Das Event läuft. Das Publikum sieht Stil- und Anzeige-Änderungen sofort auf der Stage. Fortfahren?",
+  "events.liveChangeConfirm": "Das Event läuft. Das Publikum sieht Stil-, Effekt- und Anzeige-Änderungen sofort auf der Stage. Fortfahren?",
   "events.field.image": "Event-Grafik",
   "events.field.imageHint": "PNG, JPEG, WebP oder SVG · max. 2 MB · empfohlen 1920×1080",
   "events.field.imageDrop": "Grafik hierher ziehen oder Datei wählen",
@@ -985,9 +999,64 @@ function countdownStageFieldsHtml(event = {}) {
           .join("")}
       </div>
     </fieldset>
+    ${stageEffectFieldsHtml(event)}
     <label class="check"><input type="checkbox" id="ev-show-datetime" ${event.showStageDateTime !== false ? "checked" : ""} /> ${esc(tx("events.field.showStageDateTime"))}</label>
     <label class="check"><input type="checkbox" id="ev-show-stage-qr" ${event.showStageQr ? "checked" : ""} /> ${esc(tx("events.field.showStageQr"))}</label>
     <p class="muted">${esc(tx("events.field.showStageQrHint"))}</p>
+  `;
+}
+
+/** Editor: Hintergrundeffekt-Karten (getrennt vom Countdown-Stil). */
+function stageEffectFieldsHtml(event = {}) {
+  const effect = String(event.stageEffect || "none");
+  const intensity = String(event.stageEffectIntensity || "medium");
+  const effects = [
+    { id: "none", label: tx("events.stageEffect.none"), hint: tx("events.stageEffect.noneHint") },
+    { id: "sunrise", label: tx("events.stageEffect.sunrise"), hint: tx("events.stageEffect.sunriseHint") },
+    { id: "waterfall", label: tx("events.stageEffect.waterfall"), hint: tx("events.stageEffect.waterfallHint") },
+    { id: "parallax", label: tx("events.stageEffect.parallax"), hint: tx("events.stageEffect.parallaxHint") },
+  ];
+  const intensities = [
+    { id: "low", label: tx("events.stageEffectIntensity.low") },
+    { id: "medium", label: tx("events.stageEffectIntensity.medium") },
+    { id: "high", label: tx("events.stageEffectIntensity.high") },
+  ];
+  return `
+    <fieldset class="stage-effect-picker" id="ev-stage-effect-box">
+      <legend>${esc(tx("events.field.stageEffect"))}</legend>
+      <p class="muted">${esc(tx("events.field.stageEffectHint"))}</p>
+      <div class="stage-effect-cards">
+        ${effects
+          .map(
+            (fx) => `
+          <label class="stage-effect-card ${fx.id === effect ? "is-selected" : ""}" data-effect-card="${esc(fx.id)}">
+            <input type="radio" name="ev-stage-effect" value="${esc(fx.id)}" ${fx.id === effect ? "checked" : ""} />
+            <span class="stage-effect-card-preview" data-stage-effect="${esc(fx.id)}" aria-hidden="true">
+              <span class="stage-effect stage-effect--${esc(fx.id === "none" ? "none" : fx.id)}">
+                ${fx.id === "none" ? "" : `<span class="stage-effect__layer stage-effect__layer--a"></span><span class="stage-effect__layer stage-effect__layer--b"></span>`}
+              </span>
+            </span>
+            <span class="stage-effect-card-title">${esc(fx.label)}</span>
+            <span class="stage-effect-card-hint muted">${esc(fx.hint)}</span>
+          </label>`
+          )
+          .join("")}
+      </div>
+      <div class="stage-effect-intensity" id="ev-stage-effect-intensity" ${effect === "none" ? "hidden" : ""}>
+        <p class="stage-effect-intensity-label">${esc(tx("events.field.stageEffectIntensity"))}</p>
+        <div class="stage-effect-intensity-radios">
+          ${intensities
+            .map(
+              (lvl) => `
+            <label class="stage-effect-intensity-option">
+              <input type="radio" name="ev-stage-effect-intensity" value="${esc(lvl.id)}" ${lvl.id === intensity ? "checked" : ""} />
+              ${esc(lvl.label)}
+            </label>`
+            )
+            .join("")}
+        </div>
+      </div>
+    </fieldset>
   `;
 }
 
@@ -1007,6 +1076,40 @@ function bindCountdownStyleCards() {
       if (input) input.checked = true;
     });
   });
+}
+
+/** Stage-Effekt-Karten: Auswahl + Intensität ein-/ausblenden. */
+function bindStageEffectCards() {
+  const intensityBox = document.getElementById("ev-stage-effect-intensity");
+  const syncIntensityVisibility = () => {
+    const checked = document.querySelector('input[name="ev-stage-effect"]:checked');
+    const id = String(checked?.value || "none");
+    if (intensityBox) intensityBox.hidden = id === "none";
+  };
+  document.querySelectorAll("[data-effect-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".stage-effect-card").forEach((c) => c.classList.remove("is-selected"));
+      card.classList.add("is-selected");
+      const input = card.querySelector('input[type="radio"]');
+      if (input) input.checked = true;
+      syncIntensityVisibility();
+    });
+  });
+  syncIntensityVisibility();
+}
+
+/** Ausgewählten Stage-Effekt aus den Karten lesen. */
+function readStageEffectField() {
+  const checked = document.querySelector('input[name="ev-stage-effect"]:checked');
+  const id = String(checked?.value || "none");
+  return ["none", "sunrise", "waterfall", "parallax"].includes(id) ? id : "none";
+}
+
+/** Intensität des Stage-Effekts lesen. */
+function readStageEffectIntensityField() {
+  const checked = document.querySelector('input[name="ev-stage-effect-intensity"]:checked');
+  const id = String(checked?.value || "medium");
+  return ["low", "medium", "high"].includes(id) ? id : "medium";
 }
 
 /** ISO → Wert für datetime-local (lokale Zeitzone). */
@@ -1121,6 +1224,8 @@ function readEventFields() {
     category: document.getElementById("ev-cat")?.value,
     room: document.getElementById("ev-room")?.value,
     countdownStyle: readCountdownStyleField(),
+    stageEffect: readStageEffectField(),
+    stageEffectIntensity: readStageEffectIntensityField(),
     showStageDateTime: document.getElementById("ev-show-datetime")?.checked !== false,
     showStageQr: Boolean(document.getElementById("ev-show-stage-qr")?.checked),
   };
@@ -1168,6 +1273,7 @@ async function renderCreate(root) {
   document.getElementById("event-create-form")?.addEventListener("submit", onCreateSubmit);
   bindEventImageUpload("");
   bindCountdownStyleCards();
+  bindStageEffectCards();
 }
 
 async function onCreateSubmit(e) {
@@ -1278,6 +1384,7 @@ async function renderDetail(root, eventId) {
   hooks.drawQrCode(document.getElementById("admin-event-qr"), joinUrl);
   bindEventImageUpload(event.eventImage || "");
   bindCountdownStyleCards();
+  bindStageEffectCards();
   document.getElementById("event-edit-form")?.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const msg = document.getElementById("event-edit-msg");
@@ -1303,6 +1410,8 @@ async function renderDetail(root, eventId) {
     const liveVisualChange =
       event.status === "active" &&
       (patch.countdownStyle !== (event.countdownStyle || "modern") ||
+        patch.stageEffect !== (event.stageEffect || "none") ||
+        patch.stageEffectIntensity !== (event.stageEffectIntensity || "medium") ||
         patch.showStageDateTime !== (event.showStageDateTime !== false) ||
         patch.showStageQr !== Boolean(event.showStageQr));
     if (liveVisualChange && !confirm(tx("events.liveChangeConfirm"))) {

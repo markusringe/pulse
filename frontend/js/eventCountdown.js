@@ -6,6 +6,10 @@
 /** Erlaubte Countdown-Stile (persistiert am Event). */
 export const COUNTDOWN_STYLES = ["classic", "modern", "retro"];
 
+/** Stage-Hintergrundeffekte (getrennt vom Countdown-Stil). */
+export const STAGE_EFFECTS = ["none", "sunrise", "waterfall", "parallax"];
+export const STAGE_EFFECT_INTENSITIES = ["low", "medium", "high"];
+
 /** Schwellen in Millisekunden. */
 export const THRESH = {
   day: 24 * 60 * 60 * 1000,
@@ -24,6 +28,43 @@ export function sanitizeCountdownStyle(value) {
     .trim()
     .toLowerCase();
   return COUNTDOWN_STYLES.includes(id) ? id : "modern";
+}
+
+/**
+ * Stage-Effekt normalisieren (Default: none).
+ * @param {unknown} value
+ */
+export function sanitizeStageEffect(value) {
+  const id = String(value || "none")
+    .trim()
+    .toLowerCase();
+  return STAGE_EFFECTS.includes(id) ? id : "none";
+}
+
+/**
+ * Effekt-Intensität normalisieren (Default: medium).
+ * @param {unknown} value
+ */
+export function sanitizeStageEffectIntensity(value) {
+  const id = String(value || "medium")
+    .trim()
+    .toLowerCase();
+  return STAGE_EFFECT_INTENSITIES.includes(id) ? id : "medium";
+}
+
+/**
+ * Dekorative Effekt-Layer für die Stage (nur CSS, aria-hidden).
+ * @param {string} [effect]
+ * @param {string} [intensity]
+ */
+export function renderStageEffectLayers(effect, intensity) {
+  const fx = sanitizeStageEffect(effect);
+  if (fx === "none") return "";
+  const level = sanitizeStageEffectIntensity(intensity);
+  return `<div class="stage-effect stage-effect--${fx}" data-intensity="${esc(level)}" aria-hidden="true">
+    <span class="stage-effect__layer stage-effect__layer--a"></span>
+    <span class="stage-effect__layer stage-effect__layer--b"></span>
+  </div>`;
 }
 
 /**
@@ -211,6 +252,7 @@ export function renderCountdownPanel(meta, ms, opts = {}) {
 
   return `
     ${bg}
+    ${variant === "stage" ? renderStageEffectLayers(meta?.stageEffect, meta?.stageEffectIntensity) : ""}
     <div class="event-countdown-panel" data-urgency="${urgency}" data-variant="${esc(variant)}">
       ${meta?.title ? `<h1 class="event-countdown-title">${esc(meta.title)}</h1>` : ""}
       <p class="event-countdown-status" role="status">${esc(status)}</p>
@@ -306,6 +348,8 @@ export function mountCountdown(host, meta, opts = {}) {
     const liveMeta = getMeta();
     const ms = remainingMs(liveMeta.startTime, getSkew());
     host.dataset.countdownStyle = sanitizeCountdownStyle(liveMeta.countdownStyle);
+    host.dataset.stageEffect = sanitizeStageEffect(liveMeta.stageEffect);
+    host.dataset.stageEffectIntensity = sanitizeStageEffectIntensity(liveMeta.stageEffectIntensity);
     const showQr = opts.showQr ?? Boolean(liveMeta.showStageQr);
     host.innerHTML = renderCountdownPanel(liveMeta, ms, {
       variant: opts.variant || "stage",

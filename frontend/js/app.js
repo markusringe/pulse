@@ -37,7 +37,7 @@ import { introQuiz, knowledgeCheck, icebreakerQuiz } from "./templates.js";
 import { questionsToCsv, downloadText, printQuestionsPdf, simpleMarkdown } from "./export.js";
 import { mountReactionBar, burstReaction } from "./reactions.js";
 import { bindSslPage, showSslPage } from "./ssl.js";
-import { bindHelp, showHelpPage, explainError, explainServerError } from "./help.js";
+import { bindHelp, showHelpPage, explainError, explainServerError, syncHelpFabVisibility } from "./help.js";
 import { bindPrivacyPages, fillLegalViews } from "./privacyPage.js";
 import { bindSettingsPanel, refreshAuthSettingsPanel } from "./settings.js";
 import { syncAdminNav } from "./adminNav.js";
@@ -782,6 +782,7 @@ function showView(name, routeHash) {
     el.inert = !active;
   }
   ctx.role = name;
+  syncHelpFabVisibility();
   const hashForNav = routeHash ?? hashRoutePath();
   syncAdminNav(name, hashForNav);
   applyAdminNavVisibility();

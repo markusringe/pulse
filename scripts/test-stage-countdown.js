@@ -3,6 +3,7 @@
  * Unit-Tests für Countdown-Metadaten (Server-seitig, ohne Browser).
  */
 const meta = require("../lib/eventCountdownMeta");
+const stageFx = require("../lib/stageEffectMeta");
 const events = require("../lib/events");
 const fs = require("fs");
 const os = require("os");
@@ -31,6 +32,16 @@ assert(
   "join url display"
 );
 
+assert(stageFx.sanitizeStageEffect("none") === "none", "stageEffect default none");
+assert(stageFx.sanitizeStageEffect("sunrise") === "sunrise", "stageEffect sunrise");
+assert(stageFx.sanitizeStageEffect("waterfall") === "waterfall", "stageEffect waterfall");
+assert(stageFx.sanitizeStageEffect("parallax") === "parallax", "stageEffect parallax");
+assert(stageFx.sanitizeStageEffect("invalid") === "none", "stageEffect invalid → none");
+assert(stageFx.sanitizeStageEffectIntensity("medium") === "medium", "intensity default medium");
+assert(stageFx.sanitizeStageEffectIntensity("low") === "low", "intensity low");
+assert(stageFx.sanitizeStageEffectIntensity("high") === "high", "intensity high");
+assert(stageFx.sanitizeStageEffectIntensity("x") === "medium", "intensity invalid → medium");
+
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tt-countdown-meta-"));
 const origCwd = process.cwd();
 process.chdir(dir);
@@ -44,21 +55,34 @@ const ev = events.create({
   countdownStyle: "retro",
   showStageQr: true,
   showStageDateTime: false,
+  stageEffect: "sunrise",
+  stageEffectIntensity: "high",
 });
 
 assert(ev.countdownStyle === "retro", "persist countdownStyle");
 assert(ev.showStageQr === true, "persist showStageQr");
 assert(ev.showStageDateTime === false, "persist showStageDateTime false");
+assert(ev.stageEffect === "sunrise", "persist stageEffect");
+assert(ev.stageEffectIntensity === "high", "persist stageEffectIntensity");
 
 const m = events.eventMetaFor(ev.id);
 assert(m.countdownStyle === "retro", "eventMetaFor style");
 assert(m.showStageQr === true, "eventMetaFor qr");
 assert(m.showStageDateTime === false, "eventMetaFor datetime off");
+assert(m.stageEffect === "sunrise", "eventMetaFor stageEffect");
+assert(m.stageEffectIntensity === "high", "eventMetaFor intensity");
 
-events.patchEventMeta(ev.id, { showStageQr: false, countdownStyle: "classic" });
+events.patchEventMeta(ev.id, {
+  showStageQr: false,
+  countdownStyle: "classic",
+  stageEffect: "parallax",
+  stageEffectIntensity: "low",
+});
 const m2 = events.eventMetaFor(ev.id);
 assert(m2.showStageQr === false, "patch qr off");
 assert(m2.countdownStyle === "classic", "patch style");
+assert(m2.stageEffect === "parallax", "patch stageEffect");
+assert(m2.stageEffectIntensity === "low", "patch intensity");
 
 process.chdir(origCwd);
 console.log("OK test-stage-countdown");

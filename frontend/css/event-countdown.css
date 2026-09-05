@@ -631,3 +631,85 @@
 .countdown-style-card-title {
   font-weight: 650;
 }
+
+/* —— Editor: Stage-Hintergrundeffekt-Karten —— */
+.stage-effect-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.stage-effect-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.stage-effect-card.is-selected {
+  border-color: var(--primary-color, #007cc1);
+  box-shadow: 0 0 0 1px var(--primary-color, #007cc1);
+}
+
+.stage-effect-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stage-effect-card-preview {
+  position: relative;
+  display: block;
+  height: 3.25rem;
+  border-radius: 0.35rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0a1628 0%, #152238 100%);
+}
+
+.stage-effect-card-preview .stage-effect {
+  inset: 0;
+}
+
+.stage-effect-card-preview[data-stage-effect="none"] {
+  background: linear-gradient(180deg, #1a2740 0%, #0f1828 100%);
+}
+
+.stage-effect-card-title {
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+
+.stage-effect-intensity {
+  margin-top: 0.85rem;
+}
+
+.stage-effect-intensity-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.stage-effect-intensity-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+}
+
+.stage-effect-intensity-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-effect-card-preview .stage-effect__layer {
+    animation: none !important;
+  }
+}

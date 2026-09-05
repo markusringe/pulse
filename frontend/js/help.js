@@ -336,6 +336,7 @@ function injectContextChrome() {
 }
 
 function updateContextPanel() {
+  syncHelpFabVisibility();
   const body = document.getElementById("help-context-body");
   if (!body) return;
   const hash = location.hash.replace(/^#/, "") || "/";
@@ -400,6 +401,21 @@ function updateContextPanel() {
   body.innerHTML = `<ul>${items
     .map(([href, label]) => `<li><a href="${href}">${escapeHtml(label)}</a></li>`)
     .join("")}</ul>`;
+}
+
+/**
+ * Kontext-Hilfe (FAB unten rechts) ausblenden — Presenter-Modus ohne Ablenkung.
+ */
+export function syncHelpFabVisibility() {
+  const hash = location.hash.replace(/^#/, "") || "/";
+  const onPresent = /^\/present(\/|$)/.test(hash);
+  const fab = document.getElementById("help-fab");
+  const panel = document.getElementById("help-context");
+  if (fab) fab.hidden = onPresent;
+  if (panel && onPresent) {
+    panel.hidden = true;
+    fab?.setAttribute("aria-expanded", "false");
+  }
 }
 
 /**

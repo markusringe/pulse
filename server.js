@@ -1869,6 +1869,24 @@ function applyEventCountdownControl(session, payload = {}, client = {}) {
     return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
   }
 
+  if (action === "set_stage_effect") {
+    eventStore.patchEventMeta(session.eventId, {
+      stageEffect: payload.stageEffect,
+    });
+    schedulePersist(session);
+    announceEventMeta(session);
+    return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+  }
+
+  if (action === "set_stage_effect_intensity") {
+    eventStore.patchEventMeta(session.eventId, {
+      stageEffectIntensity: payload.stageEffectIntensity,
+    });
+    schedulePersist(session);
+    announceEventMeta(session);
+    return { ok: true, eventMeta: eventStore.eventMetaFor(session.eventId) };
+  }
+
   return { error: "unknown_action" };
 }
 

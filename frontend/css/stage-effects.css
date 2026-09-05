@@ -1,0 +1,165 @@
+/**
+ * Stage-Hintergrundeffekte — nur CSS (transform/opacity).
+ * Kombinierbar mit data-countdown-style; bei data-stage-effect ≠ none keine BG-Pulse-Animation.
+ */
+
+.event-countdown-host {
+  --fx-opacity: 0.08;
+  --fx-shift: 6%;
+}
+
+.event-countdown-host[data-stage-effect-intensity="low"] {
+  --fx-opacity: 0.05;
+  --fx-shift: 4%;
+}
+
+.event-countdown-host[data-stage-effect-intensity="high"] {
+  --fx-opacity: 0.12;
+  --fx-shift: 9%;
+}
+
+/* Effekt aktiv: bestehende Countdown-Hintergrund-Animation aus */
+.event-countdown-host[data-stage-effect]:not([data-stage-effect="none"]) .event-countdown-bg,
+.event-countdown-host[data-stage-effect]:not([data-stage-effect="none"]) .event-countdown-bg--plain {
+  animation: none !important;
+}
+
+.stage-effect {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.stage-effect__layer {
+  position: absolute;
+  inset: -15%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.stage-effect__layer--a {
+  opacity: var(--fx-opacity);
+}
+
+.stage-effect__layer--b {
+  opacity: calc(var(--fx-opacity) * 0.75);
+}
+
+/* —— Sunrise: warmer Lichtkegel von unten —— */
+.stage-effect--sunrise .stage-effect__layer--a {
+  background: radial-gradient(
+    ellipse 90% 55% at 50% 115%,
+    rgba(255, 180, 80, 0.55) 0%,
+    rgba(255, 120, 60, 0.2) 45%,
+    transparent 70%
+  );
+  animation: stage-sunrise-rise 22s ease-in-out infinite alternate;
+}
+
+.stage-effect--sunrise .stage-effect__layer--b {
+  background: radial-gradient(
+    ellipse 70% 40% at 50% 100%,
+    rgba(255, 230, 150, 0.35) 0%,
+    transparent 65%
+  );
+  animation: stage-sunrise-rise 18s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes stage-sunrise-rise {
+  from {
+    transform: translateY(8%) scale(1);
+    opacity: calc(var(--fx-opacity) * 0.7);
+  }
+  to {
+    transform: translateY(calc(var(--fx-shift) * -1)) scale(1.04);
+    opacity: var(--fx-opacity);
+  }
+}
+
+/* —— Wasserfall: kühle seitliche Lichtbahnen —— */
+.stage-effect--waterfall .stage-effect__layer--a {
+  background: repeating-linear-gradient(
+    105deg,
+    transparent 0,
+    transparent 48px,
+    rgba(120, 200, 255, 0.12) 48px,
+    rgba(120, 200, 255, 0.12) 52px
+  );
+  animation: stage-waterfall-drift 28s linear infinite;
+}
+
+.stage-effect--waterfall .stage-effect__layer--b {
+  background: repeating-linear-gradient(
+    75deg,
+    transparent 0,
+    transparent 64px,
+    rgba(80, 160, 220, 0.08) 64px,
+    rgba(80, 160, 220, 0.08) 68px
+  );
+  animation: stage-waterfall-drift 36s linear infinite reverse;
+}
+
+@keyframes stage-waterfall-drift {
+  from {
+    transform: translateX(-12%);
+  }
+  to {
+    transform: translateX(12%);
+  }
+}
+
+/* —— Parallaxe: langsame Blob-Tiefe —— */
+.stage-effect--parallax .stage-effect__layer--a {
+  width: 55%;
+  height: 55%;
+  top: 10%;
+  left: -8%;
+  inset: auto;
+  border-radius: 45% 55% 60% 40%;
+  background: radial-gradient(circle at 30% 30%, rgba(130, 90, 255, 0.35), transparent 70%);
+  animation: stage-parallax-a 34s ease-in-out infinite alternate;
+}
+
+.stage-effect--parallax .stage-effect__layer--b {
+  width: 50%;
+  height: 50%;
+  bottom: 5%;
+  right: -10%;
+  top: auto;
+  left: auto;
+  inset: auto;
+  border-radius: 60% 40% 45% 55%;
+  background: radial-gradient(circle at 70% 60%, rgba(0, 180, 200, 0.28), transparent 72%);
+  animation: stage-parallax-b 46s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes stage-parallax-a {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(8%, 5%, 0);
+  }
+}
+
+@keyframes stage-parallax-b {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-10%, -6%, 0);
+  }
+}
+
+/* Share-Modus und reduced-motion: statische Endansicht */
+.view-stage[data-stage-mode="share"] .stage-effect__layer {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-effect__layer {
+    animation: none !important;
+  }
+}
