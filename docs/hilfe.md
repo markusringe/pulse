@@ -3,7 +3,7 @@
 Zusammenfassung der In-App-Hilfe (`#/help`, `#/admin/help`) als druckbares Markdown-Dokument.  
 **Stand:** Programmversion **v1.5.27** · Hilfe-Katalog **Version 13** · **27 Artikel** · 2026-09-05.
 
-Die interaktive Hilfe mit Rollenfilter, Suche, Tour und Feedback liegt im Frontend unter `frontend/help/`. Dieses Dokument spiegelt die gleiche Struktur für Admins, Redaktion und Schulungsunterlagen.
+Die interaktive Hilfe mit Rollenfilter, Suche, Tour und Feedback liegt im Frontend unter `frontend/help/`. Der Katalog wird serverseitig über `GET /api/help/articles` nach Rolle gefiltert (Fallback: statisches `articles.json`). Dieses Dokument spiegelt die gleiche Struktur für Admins, Redaktion und Schulungsunterlagen.
 
 **Versionspflege:** Nach Änderung der Version in `package.json` bitte `npm run docs:sync-version` ausführen — dann stimmen In-App-Hilfe, HTML-Artikel und diese Markdown-Datei mit der Programmversion überein. Live-Stand auch unter `#/admin/updates` und `GET /api/health`.
 
