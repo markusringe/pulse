@@ -15,7 +15,7 @@
 | — | Prod `stage.js` | ✅ kein `stageSpecialSlideNav` | Bundle-Check |
 | — | Prod `deck.js` | ✅ `deck-chip-special` vorhanden | Folienleiste v1.5.37 |
 
-**Offen lokal/VPS-Container:** `test-presenter-special-slide-dock.js` liegt im Git-Repo, ist im Docker-Image (v1.5.37) noch **nicht** enthalten — Ab v1.5.38 im Dockerfile ergänzt.
+**Offen lokal/VPS-Container:** Ab **v1.5.38** im Docker-Image — `docker exec pulse-pulse-1 node scripts/test-presenter-special-slide-dock.js`
 
 ---
 
